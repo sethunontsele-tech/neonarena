@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores player profile, customization, and global stats.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "gamertag": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "customization": {
+          "type": "object",
+          "properties": {
+            "skin": { "type": "string" },
+            "color": { "type": "string" },
+            "pattern": { "type": "string" },
+            "accessories": { "type": "array", "items": { "type": "string" } },
+            "weaponSkin": { "type": "string" }
+          }
+        },
+        "stats": {
+          "type": "object",
+          "properties": {
+            "totalKills": { "type": "integer" },
+            "totalDeaths": { "type": "integer" },
+            "totalWins": { "type": "integer" },
+            "totalGames": { "type": "integer" },
+            "totalShots": { "type": "integer" },
+            "totalHits": { "type": "integer" },
+            "winStreak": { "type": "integer" },
+            "maxWinStreak": { "type": "integer" },
+            "totalScore": { "type": "integer" }
+          }
+        }
+      },
+      "required": ["uid", "displayName"]
+    },
+    "Match": {
+      "title": "Match Record",
+      "description": "Stores details of a completed match for history and replays.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "duration": { "type": "number" },
+        "mode": { "type": "string" },
+        "map": { "type": "string" },
+        "players": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "uid": { "type": "string" },
+              "displayName": { "type": "string" },
+              "kills": { "type": "integer" },
+              "deaths": { "type": "integer" },
+              "assists": { "type": "integer" },
+              "score": { "type": "integer" },
+              "accuracy": { "type": "number" },
+              "team": { "type": "string" },
+              "result": { "type": "string", "enum": ["win", "loss", "draw"] }
+            }
+          }
+        },
+        "replayData": { "type": "string", "description": "Serialized replay data" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles and stats"
+    },
+    "/matches/{matchId}": {
+      "schema": "Match",
+      "description": "Completed match records"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "NeonArena",
+  "description": "A high-quality, AAA-style multiplayer FPS with advanced movement, customization, and competitive game modes.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
