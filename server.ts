@@ -26,6 +26,8 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
+type RankType = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'master' | 'grandmaster';
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -40,30 +42,176 @@ async function startServer() {
   const MAX_PLAYERS = 60;
   let playerCounter = 1;
 
+  const calculateRankPoints = (player: any, result: 'win' | 'loss' | 'draw', isRanked: boolean) => {
+    if (!isRanked) return 0;
+    let points = 0;
+    if (result === 'win') points += 25;
+    else if (result === 'loss') points -= 15;
+    points += player.kills * 2;
+    points -= player.deaths * 1;
+    return Math.max(-50, Math.min(100, points));
+  };
+
+  const calculateXP = (player: any, result: 'win' | 'loss' | 'draw') => {
+    let xp = player.score / 10;
+    xp += player.kills * 50;
+    if (result === 'win') xp += 500;
+    else if (result === 'loss') xp += 100;
+    return Math.floor(xp);
+  };
+
+  const saveMatchRecord = async (room: RoomState) => {
+    try {
+      const isRanked = room.id.startsWith('ranked-') || room.currentMode === 'ffa' || room.currentMode === 'tdm'; // Example logic
+      
+      const matchRecord = {
+        id: Math.random().toString(36).substr(2, 9),
+        date: new Date().toISOString(),
+        map: room.currentMap,
+        mode: room.currentMode,
+        isRanked,
+        teamScores: room.teamScores,
+        players: Object.values(room.players).map(p => {
+          const result = room.currentMode === 'ffa' 
+            ? (Object.values(room.players).sort((a, b) => b.score - a.score)[0].id === p.id ? 'win' : 'loss')
+            : (room.teamScores.amber > room.teamScores.blue ? (p.team === 'amber' ? 'win' : 'loss') : (p.team === 'blue' ? 'win' : 'loss'));
+          
+          const rpGained = calculateRankPoints(p, result as any, isRanked);
+          const xpGained = calculateXP(p, result as any);
+          const creditsGained = Math.floor(xpGained / 10);
+
+          return {
+            id: p.id,
+            uid: p.uid,
+            name: p.name,
+            score: p.score,
+            kills: p.kills,
+            deaths: p.deaths,
+            team: p.team,
+            result,
+            rankPointsGained: rpGained,
+            xpGained,
+            creditsGained
+          };
+        }),
+        duration: 600 - room.timeLeft
+      };
+      
+      await setDoc(doc(collection(db, 'matches'), matchRecord.id), matchRecord);
+      console.log(`Match record saved: ${matchRecord.id}`);
+
+      // Update Player Profiles
+      for (const p of matchRecord.players) {
+        if (p.uid) {
+          try {
+            const userRef = doc(db, 'users', p.uid);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              const userData = userSnap.data();
+              let newXP = (userData.xp || 0) + p.xpGained;
+              let newLevel = userData.level || 1;
+              let newRP = (userData.rankPoints || 0) + p.rankPointsGained;
+              let newRank = (userData.rank || 'bronze') as RankType;
+
+              // Level up logic: each level requires level * 1000 XP
+              while (newXP >= newLevel * 1000) {
+                newXP -= newLevel * 1000;
+                newLevel++;
+              }
+
+              // Rank up logic: 100 RP to rank up, < 0 RP to rank down
+              const rankOrder: RankType[] = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'master', 'grandmaster'];
+              const currentRankIndex = rankOrder.indexOf(newRank);
+              
+              if (newRP >= 100 && currentRankIndex < rankOrder.length - 1) {
+                newRP -= 100;
+                newRank = rankOrder[currentRankIndex + 1];
+              } else if (newRP < 0 && currentRankIndex > 0) {
+                newRP += 100;
+                newRank = rankOrder[currentRankIndex - 1];
+              }
+
+              await updateDoc(userRef, {
+                xp: newXP,
+                level: newLevel,
+                rankPoints: newRP,
+                rank: newRank,
+                credits: increment(p.creditsGained),
+                'stats.kills': increment(p.kills),
+                'stats.deaths': increment(p.deaths),
+                'stats.totalScore': increment(p.score),
+                'stats.gamesPlayed': increment(1),
+                'stats.wins': increment(p.result === 'win' ? 1 : 0)
+              });
+              console.log(`Updated profile for user: ${p.uid} (Level: ${newLevel}, Rank: ${newRank})`);
+            }
+          } catch (error) {
+            console.error(`Error updating profile for user ${p.uid}:`, error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error saving match record:', error);
+    }
+  };
+
+  interface VehicleState {
+    id: string;
+    type: 'car' | 'plane' | 'submarine';
+    position: [number, number, number];
+    rotation: [number, number, number];
+    velocity: [number, number, number];
+    health: number;
+    maxHealth: number;
+    driverId: string | null;
+    name: string;
+  }
+
   interface RoomState {
     id: string;
+    gameState: 'lobby' | 'playing' | 'gameover';
+    timeLeft: number;
     currentMap: 'maze' | 'arena' | 'pillars' | 'flat';
-    currentMode: 'ffa' | 'tdm' | 'ctf' | 'creative';
+    currentMode: 'ffa' | 'tdm' | 'ctf' | 'creative' | 'koth' | 'domination';
     teamScores: { amber: number, blue: number };
     flags: { team: 'amber' | 'blue', position: [number, number, number], carrierId: string | null }[];
+    controlPoints: {
+      id: string;
+      name: string;
+      position: [number, number, number];
+      radius: number;
+      owner: 'none' | 'amber' | 'blue';
+      progress: number;
+      capturingTeam: 'none' | 'amber' | 'blue';
+    }[];
     blocks: { id: string, type: string, position: [number, number, number] }[];
     settings: {
       jumpHeight: number;
       gravity: number;
       botDifficulty: 'easy' | 'medium' | 'hard' | 'expert';
       botCount: number;
+      botPower: number;
+      botAggression: number;
+      botAccuracy: number;
+      botReactionTime: number;
+      botStrategy: 'aggressive' | 'defensive' | 'balanced' | 'tactical';
     };
     enemies: Record<string, {
       id: string,
       position: [number, number, number],
       rotation: number,
       health: number,
-      state: 'active' | 'disabled',
+      state: 'active' | 'disabled' | 'patrol' | 'chase' | 'attack' | 'cover',
       disabledUntil: number,
-      team: 'none' | 'amber' | 'blue'
+      team: 'none' | 'amber' | 'blue',
+      targetId: string | null,
+      lastShotTime: number,
+      path: [number, number, number][],
+      skillLevel: number // 1-10, adjusts dynamically
     }>;
     players: Record<string, { 
       id: string, 
+      uid?: string,
       name: string, 
       position: [number, number, number], 
       rotation: number, 
@@ -82,8 +230,14 @@ async function startServer() {
       isSprinting: boolean,
       isSliding: boolean,
       isBuildMode: boolean,
-      selectedBlock: string
+      selectedBlock: string,
+      playerClass: string,
+      isDashing: boolean,
+      currentVehicleId: string | null,
+      currentDimension: string
     }>;
+    projectiles: any[];
+    vehicles: Record<string, VehicleState>;
   }
 
   const rooms: Record<string, RoomState> = {};
@@ -97,6 +251,8 @@ async function startServer() {
     if (!rooms[id]) {
       rooms[id] = {
         id,
+        gameState: 'lobby',
+        timeLeft: 600,
         currentMap: 'maze',
         currentMode: 'ffa',
         teamScores: { amber: 0, blue: 0 },
@@ -104,29 +260,44 @@ async function startServer() {
           { team: 'amber', position: [0, 0, 80], carrierId: null },
           { team: 'blue', position: [0, 0, -80], carrierId: null }
         ],
+        controlPoints: [],
         blocks: [],
         settings: {
           jumpHeight: 1.5,
           gravity: 9.81,
           botDifficulty: 'medium',
-          botCount: 4
+          botCount: 4,
+          botPower: 5,
+          botAggression: 5,
+          botAccuracy: 5,
+          botReactionTime: 500,
+          botStrategy: 'balanced'
         },
         enemies: {},
-        players: {}
+        players: {},
+        projectiles: [],
+        vehicles: {}
       };
 
-      // Initialize bots
-      for (let i = 0; i < rooms[id].settings.botCount; i++) {
-        const botId = `bot-${i}`;
-        rooms[id].enemies[botId] = {
-          id: botId,
-          position: [Math.random() * 40 - 20, 0, Math.random() * 40 - 20],
-          rotation: 0,
-          health: 100,
-          state: 'active',
-          disabledUntil: 0,
-          team: 'none'
-        };
+      // Initialize bots (only if not creative mode or if it's a saved private server)
+      const shouldSpawnBots = rooms[id].currentMode !== 'creative' || id.startsWith('private-');
+      if (shouldSpawnBots) {
+        for (let i = 0; i < rooms[id].settings.botCount; i++) {
+          const botId = `bot-${i}`;
+          rooms[id].enemies[botId] = {
+            id: botId,
+            position: [Math.random() * 40 - 20, 0, Math.random() * 40 - 20],
+            rotation: 0,
+            health: 100,
+            state: 'active',
+            disabledUntil: 0,
+            team: 'none',
+            targetId: null,
+            lastShotTime: 0,
+            path: [],
+            skillLevel: 5
+          };
+        }
       }
 
       // Load custom map for private servers
@@ -153,7 +324,7 @@ async function startServer() {
 
     let currentRoomId: string | null = null;
 
-    socket.on('joinGame', async (data: { skin: string, color?: string, pattern?: string, accessories?: string[], map: 'maze' | 'arena' | 'pillars' | 'flat', mode: 'ffa' | 'tdm' | 'ctf' | 'creative', roomId?: string, privateServerName?: string, name?: string }) => {
+    socket.on('joinGame', async (data: { skin: string, color?: string, pattern?: string, accessories?: string[], map: 'maze' | 'arena' | 'pillars' | 'flat', mode: 'ffa' | 'tdm' | 'ctf' | 'creative' | 'koth' | 'domination', roomId?: string, privateServerName?: string, name?: string, playerClass?: 'mage' | 'spellblade' | 'alchemist', uid?: string }) => {
       const room = await getOrCreateRoom(data.roomId || null, data.privateServerName);
       currentRoomId = room.id;
 
@@ -167,7 +338,21 @@ async function startServer() {
       // If it's the first player in room, they set the map and mode
       if (Object.keys(room.players).length === 0) {
         if (data.map) room.currentMap = data.map;
-        if (data.mode) room.currentMode = data.mode;
+        if (data.mode) {
+          room.currentMode = data.mode;
+          // Initialize Control Points based on mode
+          if (data.mode === 'koth') {
+            room.controlPoints = [
+              { id: 'hill', name: 'The Hill', position: [0, 0, 0], radius: 10, owner: 'none', progress: 0, capturingTeam: 'none' }
+            ];
+          } else if (data.mode === 'domination') {
+            room.controlPoints = [
+              { id: 'point-a', name: 'Point A', position: [30, 0, 30], radius: 8, owner: 'none', progress: 0, capturingTeam: 'none' },
+              { id: 'point-b', name: 'Point B', position: [0, 0, 0], radius: 8, owner: 'none', progress: 0, capturingTeam: 'none' },
+              { id: 'point-c', name: 'Point C', position: [-30, 0, -30], radius: 8, owner: 'none', progress: 0, capturingTeam: 'none' }
+            ];
+          }
+        }
       }
       
       const playerName = data.name || `Player ${playerCounter++}`;
@@ -184,6 +369,7 @@ async function startServer() {
 
       room.players[socket.id] = {
         id: socket.id,
+        uid: data.uid,
         name: playerName,
         position: [0, 2, 0],
         rotation: 0,
@@ -202,7 +388,11 @@ async function startServer() {
         isSprinting: false,
         isSliding: false,
         isBuildMode: false,
-        selectedBlock: 'stone'
+        selectedBlock: 'stone',
+        playerClass: data.playerClass || 'mage',
+        isDashing: false,
+        currentVehicleId: null,
+        currentDimension: 'core'
       };
 
       // Send initial state
@@ -224,7 +414,7 @@ async function startServer() {
       socket.to(room.id).emit('playerJoined', room.players[socket.id]);
     });
 
-    socket.on('move', (data: { position: [number, number, number], rotation: number, weapon?: string, isSprinting?: boolean, isSliding?: boolean, isBuildMode?: boolean, selectedBlock?: string }) => {
+    socket.on('move', (data: { position: [number, number, number], rotation: number, weapon?: string, isSprinting?: boolean, isSliding?: boolean, isBuildMode?: boolean, selectedBlock?: string, isDashing?: boolean, vehicleId?: string, currentDimension?: string }) => {
       const room = rooms[currentRoomId || 'global'];
       if (room && room.players[socket.id]) {
         const p = room.players[socket.id];
@@ -235,6 +425,17 @@ async function startServer() {
         if (data.isSliding !== undefined) p.isSliding = data.isSliding;
         if (data.isBuildMode !== undefined) p.isBuildMode = data.isBuildMode;
         if (data.selectedBlock !== undefined) p.selectedBlock = data.selectedBlock;
+        if (data.isDashing !== undefined) p.isDashing = data.isDashing;
+        if (data.currentDimension !== undefined) p.currentDimension = data.currentDimension;
+        
+        if (data.vehicleId) {
+          const vehicle = room.vehicles[data.vehicleId];
+          if (vehicle && vehicle.driverId === socket.id) {
+            vehicle.position = data.position;
+            vehicle.rotation = [0, data.rotation, 0];
+            io.to(room.id).emit('vehicleMoved', { id: data.vehicleId, position: data.position, rotation: vehicle.rotation });
+          }
+        }
         
         socket.to(room.id).emit('playerMoved', { id: socket.id, ...data });
 
@@ -292,6 +493,72 @@ async function startServer() {
             }
           });
         }
+      }
+    });
+
+    socket.on('spawnVehicle', async ({ type }) => {
+      const room = rooms[currentRoomId || 'global'];
+      if (!room) return;
+      
+      const vehicleId = `vehicle-${Math.random().toString(36).substr(2, 9)}`;
+      const player = room.players[socket.id];
+      if (!player) return;
+
+      const vehicle: VehicleState = {
+        id: vehicleId,
+        type,
+        position: [player.position[0], player.position[1] + 2, player.position[2]],
+        rotation: [0, 0, 0],
+        velocity: [0, 0, 0],
+        health: 1000,
+        maxHealth: 1000,
+        driverId: null,
+        name: `${player.name}'s ${type}`
+      };
+
+      room.vehicles[vehicleId] = vehicle;
+      io.to(room.id).emit('vehicleSpawned', vehicle);
+    });
+
+    socket.on('enterVehicle', async (vehicleId) => {
+      const room = rooms[currentRoomId || 'global'];
+      if (!room) return;
+      
+      const vehicle = room.vehicles[vehicleId];
+      if (vehicle && !vehicle.driverId) {
+        vehicle.driverId = socket.id;
+        if (room.players[socket.id]) {
+          room.players[socket.id].currentVehicleId = vehicleId;
+        }
+        io.to(room.id).emit('playerEnteredVehicle', { vehicleId, playerId: socket.id });
+      }
+    });
+
+    socket.on('exitVehicle', async () => {
+      const room = rooms[currentRoomId || 'global'];
+      if (!room) return;
+      
+      for (const vehicleId in room.vehicles) {
+        if (room.vehicles[vehicleId].driverId === socket.id) {
+          room.vehicles[vehicleId].driverId = null;
+          if (room.players[socket.id]) {
+            room.players[socket.id].currentVehicleId = null;
+          }
+          io.to(room.id).emit('playerExitedVehicle', { vehicleId, playerId: socket.id });
+          break;
+        }
+      }
+    });
+
+    socket.on('updateVehicle', (data: { vehicleId: string, position: [number, number, number], rotation: number }) => {
+      const room = rooms[currentRoomId || 'global'];
+      if (!room) return;
+      
+      const vehicle = room.vehicles[data.vehicleId];
+      if (vehicle && vehicle.driverId === socket.id) {
+        vehicle.position = data.position;
+        vehicle.rotation = [0, data.rotation, 0];
+        socket.to(room.id).emit('vehicleUpdated', data);
       }
     });
 
@@ -399,6 +666,33 @@ async function startServer() {
       }
     });
 
+    socket.on('hitVehicle', (data: { vehicleId: string, damage: number }) => {
+      const room = rooms[currentRoomId || 'global'];
+      if (!room) return;
+      
+      const vehicle = room.vehicles[data.vehicleId];
+      if (vehicle) {
+        vehicle.health = Math.max(0, vehicle.health - data.damage);
+        io.to(room.id).emit('vehicleHit', { vehicleId: data.vehicleId, health: vehicle.health, damage: data.damage });
+        
+        if (vehicle.health <= 0) {
+          if (vehicle.driverId) {
+            const driver = room.players[vehicle.driverId];
+            if (driver) {
+              driver.health = 0;
+              driver.state = 'disabled';
+              driver.disabledUntil = Date.now() + 3000;
+              driver.deaths += 1;
+              driver.currentVehicleId = null;
+              io.to(room.id).emit('playerDied', { victimId: vehicle.driverId, killerId: socket.id });
+            }
+          }
+          delete room.vehicles[data.vehicleId];
+          io.to(room.id).emit('vehicleDestroyed', data.vehicleId);
+        }
+      }
+    });
+
     socket.on('emote', (emote: string) => {
       const room = rooms[currentRoomId || 'global'];
       if (room && room.players[socket.id]) {
@@ -416,6 +710,19 @@ async function startServer() {
         };
         room.blocks.push(block);
         io.to(room.id).emit('blockPlaced', block);
+      }
+    });
+
+    socket.on('bulkPlaceBlocks', (blocks: { type: string, position: [number, number, number] }[]) => {
+      const room = rooms[currentRoomId || 'global'];
+      if (room && Array.isArray(blocks)) {
+        const newBlocks = blocks.map(b => ({
+          id: `block-${Math.random().toString(36).substr(2, 9)}`,
+          type: b.type,
+          position: b.position
+        }));
+        room.blocks.push(...newBlocks);
+        io.to(room.id).emit('bulkBlocksPlaced', newBlocks);
       }
     });
 
@@ -473,12 +780,50 @@ async function startServer() {
       }
     });
 
+    socket.on('startGame', () => {
+      const room = rooms[currentRoomId || 'global'];
+      if (room && room.gameState === 'lobby') {
+        room.gameState = 'playing';
+        room.timeLeft = 600;
+        io.to(room.id).emit('gameStarted', { timeLeft: room.timeLeft });
+        
+        // Reset scores
+        Object.values(room.players).forEach(p => {
+          p.score = 0; p.kills = 0; p.deaths = 0; p.health = 100; p.state = 'active';
+        });
+        io.to(room.id).emit('scoresUpdated', room.players);
+      }
+    });
+
     socket.on('updateSettings', (settings: any) => {
       const room = rooms[currentRoomId || 'global'];
       if (room && room.id.startsWith('private-')) {
+        const oldBotCount = room.settings.botCount;
         room.settings = { ...room.settings, ...settings };
         io.to(room.id).emit('settingsUpdated', room.settings);
         
+        // Respawn bots if count changed
+        if (room.settings.botCount !== oldBotCount) {
+          room.enemies = {};
+          for (let i = 0; i < room.settings.botCount; i++) {
+            const botId = `bot-${i}`;
+            room.enemies[botId] = {
+              id: botId,
+              position: [Math.random() * 40 - 20, 0, Math.random() * 40 - 20],
+              rotation: 0,
+              health: 100,
+              state: 'active',
+              disabledUntil: 0,
+              team: 'none',
+              targetId: null,
+              lastShotTime: 0,
+              path: [],
+              skillLevel: 5
+            };
+          }
+          io.to(room.id).emit('enemiesMoved', room.enemies);
+        }
+
         // Persist settings if it's a private server
         const docRef = doc(db, 'maps', room.id);
         updateDoc(docRef, { settings: room.settings }).catch(err => console.error('Error updating settings:', err));
@@ -496,10 +841,55 @@ async function startServer() {
     socket.on('fireProjectile', (data: any) => {
       socket.to(currentRoomId || 'global').emit('projectileFired', data);
     });
+    
+    socket.on('meleeAttack', (data: any) => {
+      socket.to(currentRoomId || 'global').emit('playerMeleeAttacked', {
+        playerId: socket.id,
+        weaponId: data.weaponId
+      });
+    });
 
     // WebRTC Signaling
     socket.on('signal', (data: { to: string, signal: any }) => {
       io.to(data.to).emit('signal', { from: socket.id, signal: data.signal });
+    });
+
+    socket.on('updateSettings', (newSettings: any) => {
+      const room = rooms[currentRoomId || 'global'];
+      if (room) {
+        room.settings = { ...room.settings, ...newSettings };
+        io.to(room.id).emit('settingsUpdated', room.settings);
+        
+        // Handle bot count change immediately if needed
+        if (newSettings.botCount !== undefined) {
+          const count = newSettings.botCount;
+          const currentBotIds = Object.keys(room.enemies);
+          const currentCount = currentBotIds.length;
+          
+          if (count > currentCount) {
+             for (let i = 0; i < count - currentCount; i++) {
+               const id = `bot-${Math.random().toString(36).substr(2, 9)}`;
+               room.enemies[id] = {
+                 id,
+                 position: [Math.random() * 80 - 40, 1, Math.random() * 80 - 40],
+                 rotation: 0,
+                 health: 100,
+                 state: 'active',
+                 disabledUntil: 0,
+                 team: 'none',
+                 targetId: '',
+                 lastShotTime: 0,
+                 path: [],
+                 skillLevel: 5
+               };
+             }
+          } else if (count < currentCount) {
+             const toRemove = currentBotIds.slice(0, currentCount - count);
+             toRemove.forEach(id => delete room.enemies[id]);
+          }
+          io.to(room.id).emit('enemiesUpdated', Object.values(room.enemies));
+        }
+      }
     });
 
     socket.on('disconnect', () => {
@@ -546,10 +936,67 @@ async function startServer() {
   setInterval(() => {
     const now = Date.now();
     Object.values(rooms).forEach(room => {
+      // Update Timer
+      if (room.gameState === 'playing') {
+        room.timeLeft -= 0.1;
+        if (room.timeLeft <= 0) {
+          room.timeLeft = 0;
+          room.gameState = 'gameover';
+          io.to(room.id).emit('gameOver', { 
+            teamScores: room.teamScores,
+            players: Object.values(room.players).map(p => ({ id: p.id, name: p.name, score: p.score, kills: p.kills, deaths: p.deaths }))
+          });
+          saveMatchRecord(room);
+        }
+      }
+
+      // Update Control Points
+      if (room.gameState === 'playing' && (room.currentMode === 'koth' || room.currentMode === 'domination')) {
+        let changed = false;
+        room.controlPoints.forEach(cp => {
+          const playersInZone = Object.values(room.players).filter(p => {
+            if (p.state === 'disabled') return false;
+            const dist = Math.sqrt(Math.pow(p.position[0] - cp.position[0], 2) + Math.pow(p.position[2] - cp.position[2], 2));
+            return dist < cp.radius;
+          });
+
+          const amberInZone = playersInZone.filter(p => p.team === 'amber').length;
+          const blueInZone = playersInZone.filter(p => p.team === 'blue').length;
+
+          const oldOwner = cp.owner;
+          const oldProgress = cp.progress;
+
+          if (amberInZone > blueInZone) {
+            cp.capturingTeam = 'amber';
+            cp.progress = Math.min(100, cp.progress + 2);
+            if (cp.progress === 100) cp.owner = 'amber';
+          } else if (blueInZone > amberInZone) {
+            cp.capturingTeam = 'blue';
+            cp.progress = Math.max(-100, cp.progress - 2);
+            if (cp.progress === -100) cp.owner = 'blue';
+          } else {
+            cp.capturingTeam = 'none';
+          }
+
+          if (cp.owner === 'amber') room.teamScores.amber += 0.05;
+          if (cp.owner === 'blue') room.teamScores.blue += 0.05;
+
+          if (oldOwner !== cp.owner || Math.abs(oldProgress - cp.progress) > 1) {
+            changed = true;
+          }
+        });
+
+        if (changed || now % 1000 < 100) {
+          io.to(room.id).emit('controlPointUpdate', { controlPoints: room.controlPoints, teamScores: room.teamScores });
+        }
+      }
+
       // Update Bots
       const botIds = Object.keys(room.enemies);
       if (botIds.length > 0) {
         const playerIds = Object.keys(room.players);
+        const mapSize = 500;
+        const boundary = mapSize / 2 - 10;
         
         botIds.forEach(botId => {
           const bot = room.enemies[botId];
@@ -557,78 +1004,128 @@ async function startServer() {
             if (now > bot.disabledUntil) {
               bot.state = 'active';
               bot.health = 100;
-              io.to(room.id).emit('enemyUpdate', { id: botId, state: 'active', health: 100 });
+              bot.position = [(Math.random() - 0.5) * (mapSize - 40), 1, (Math.random() - 0.5) * (mapSize - 40)];
+              io.to(room.id).emit('enemyUpdate', { id: botId, state: 'active', health: 100, position: bot.position });
             }
             return;
           }
 
-          // Simple AI: Move towards nearest player
-          if (playerIds.length > 0) {
-            let nearestPlayerId = playerIds[0];
+          // Advanced AI State Machine
+          const settings = room.settings;
+          const botSpeed = 0.15 * (settings.botPower / 5);
+          const reactionTime = settings.botReactionTime;
+          const accuracy = settings.botAccuracy / 10;
+          const strategy = settings.botStrategy;
+          
+          if (!bot.targetId || !room.players[bot.targetId] || room.players[bot.targetId].state === 'disabled') {
+            let nearestPlayerId = null;
             let minDistance = Infinity;
-
             playerIds.forEach(pid => {
               const player = room.players[pid];
-              const dist = Math.sqrt(
-                Math.pow(player.position[0] - bot.position[0], 2) +
-                Math.pow(player.position[2] - bot.position[2], 2)
-              );
-              if (dist < minDistance) {
-                minDistance = dist;
-                nearestPlayerId = pid;
-              }
+              if (player.state === 'disabled') return;
+              const dist = Math.sqrt(Math.pow(player.position[0] - bot.position[0], 2) + Math.pow(player.position[2] - bot.position[2], 2));
+              if (dist < minDistance) { minDistance = dist; nearestPlayerId = pid; }
             });
+            bot.targetId = nearestPlayerId;
+          }
 
-            const target = room.players[nearestPlayerId];
-            const dx = target.position[0] - bot.position[0];
-            const dz = target.position[2] - bot.position[2];
-            const angle = Math.atan2(dx, dz);
-            bot.rotation = angle;
+          if (bot.targetId) {
+            const target = room.players[bot.targetId];
+            const dist = Math.sqrt(Math.pow(target.position[0] - bot.position[0], 2) + Math.pow(target.position[2] - bot.position[2], 2));
+            
+            // State Logic
+            if (bot.health < 40 && strategy !== 'aggressive') bot.state = 'cover';
+            else if (dist < (strategy === 'tactical' ? 30 : 20)) bot.state = 'attack';
+            else bot.state = 'chase';
 
-            // Move bot
-            const speed = 0.05;
-            if (minDistance > 5) {
-              bot.position[0] += Math.sin(angle) * speed;
-              bot.position[2] += Math.cos(angle) * speed;
+            // Movement Logic
+            if (bot.state === 'chase' || bot.state === 'attack') {
+              const angle = Math.atan2(target.position[0] - bot.position[0], target.position[2] - bot.position[2]);
+              bot.rotation = angle;
+              
+              // Obstacle avoidance
+              let finalAngle = angle;
+              const nextX = bot.position[0] + Math.sin(angle) * 5;
+              const nextZ = bot.position[2] + Math.cos(angle) * 5;
+              const isBlocked = room.blocks.some(b => 
+                Math.abs(b.position[0] - nextX) < 2 && Math.abs(b.position[2] - nextZ) < 2
+              );
+              
+              if (isBlocked) {
+                finalAngle += Math.PI / 2; // Side-step
+              }
+
+              if (dist > (bot.state === 'attack' ? 12 : 3)) {
+                bot.position[0] += Math.sin(finalAngle) * botSpeed;
+                bot.position[2] += Math.cos(finalAngle) * botSpeed;
+              }
+
+              if (bot.state === 'attack') {
+                const strafe = angle + Math.PI / 2;
+                const jitter = Math.sin(now / 400 + Math.random()) * botSpeed * 0.5;
+                bot.position[0] += Math.sin(strafe) * jitter;
+                bot.position[2] += Math.cos(strafe) * jitter;
+              }
+            } else if (bot.state === 'cover') {
+              // Move towards nearest cluster of blocks or away from player
+              const angle = Math.atan2(bot.position[0] - target.position[0], bot.position[2] - target.position[2]);
+              bot.position[0] += Math.sin(angle) * botSpeed * 1.2;
+              bot.position[2] += Math.cos(angle) * botSpeed * 1.2;
             }
 
-            // Shooting logic
-            if (minDistance < 20 && Math.random() < 0.02) {
-              io.to(room.id).emit('enemyShot', { 
-                id: botId, 
-                start: bot.position, 
-                end: target.position, 
-                color: '#ff0000' 
-              });
+            // Keep in bounds
+            bot.position[0] = Math.max(-boundary, Math.min(boundary, bot.position[0]));
+            bot.position[2] = Math.max(-boundary, Math.min(boundary, bot.position[2]));
+
+            if (bot.state === 'attack' && now - bot.lastShotTime > reactionTime) {
+              // Target Prediction
+              const error = (1 - accuracy) * 4;
+              const predictedPos = [
+                target.position[0] + (Math.random() - 0.5) * error,
+                target.position[1],
+                target.position[2] + (Math.random() - 0.5) * error
+              ];
+
+              const hitChance = (accuracy / (target.isSprinting ? 2 : 1)) * (bot.skillLevel / 10);
+              io.to(room.id).emit('enemyShot', { id: botId, start: bot.position, end: predictedPos, color: '#ff0000' });
               
-              // Randomly hit player
-              if (Math.random() < 0.3) {
-                const damage = 10;
+              if (Math.random() < hitChance) {
+                const damage = 10 * (settings.botPower / 5);
                 target.health -= damage;
                 if (target.health <= 0) {
-                  target.health = 0;
-                  target.state = 'disabled';
-                  target.deaths += 1;
-                  target.disabledUntil = now + 3000;
+                  target.health = 0; target.state = 'disabled'; target.deaths += 1; target.disabledUntil = now + 3000;
+                  bot.skillLevel = Math.min(10, bot.skillLevel + 1);
+                  bot.state = 'patrol';
                 }
-                io.to(room.id).emit('playerHit', {
-                  targetId: nearestPlayerId,
-                  shooterId: botId,
-                  targetDisabledUntil: target.disabledUntil,
-                  shooterScore: 0,
-                  targetHealth: target.health,
-                  shooterKills: 0,
-                  targetDeaths: target.deaths
+                io.to(room.id).emit('playerHit', { 
+                  targetId: bot.targetId, 
+                  shooterId: botId, 
+                  targetDisabledUntil: target.disabledUntil, 
+                  shooterScore: 0, 
+                  targetHealth: target.health, 
+                  targetDeaths: target.deaths 
                 });
+              } else {
+                bot.skillLevel = Math.max(1, bot.skillLevel - 0.1);
               }
+              bot.lastShotTime = now;
             }
+          } else {
+            bot.state = 'patrol';
+            bot.rotation += 0.02;
+            bot.position[0] += Math.sin(bot.rotation) * botSpeed * 0.5;
+            bot.position[2] += Math.cos(bot.rotation) * botSpeed * 0.5;
+            
+            // Keep in bounds
+            bot.position[0] = Math.max(-boundary, Math.min(boundary, bot.position[0]));
+            bot.position[2] = Math.max(-boundary, Math.min(boundary, bot.position[2]));
           }
         });
 
         io.to(room.id).emit('enemiesMoved', room.enemies);
       }
     });
-  }, 100);
+  }, 33);
 }
 
 startServer();

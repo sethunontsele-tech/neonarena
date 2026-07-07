@@ -15,16 +15,36 @@ const CHASE_DIST = 15; // Reduced from 20
 const SHOOT_DIST = 15;
 const SHOOT_COOLDOWN = 3500; // Increased from 2000 for less aggressive shooting
 
+import { useVisibilityCulling } from '../utils/useFrustumCulling';
+
 export function Enemy({ data }: { data: EnemyData }) {
   const body = useRef<RapierRigidBody>(null);
+  const { rapier, world } = useRapier();
   const { camera } = useThree();
-  const { world, rapier } = useRapier();
+  
+  const isVisible = useVisibilityCulling(
+    () => {
+      if (!body.current) return data.position;
+      const trans = body.current.translation();
+      return [trans.x, trans.y, trans.z];
+    },
+    { radius: 3, maxDistance: 180, checkEvery: 2 }
+  );
+
+  const skin = useMemo(() => {
+    const skins: ('neon' | 'gold' | 'stealth' | 'glitch')[] = ['neon', 'gold', 'stealth', 'glitch'];
+    return skins[Math.floor(Math.random() * skins.length)];
+  }, []);
+
+  const isGlitch = data.isGlitch || skin === 'glitch';
   
   const gameState = useGameStore(state => state.gameState);
   const playerState = useGameStore(state => state.playerState);
   const hitPlayer = useGameStore(state => state.hitPlayer);
   const addLaser = useGameStore(state => state.addLaser);
   const addParticles = useGameStore(state => state.addParticles);
+  const isTargeted = useGameStore(state => state.targetedEnemyId === data.id);
+  const isTimeWarpActive = useGameStore(state => state.isTimeWarpActive);
 
   const lastShootTime = useRef(0);
   const patrolTarget = useRef(new THREE.Vector3());
@@ -32,11 +52,6 @@ export function Enemy({ data }: { data: EnemyData }) {
   const state = useRef<'patrol' | 'chase'>('patrol');
 
   const groupRef = useRef<THREE.Group>(null);
-
-  const skin = useMemo(() => {
-    const skins: ('neon' | 'gold' | 'stealth' | 'glitch')[] = ['neon', 'gold', 'stealth', 'glitch'];
-    return skins[Math.floor(Math.random() * skins.length)];
-  }, []);
 
   // Initialize patrol target
   useMemo(() => {
@@ -47,8 +62,18 @@ export function Enemy({ data }: { data: EnemyData }) {
     );
   }, [data.position]);
 
+  const isReplaying = useGameStore(state => state.isReplaying);
+  
   useFrame((state_fiber) => {
-    if (!body.current || gameState !== 'playing' || data.state === 'disabled') {
+    if (!body.current) return;
+    
+    if (isReplaying) {
+      // In replay mode, we manually set the position from the snapshot
+      body.current.setNextKinematicTranslation({ x: data.position[0], y: data.position[1], z: data.position[2] });
+      return;
+    }
+
+    if (gameState !== 'playing' || data.state === 'disabled') {
       if (body.current) {
         body.current.setLinvel({ x: 0, y: body.current.linvel().y, z: 0 }, true);
       }
@@ -57,6 +82,19 @@ export function Enemy({ data }: { data: EnemyData }) {
 
     const pos = body.current.translation();
     const currentPos = new THREE.Vector3(pos.x, pos.y, pos.z);
+
+    // Time Warp Logic: Slow down if near player and time warp is active
+    let localSpeed = ENEMY_SPEED;
+    let localShootCooldown = SHOOT_COOLDOWN;
+    
+    if (isTimeWarpActive) {
+      const playerPos = camera.position.clone();
+      const distToPlayer = currentPos.distanceTo(playerPos);
+      if (distToPlayer < 12) {
+        localSpeed *= 0.2;
+        localShootCooldown *= 5;
+      }
+    }
     
     let closestTargetPos: THREE.Vector3 | null = null;
     let closestDist = CHASE_DIST;
@@ -105,7 +143,7 @@ export function Enemy({ data }: { data: EnemyData }) {
       
       // Shooting logic
       const now = Date.now();
-      if (closestDist < SHOOT_DIST && now - lastShootTime.current > SHOOT_COOLDOWN) {
+      if (closestDist < SHOOT_DIST && now - lastShootTime.current > localShootCooldown) {
         // Raycast to check line of sight
         const rayDir = new THREE.Vector3().subVectors(closestTargetPos, currentPos).normalize();
         
@@ -191,9 +229,9 @@ export function Enemy({ data }: { data: EnemyData }) {
     // Apply movement
     const velocity = body.current.linvel();
     body.current.setLinvel({
-      x: direction.x * ENEMY_SPEED,
+      x: direction.x * localSpeed,
       y: velocity.y,
-      z: direction.z * ENEMY_SPEED
+      z: direction.z * localSpeed
     }, true);
 
     // Rotate to face direction
@@ -222,10 +260,10 @@ export function Enemy({ data }: { data: EnemyData }) {
       userData={{ name: data.id }}
     >
       <CapsuleCollider args={[0.5, 0.5]} position={[0, 1, 0]} />
-      <group ref={groupRef} position={[0, 0, 0]}>
+      <group ref={groupRef} position={[0, 0, 0]} visible={isVisible}>
         {/* Body */}
         <mesh castShadow position={[0, 1, 0]}>
-          {skin === 'glitch' ? (
+          {isGlitch ? (
             <boxGeometry args={[0.8, 1.8, 0.8]} />
           ) : skin === 'stealth' ? (
             <coneGeometry args={[0.6, 2, 8]} />
@@ -233,15 +271,29 @@ export function Enemy({ data }: { data: EnemyData }) {
             <capsuleGeometry args={[0.5, 1]} />
           )}
           <meshStandardMaterial 
-            color={skin === 'gold' ? '#ffd700' : color} 
+            color={isGlitch ? '#ff0000' : (skin === 'gold' ? '#ffd700' : color)} 
             roughness={skin === 'gold' ? 0.1 : 0.3} 
             metalness={skin === 'gold' ? 1 : 0.8} 
-            emissive={skin === 'gold' ? '#ffd700' : color}
-            emissiveIntensity={data.state === 'disabled' ? 0 : (skin === 'neon' ? 0.8 : 0.4)}
-            transparent={skin === 'stealth'}
-            opacity={skin === 'stealth' ? 0.4 : 1}
+            emissive={isTargeted ? '#00ffff' : (isGlitch ? '#ff0000' : (skin === 'gold' ? '#ffd700' : color))}
+            emissiveIntensity={isTargeted ? 1.5 : (data.state === 'disabled' ? 0 : (isGlitch ? 2 : (skin === 'neon' ? 0.8 : 0.4)))}
+            transparent={skin === 'stealth' || isGlitch}
+            opacity={isGlitch ? 0.8 : (skin === 'stealth' ? 0.4 : 1)}
           />
         </mesh>
+
+        {/* Targeted Outline/Indicator */}
+        {isTargeted && (
+          <mesh position={[0, 1, 0]}>
+            {isGlitch ? (
+              <boxGeometry args={[0.9, 1.9, 0.9]} />
+            ) : skin === 'stealth' ? (
+              <coneGeometry args={[0.7, 2.1, 8]} />
+            ) : (
+              <capsuleGeometry args={[0.55, 1.1]} />
+            )}
+            <meshBasicMaterial color="#00ffff" wireframe transparent opacity={0.5} />
+          </mesh>
+        )}
         
         {/* Eye/Visor */}
         <mesh position={[0, 1.6, 0.45]}>
@@ -264,7 +316,7 @@ export function Enemy({ data }: { data: EnemyData }) {
 
         {/* Health Bar */}
         {data.state === 'active' && (
-          <group position={[0, 2.4, 0]}>
+          <group position={[0, 2.4, 0]} scale={isTargeted ? 1.5 : 1}>
             {/* Background */}
             <mesh>
               <planeGeometry args={[1.2, 0.15]} />

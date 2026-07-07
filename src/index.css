@@ -1,1 +1,54 @@
 @import "tailwindcss";
+
+@theme {
+  --animate-spin-slow: spin 3s linear infinite;
+  --animate-bounce-slow: bounce-slow 4s ease-in-out infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(40%); }
+}
+
+@keyframes heat-wiggle {
+  0%, 100% {
+    filter: hue-rotate(0deg) saturate(1) contrast(1);
+    transform: scale(1) skewX(0deg) skewY(0deg);
+  }
+  25% {
+    transform: scale(1.008) skewX(0.4deg) skewY(0.1deg);
+  }
+  50% {
+    filter: hue-rotate(4deg) saturate(1.1) contrast(1.02);
+    transform: scale(1.01) skewX(-0.3deg) skewY(-0.2deg);
+  }
+  75% {
+    transform: scale(1.006) skewX(0.2deg) skewY(0.3deg);
+  }
+}
+
+.animate-wiggle-heat {
+  animation: heat-wiggle 1.8s ease-in-out infinite;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

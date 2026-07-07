@@ -1,14 +1,15 @@
 {
   "entities": {
-    "User": {
+    "UserProfile": {
       "title": "User Profile",
-      "description": "Stores player profile, customization, and global stats.",
+      "description": "Stores player identity, stats, and achievements.",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
         "displayName": { "type": "string" },
         "gamertag": { "type": "string" },
         "avatarUrl": { "type": "string" },
+        "clanId": { "type": "string" },
         "customization": {
           "type": "object",
           "properties": {
@@ -16,7 +17,8 @@
             "color": { "type": "string" },
             "pattern": { "type": "string" },
             "accessories": { "type": "array", "items": { "type": "string" } },
-            "weaponSkin": { "type": "string" }
+            "weaponSkin": { "type": "string" },
+            "banner": { "type": "string" }
           }
         },
         "stats": {
@@ -32,49 +34,134 @@
             "maxWinStreak": { "type": "integer" },
             "totalScore": { "type": "integer" }
           }
-        }
+        },
+        "rank": {
+          "type": "object",
+          "properties": {
+            "current": { "type": "string" },
+            "points": { "type": "integer" },
+            "peak": { "type": "string" },
+            "seasonWins": { "type": "integer" }
+          }
+        },
+        "progression": {
+          "type": "object",
+          "properties": {
+            "level": { "type": "integer" },
+            "xp": { "type": "integer" },
+            "weaponXP": { "type": "object" },
+            "weaponLevels": { "type": "object" }
+          }
+        },
+        "economy": {
+          "type": "object",
+          "properties": {
+            "credits": { "type": "integer" },
+            "inventory": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "battlePass": {
+          "type": "object",
+          "properties": {
+            "tier": { "type": "integer" },
+            "xp": { "type": "integer" },
+            "isPremium": { "type": "boolean" }
+          }
+        },
+        "social": {
+          "type": "object",
+          "properties": {
+            "friends": { "type": "array", "items": { "type": "string" } },
+            "incomingRequests": { "type": "array", "items": { "type": "string" } },
+            "outgoingRequests": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "trophies": { "type": "array", "items": { "type": "object" } },
+        "isAdmin": { "type": "boolean" }
       },
-      "required": ["uid", "displayName"]
+      "required": ["uid", "gamertag"]
     },
-    "Match": {
-      "title": "Match Record",
-      "description": "Stores details of a completed match for history and replays.",
+    "Trophy": {
+      "title": "Trophy",
+      "description": "Definition of an achievement.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "date": { "type": "string", "format": "date-time" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "icon": { "type": "string" },
+        "requirement": { "type": "string" }
+      }
+    },
+    "UpdateRecommendation": {
+      "title": "Update Recommendation",
+      "description": "Community suggested game updates.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "gamertag": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "aiResponse": { "type": "string" },
+        "timestamp": { "type": "string" }
+      }
+    },
+    "MatchHistory": {
+      "title": "Match History",
+      "description": "Records of past matches.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
         "duration": { "type": "number" },
         "mode": { "type": "string" },
         "map": { "type": "string" },
+        "isRanked": { "type": "boolean" },
         "players": {
           "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "uid": { "type": "string" },
-              "displayName": { "type": "string" },
-              "kills": { "type": "integer" },
-              "deaths": { "type": "integer" },
-              "assists": { "type": "integer" },
-              "score": { "type": "integer" },
-              "accuracy": { "type": "number" },
-              "team": { "type": "string" },
-              "result": { "type": "string", "enum": ["win", "loss", "draw"] }
-            }
-          }
+          "items": { "type": "object" }
         },
-        "replayData": { "type": "string", "description": "Serialized replay data" }
+        "replayData": { "type": "string" }
+      }
+    },
+    "Clan": {
+      "title": "Clan",
+      "description": "A group of players.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "tag": { "type": "string" },
+        "color": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "memberIds": { "type": "array", "items": { "type": "string" } },
+        "clanXP": { "type": "integer" },
+        "createdAt": { "type": "number" }
       }
     }
   },
   "firestore": {
     "/users/{uid}": {
-      "schema": "User",
-      "description": "User profiles and stats"
+      "schema": "UserProfile",
+      "description": "User profiles"
+    },
+    "/trophies/{trophyId}": {
+      "schema": "Trophy",
+      "description": "Global trophy definitions"
+    },
+    "/recommendations/{recId}": {
+      "schema": "UpdateRecommendation",
+      "description": "Community update suggestions"
     },
     "/matches/{matchId}": {
-      "schema": "Match",
-      "description": "Completed match records"
+      "schema": "MatchHistory",
+      "description": "Global match history"
+    },
+    "/clans/{clanId}": {
+      "schema": "Clan",
+      "description": "Player clans"
     }
   }
 }

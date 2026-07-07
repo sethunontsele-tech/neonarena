@@ -1,7 +1,9 @@
 {
-  "name": "NeonArena",
-  "description": "A high-quality, AAA-style multiplayer FPS with advanced movement, customization, and competitive game modes.",
+  "name": "NeonArena-v.1",
+  "description": "A high-quality, AAA-style multiplayer FPS with advanced movement, customization, competitive game modes, and a Gemini-powered AI structure builder.",
   "requestFramePermissions": [
-    "microphone"
+    "microphone",
+    "geolocation",
+    "camera"
   ]
 }

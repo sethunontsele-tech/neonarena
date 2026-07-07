@@ -4,7 +4,11 @@
 */
 
 import * as THREE from 'three';
+import React, { Suspense } from 'react';
+import { useLoader } from '@react-three/fiber';
+import { OBJLoader, MTLLoader } from 'three-stdlib';
 import { SkinType, PatternType, AccessoryType, EntityState } from '../store';
+import { ModernPlayer } from './ModernPlayer';
 
 interface PlayerModelProps {
   skin: SkinType;
@@ -13,64 +17,104 @@ interface PlayerModelProps {
   accessories: AccessoryType[];
   state: EntityState;
   isMe?: boolean;
+  isGlitch?: boolean;
+  infectionTimer?: number;
+  activeStreakPower?: string | null;
 }
 
-export function PlayerModel({ skin, color, pattern, accessories, state, isMe }: PlayerModelProps) {
+function AlienMesh({ color }: { color: string }) {
+  const materials = useLoader(MTLLoader, '/alien/Alien Animal.mtl');
+  const obj = useLoader(OBJLoader, '/alien/alien.obj', (loader) => {
+    materials.preload();
+    loader.setMaterials(materials);
+  });
+
+  return (
+    <primitive 
+      object={obj.clone()} 
+      scale={0.15} 
+      position={[0, -1, 0]}
+      rotation={[0, Math.PI, 0]}
+    />
+  );
+}
+
+export function PlayerModel({ skin, color, pattern, accessories, state, isMe, isGlitch, infectionTimer = 0, activeStreakPower }: PlayerModelProps) {
   const isPlayerDisabled = state === 'disabled';
-  const baseColor = isPlayerDisabled ? '#444' : color;
+  const isGodMode = activeStreakPower === 'GOD MODE';
+  const baseColor = isGlitch ? '#ff0000' : (isGodMode ? '#ffd700' : (isPlayerDisabled ? '#444' : color));
+
+  // Pulse effect for infection
+  const pulseScale = isGlitch ? 1.0 : 1.0 + (infectionTimer / 100) * 0.1 * Math.sin(Date.now() * 0.01);
 
   const materialProps = {
-    color: skin === 'gold' ? '#ffd700' : 
+    color: isGlitch ? '#ff0000' : (
+           isGodMode ? '#ffd700' : (
+           skin === 'gold' ? '#ffd700' : 
            skin === 'ruby' ? '#ff0000' :
            skin === 'emerald' ? '#00ff44' :
            skin === 'diamond' ? '#b9f2ff' :
            skin === 'void' ? '#000000' :
-           baseColor,
-    roughness: skin === 'gold' ? 0.1 : 
+           baseColor)),
+    roughness: isGlitch || isGodMode ? 0.1 : (
+               skin === 'gold' ? 0.1 : 
                skin === 'diamond' ? 0.05 :
                skin === 'void' ? 1 :
-               0.3,
-    metalness: skin === 'gold' ? 1 : 
+               0.3),
+    metalness: isGlitch || isGodMode ? 0.9 : (
+               skin === 'gold' ? 1 : 
                skin === 'ruby' ? 0.8 :
                skin === 'emerald' ? 0.6 :
                skin === 'diamond' ? 0.9 :
                skin === 'void' ? 0 :
-               0.8,
-    emissive: skin === 'gold' ? '#ffd700' : 
+               0.8),
+    emissive: isGlitch ? '#ff0000' : (
+              isGodMode ? '#ffd700' : (
+              skin === 'gold' ? '#ffd700' : 
               skin === 'ruby' ? '#660000' :
               skin === 'emerald' ? '#00ff44' :
               skin === 'diamond' ? '#ffffff' :
               skin === 'void' ? '#000000' :
-              baseColor,
+              baseColor)),
     emissiveIntensity: isPlayerDisabled ? 0 : 
-                       (skin === 'neon' ? 0.8 : 
+                       (isGlitch ? 2.0 : (
+                        isGodMode ? 1.5 : (
+                        skin === 'neon' ? 0.8 : 
                         skin === 'emerald' ? 1.2 :
                         skin === 'void' ? 0 :
-                        0.4),
-    transparent: skin === 'stealth' || skin === 'diamond',
-    opacity: skin === 'stealth' ? 0.4 : skin === 'diamond' ? 0.6 : 1,
+                        0.4 + (infectionTimer / 100) * 1.5))), // Pulse more as infection increases
+    transparent: isGlitch || skin === 'stealth' || skin === 'diamond',
+    opacity: isGlitch ? 0.8 : (skin === 'stealth' ? 0.4 : skin === 'diamond' ? 0.6 : 1),
   };
 
   return (
-    <group>
+    <group scale={pulseScale}>
       {/* Main Body */}
-      <mesh castShadow position={[0, 1, 0]}>
-        {skin === 'glitch' ? (
-          <boxGeometry args={[0.8, 1.8, 0.8]} />
-        ) : skin === 'stealth' ? (
-          <coneGeometry args={[0.6, 2, 8]} />
-        ) : skin === 'void' ? (
-          <boxGeometry args={[0.4, 2.2, 0.4]} />
-        ) : skin === 'steve' || skin === 'alex' ? (
-          <boxGeometry args={[0.6, 1.8, 0.4]} />
-        ) : (
-          <capsuleGeometry args={[0.5, 1]} />
-        )}
-        <meshStandardMaterial 
-          {...materialProps} 
-          color={skin === 'steve' ? '#2e7d32' : skin === 'alex' ? '#ff8a65' : materialProps.color}
-        />
-      </mesh>
+      {skin === 'vijo_pro' ? (
+        <ModernPlayer />
+      ) : skin === 'alien' ? (
+        <Suspense fallback={<mesh position={[0, 1, 0]}><capsuleGeometry args={[0.5, 1]} /><meshStandardMaterial color={color} wireframe /></mesh>}>
+          <AlienMesh color={color} />
+        </Suspense>
+      ) : (
+        <mesh castShadow position={[0, 1, 0]}>
+          {isGlitch || skin === 'glitch' ? (
+            <boxGeometry args={[0.8, 1.8, 0.8]} />
+          ) : skin === 'stealth' ? (
+            <coneGeometry args={[0.6, 2, 8]} />
+          ) : skin === 'void' ? (
+            <boxGeometry args={[0.4, 2.2, 0.4]} />
+          ) : skin === 'steve' || skin === 'alex' ? (
+            <boxGeometry args={[0.6, 1.8, 0.4]} />
+          ) : (
+            <capsuleGeometry args={[0.5, 1]} />
+          )}
+          <meshStandardMaterial 
+            {...materialProps} 
+            color={skin === 'steve' ? '#2e7d32' : skin === 'alex' ? '#ff8a65' : materialProps.color}
+          />
+        </mesh>
+      )}
 
       {/* Minecraft Head */}
       {(skin === 'steve' || skin === 'alex') && (

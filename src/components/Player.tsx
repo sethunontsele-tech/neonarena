@@ -6,9 +6,10 @@
 import { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, RapierRigidBody, useRapier, CapsuleCollider } from '@react-three/rapier';
-import { PointerLockControls } from '@react-three/drei';
+import { PointerLockControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { useGameStore, WEAPONS } from '../store';
+import { useGameStore, WEAPONS, DIMENSIONS } from '../store';
+import { soundService } from '../services/soundService';
 import { PlayerModel } from './PlayerModel';
 import { BLOCK_COLORS } from './Arena';
 
@@ -18,12 +19,16 @@ const MAX_LASER_DIST = 100;
 export function Player() {
   const body = useRef<RapierRigidBody>(null);
   const { camera, gl } = useThree();
+  useEffect(() => {
+    (window as any).camera = camera;
+  }, [camera]);
   const { rapier, world } = useRapier();
   
   const playerState = useGameStore(state => state.playerState);
   const gameState = useGameStore(state => state.gameState);
   const addLaser = useGameStore(state => state.addLaser);
   const hitEnemy = useGameStore(state => state.hitEnemy);
+  const infectPlayer = useGameStore(state => state.infectPlayer);
   const addParticles = useGameStore(state => state.addParticles);
 
   const recordShot = useGameStore(state => state.recordShot);
@@ -31,9 +36,28 @@ export function Player() {
   const mobileControls = useGameStore(state => state.mobileControls);
   const isMobile = useGameStore(state => state.isMobile);
 
-  const keys = useRef({ w: false, a: false, s: false, d: false, space: false });
+  const energy = useGameStore(state => state.energy);
+  const focus = useGameStore(state => state.focus);
+  const overload = useGameStore(state => state.overload);
+  const isFlashlightActive = useGameStore(state => state.isFlashlightActive);
+  const instability = useGameStore(state => state.instability);
+  const portalPosition = useGameStore(state => state.portalPosition);
+  const mapSeed = useGameStore(state => state.mapSeed);
+  const updateStats = useGameStore(state => state.updateStats);
+  const arenaState = useGameStore(state => state.arenaState);
+  const isWallRunningStore = useGameStore(state => state.isWallRunning);
+  const wallRunSideStore = useGameStore(state => state.wallRunSide);
+  const setWallRunning = useGameStore(state => state.setWallRunning);
+
+  const keys = useRef({ w: false, a: false, s: false, d: false, space: false, shift: false, c: false });
   const lastEmitTime = useRef(0);
   const isGrounded = useRef(false);
+  const jumpCount = useRef(0);
+  const lastJumpTime = useRef(0);
+  const lastDashTime = useRef(0);
+  const lastHailDamageTime = useRef(0);
+  const isSliding = useRef(false);
+  const slideTime = useRef(0);
 
   const gunGroupRef = useRef<THREE.Group>(null);
   const gunVisualRef = useRef<THREE.Group>(null);
@@ -45,7 +69,7 @@ export function Player() {
   const selectedAccessories = useGameStore(state => state.selectedAccessories);
   const isThirdPerson = useGameStore(state => state.isThirdPerson);
   const toggleThirdPerson = useGameStore(state => state.toggleThirdPerson);
-  const inventory = useGameStore(state => state.inventory);
+  const hotbar = useGameStore(state => state.hotbar);
   const currentWeaponIndex = useGameStore(state => state.currentWeaponIndex);
   const switchWeapon = useGameStore(state => state.switchWeapon);
   const isInventoryOpen = useGameStore(state => state.isInventoryOpen);
@@ -55,6 +79,7 @@ export function Player() {
   const placeBlock = useGameStore(state => state.placeBlock);
   const breakBlock = useGameStore(state => state.breakBlock);
   const team = useGameStore(state => state.team);
+  const playerClass = useGameStore(state => state.playerClass);
   const health = useGameStore(state => state.health);
   const jumpHeight = useGameStore(state => state.jumpHeight);
   const gravity = useGameStore(state => state.gravity);
@@ -64,17 +89,46 @@ export function Player() {
   const sprintSpeed = useGameStore(state => state.sprintSpeed);
   const setPlayerPosition = useGameStore(state => state.setPlayerPosition);
   const fireProjectile = useGameStore(state => state.fireProjectile);
+  const meleeAttack = useGameStore(state => state.meleeAttack);
+  const isGlitch = useGameStore(state => state.isGlitch);
+  const infectionLevel = useGameStore(state => state.infectionLevel);
+  const activeStreakPower = useGameStore(state => state.activeStreakPower);
+  const isTimeWarpActive = useGameStore(state => state.isTimeWarpActive);
+  const isAttacking = useGameStore(state => state.isAttacking);
+  const currentDimension = useGameStore(state => state.currentDimension);
+  const dimStats = DIMENSIONS[currentDimension] || DIMENSIONS.core;
+  
   const recoilRef = useRef(0);
 
   const currentAmmo = useGameStore(state => state.currentAmmo);
   const consumeAmmo = useGameStore(state => state.consumeAmmo);
   const reload = useGameStore(state => state.reload);
 
-  const currentWeapon = WEAPONS[inventory[currentWeaponIndex]];
+  const currentWeapon = WEAPONS[hotbar[currentWeaponIndex]];
   const lastFireTime = useRef(0);
   const lastMobileFireTime = useRef(0);
   const lastBuildTime = useRef(0);
   const previewRef = useRef<THREE.Mesh>(null);
+  
+  // Spotlight / Flashlight Refs
+  const flashlightGroupRef = useRef<THREE.Group>(null);
+  const spotlightRef = useRef<THREE.SpotLight>(null);
+  const spotlightTargetRef = useRef<THREE.Object3D | null>(null);
+  const isFlickeringRef = useRef(false);
+
+  useEffect(() => {
+    const targetObj = new THREE.Object3D();
+    targetObj.position.set(0, 0, -10);
+    spotlightTargetRef.current = targetObj;
+  }, []);
+  
+  // Gamepad State
+  const gamepadRef = useRef<{ axes: number[], buttons: boolean[] }>({ axes: [0, 0, 0, 0], buttons: [] });
+
+  const addReplaySnapshot = useGameStore(state => state.addReplaySnapshot);
+  const isRecording = useGameStore(state => state.isRecording);
+  const terminalVelocity = useGameStore(state => state.terminalVelocity);
+  const movementWeight = useGameStore(state => state.movementWeight);
 
   const triggerFire = () => {
     if (gameState !== 'playing' || playerState !== 'active' || isInventoryOpen) return;
@@ -112,9 +166,12 @@ export function Player() {
     }
     
     lastFireTime.current = now;
+    useGameStore.setState({ lastFireTime: now });
     if (!currentWeapon.isMelee) {
       consumeAmmo();
       recordShot();
+    } else {
+      meleeAttack();
     }
 
     // Self-healing for medkit
@@ -124,12 +181,16 @@ export function Player() {
       return;
     }
 
-    // Recoil
+    // Recoil and Screen Shake
     if (gunVisualRef.current) {
       gunVisualRef.current.position.z += 0.2;
       gunVisualRef.current.rotation.x -= 0.1;
       recoilRef.current = 0.5;
     }
+    
+    // Apply camera kick
+    camera.rotation.x += 0.02 * (currentWeapon.recoil || 1);
+    camera.rotation.y += (Math.random() - 0.5) * 0.01 * (currentWeapon.recoil || 1);
 
     // Raycast from camera
     const raycaster = new THREE.Raycaster();
@@ -257,26 +318,92 @@ export function Player() {
     }
   };
 
+  const triggerPing = (type: 'danger' | 'loot' | 'generic' = 'generic') => {
+    if (gameState !== 'playing' || playerState !== 'active') return;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+    const rayStart = camera.position.clone().add(raycaster.ray.direction.clone().multiplyScalar(0.1));
+    const ray = new rapier.Ray(rayStart, raycaster.ray.direction);
+    const hit = world.castRay(ray, 200, true);
+
+    let pingPos: [number, number, number];
+    let label = 'TARGET POINT';
+    
+    if (hit) {
+      const hitPoint = ray.pointAt(hit.timeOfImpact);
+      pingPos = [hitPoint.x, hitPoint.y, hitPoint.z];
+
+      const collider = hit.collider;
+      const rb = collider.parent();
+      if (rb && rb.userData) {
+        const userData = rb.userData as { name?: string };
+        if (userData.name) {
+          if (userData.name.startsWith('bot-')) {
+            type = 'danger';
+            label = `HOSTILE SPOTTED (${userData.name.toUpperCase()})`;
+          } else if (userData.name.startsWith('block-')) {
+            label = 'MARKED POSITION';
+          } else {
+            label = `OBJECT MARKER (${userData.name.toUpperCase()})`;
+          }
+        }
+      }
+    } else {
+      const forwardVec = new THREE.Vector3();
+      camera.getWorldDirection(forwardVec);
+      const airPoint = camera.position.clone().add(forwardVec.multiplyScalar(40));
+      pingPos = [airPoint.x, airPoint.y, airPoint.z];
+      label = 'SECTOR MARKER';
+    }
+
+    useGameStore.getState().addPing(pingPos, type, label);
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
+      if (!(window as any).keys) (window as any).keys = {};
+      (window as any).keys[key] = true;
+
       if (key === ' ') keys.current.space = true;
+      if (key === 'shift') keys.current.shift = true;
+      if (key === 'c') toggleThirdPerson();
+      if (key === 'v') useGameStore.getState().setVehicleMenuOpen(true);
+      if (key === 'control') keys.current.c = true;
       if (key in keys.current) keys.current[key as keyof typeof keys.current] = true;
-      
-      if (key === 'v') toggleThirdPerson();
       if (key === 'e') setInventoryOpen(!useGameStore.getState().isInventoryOpen);
+      if (key === 'f') {
+        useGameStore.getState().toggleFlashlight();
+        try {
+          soundService.playSFX('ui_click');
+        } catch (err) {}
+      }
       if (key === 'r') reload();
       
       if (key === 'b') useGameStore.getState().setBuildMode(!useGameStore.getState().isBuildMode);
+      
+      // Weapon Inspect
+      if (key === 'i') {
+        useGameStore.setState({ isInspecting: true, inspectStartTime: Date.now() });
+        try {
+          soundService.playSFX('ui_click');
+        } catch (err) {}
+      }
+
+      // Tactical Ping
+      if (key === 'p' || key === 'g') {
+        triggerPing();
+      }
       
       // Hotbar keys
       if (e.key >= '1' && e.key <= '9') {
         const idx = parseInt(e.key) - 1;
         if (isBuildMode) {
-          const blocks = ['stone', 'cobblestone', 'dirt', 'grass', 'sand', 'gravel', 'clay', 'bedrock', 'oak_log', 'oak_planks', 'leaves', 'furnace', 'crafting_table', 'chest', 'barrel', 'anvil', 'enchanting_table', 'coal_ore', 'iron_ore', 'gold_ore', 'diamond_ore', 'emerald_ore', 'redstone_ore', 'lapis_ore', 'bricks', 'quartz', 'concrete', 'terracotta'] as const;
+          const blocks = ['stone', 'cobblestone', 'dirt', 'grass', 'sand', 'gravel', 'clay', 'bedrock', 'oak_log'] as const;
           if (idx < blocks.length) useGameStore.getState().setSelectedBlock(blocks[idx]);
         } else {
-          if (idx < inventory.length) switchWeapon(idx);
+          if (idx < hotbar.length) switchWeapon(idx);
         }
       }
 
@@ -288,8 +415,17 @@ export function Player() {
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
+      if ((window as any).keys) (window as any).keys[key] = false;
+
       if (key === ' ') keys.current.space = false;
+      if (key === 'shift') keys.current.shift = false;
+      if (key === 'c' || key === 'control') keys.current.c = false;
       if (key in keys.current) keys.current[key as keyof typeof keys.current] = false;
+
+      // Stop Weapon Inspect
+      if (key === 'i') {
+        useGameStore.setState({ isInspecting: false });
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
@@ -297,16 +433,95 @@ export function Player() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, []);
+  }, [gameState, playerState, camera, world, rapier, hitEnemy, addParticles, addLaser, currentWeapon, gl, isInventoryOpen, isBuildMode, selectedBlock]);
 
   const updatePlayerPosition = useGameStore(state => state.updatePlayerPosition);
   const jumpPads = useGameStore(state => state.jumpPads);
 
-  useFrame((_, delta) => {
+  const swayRef = useRef(new THREE.Vector3());
+  const vaultTime = useRef(0);
+  const isVaulting = useRef(false);
+
+  useFrame((state, delta) => {
     if (!body.current || gameState !== 'playing') return;
 
+    // Gamepad Handling
+    const gamepads = navigator.getGamepads();
+    const gp = gamepads[0];
+    let gpX = 0;
+    let gpZ = 0;
+    let gpLookX = 0;
+    let gpLookY = 0;
+    let gpJump = false;
+    let gpFire = false;
+    let gpSprint = false;
+
+    if (gp) {
+      gpX = Math.abs(gp.axes[0]) > 0.1 ? gp.axes[0] : 0;
+      gpZ = Math.abs(gp.axes[1]) > 0.1 ? -gp.axes[1] : 0;
+      gpLookX = Math.abs(gp.axes[2]) > 0.1 ? gp.axes[2] : 0;
+      gpLookY = Math.abs(gp.axes[3]) > 0.1 ? gp.axes[3] : 0;
+      gpJump = gp.buttons[0].pressed; // A
+      gpFire = gp.buttons[7].pressed; // RT
+      gpSprint = gp.buttons[10].pressed; // L3
+
+      if (gpFire) triggerFire();
+      if (gp.buttons[4].pressed) { // L1
+         const nextIdx = (currentWeaponIndex - 1 + hotbar.length) % hotbar.length;
+         switchWeapon(nextIdx);
+      }
+      if (gp.buttons[5].pressed) { // R1
+         const nextIdx = (currentWeaponIndex + 1) % hotbar.length;
+         switchWeapon(nextIdx);
+      }
+    }
+
     const pos = body.current.translation();
+    const rot = camera.rotation.y;
     setPlayerPosition([pos.x, pos.y, pos.z]);
+    useGameStore.setState({ playerRotation: rot });
+
+    // Draining flashlight/spotlight energy when active
+    if (isFlashlightActive && gameState === 'playing' && playerState === 'active') {
+      const drainAmount = 8 * delta; // 8 units per second
+      if (energy <= 0) {
+        if (useGameStore.getState().isFlashlightActive) {
+          useGameStore.getState().toggleFlashlight();
+          useGameStore.getState().addEvent('🔋 FLASHLIGHT OUT OF BATTERY ENERGY!');
+        }
+      } else {
+        updateStats({ energy: Math.max(0, energy - drainAmount) });
+      }
+    }
+
+    // Portal distance check and next level transition trigger
+    if (portalPosition && gameState === 'playing' && playerState === 'active') {
+      const dist = Math.hypot(pos.x - portalPosition[0], pos.z - portalPosition[2]);
+      if (dist < 2.5) {
+        useGameStore.getState().nextLevel();
+      }
+    }
+
+    // Recording Logic
+    if (isRecording) {
+      addReplaySnapshot({
+        timestamp: Date.now(),
+        players: {
+          ['me']: {
+            position: [pos.x, pos.y, pos.z],
+            rotation: [camera.rotation.x, camera.rotation.y, camera.rotation.z],
+            animation: useGameStore.getState().playerAnimation,
+            health: health,
+            weaponIndex: currentWeaponIndex
+          }
+        },
+        enemies: [],
+        vehicles: {},
+        environment: useGameStore.getState().environment,
+        events: []
+      });
+    }
+
     const velocity = body.current.linvel();
     
     // Jump Pad Check
@@ -332,15 +547,55 @@ export function Player() {
     const right = new THREE.Vector3();
     right.crossVectors(forward, camera.up).normalize();
 
-    const moveZ = (k.w ? 1 : 0) - (k.s ? 1 : 0) + (isMobile ? mobileControls.move.y : 0);
-    const moveX = (k.d ? 1 : 0) - (k.a ? 1 : 0) + (isMobile ? mobileControls.move.x : 0);
+    const moveZ = (k.w ? 1 : 0) - (k.s ? 1 : 0) + (isMobile ? mobileControls.move.y : gpZ);
+    const moveX = (k.d ? 1 : 0) - (k.a ? 1 : 0) + (isMobile ? mobileControls.move.x : gpX);
 
-    const direction = new THREE.Vector3();
-    direction.addScaledVector(forward, moveZ);
-    direction.addScaledVector(right, moveX);
+    // Look Handling (Gamepad)
+    if (gp) {
+      const sensitivity = 2.0 * mouseSensitivity;
+      camera.rotation.y -= gpLookX * sensitivity * delta;
+      camera.rotation.x -= gpLookY * sensitivity * delta;
+      camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+    }
+
+    // Energy consumption
+    const isSprinting = (isMobile && mobileControls.sprint) || gpSprint || (!isMobile && keys.current.w && keys.current.shift && energy > 0);
+    if (isSprinting && (Math.abs(moveX) > 0.1 || Math.abs(moveZ) > 0.1)) {
+      updateStats({ energy: Math.max(0, energy - 15 * delta) });
+    }
+
+    // Class modifiers
+    const classSpeedMod = playerClass === 'spellblade' ? 1.2 : (playerClass === 'alchemist' ? 1.1 : 1.0);
+    const streakSpeedMod = activeStreakPower === 'OVERCLOCKED' ? 1.4 : 1.0;
+    const timeWarpMod = isTimeWarpActive ? 1.2 : 1.0; // Player is faster during time warp
+    const glitchMod = isGlitch ? 1.15 : 1.0;
+
+    const isSprintingActual = isSprinting && energy > 0;
+    const currentSpeed = (isSprintingActual ? sprintSpeed : SPEED) * classSpeedMod * streakSpeedMod * timeWarpMod * glitchMod * dimStats.speedMultiplier;
+
+    const targetVelocity = new THREE.Vector3();
+    targetVelocity.addScaledVector(forward, moveZ);
+    targetVelocity.addScaledVector(right, moveX);
     
-    if (direction.lengthSq() > 0) {
-      direction.normalize().multiplyScalar(SPEED);
+    if (targetVelocity.lengthSq() > 0) {
+      targetVelocity.normalize().multiplyScalar(currentSpeed);
+    }
+
+    // Advanced Physics: Acceleration/Deceleration (Controller A Alpha logic)
+    const currentVel = new THREE.Vector3(velocity.x, 0, velocity.z);
+    
+    // Controller A Alpha: Higher air control and momentum preservation
+    const airControl = isGrounded.current ? 1.0 : 0.4;
+    const accelSpeed = isGrounded.current ? movementWeight : 0.15;
+    
+    currentVel.lerp(targetVelocity, accelSpeed * airControl);
+
+    // Lean logic for "Alpha" feel
+    if (gunGroupRef.current) {
+      const targetLean = moveX * -0.1;
+      const targetTilt = moveZ * 0.05;
+      gunGroupRef.current.rotation.z = THREE.MathUtils.lerp(gunGroupRef.current.rotation.z, targetLean, 0.1);
+      gunGroupRef.current.rotation.x = THREE.MathUtils.lerp(gunGroupRef.current.rotation.x, targetTilt, 0.1);
     }
 
     // Mobile Look
@@ -360,13 +615,34 @@ export function Player() {
       
       const targetCameraPos = new THREE.Vector3(pos.x, pos.y, pos.z).add(cameraOffset);
       camera.position.lerp(targetCameraPos, 0.2);
-      
-      // Gun should still be visible but maybe positioned differently? 
-      // Actually, in many 3rd person shooters, the gun is on the model.
-      // For now, let's just keep the gun group synced but maybe hide it or move it.
     } else {
       // First Person Camera
       camera.position.set(pos.x, pos.y + 0.8, pos.z); // Eye level
+    }
+
+    // Character Animations (Procedural)
+    const isMoving = Math.abs(moveX) > 0.1 || Math.abs(moveZ) > 0.1;
+    const currentIsPlayerMoving = isMoving || !isGrounded.current;
+    if (useGameStore.getState().isPlayerMoving !== currentIsPlayerMoving) {
+      useGameStore.setState({ isPlayerMoving: currentIsPlayerMoving });
+    }
+    if (!isGrounded.current) {
+      useGameStore.getState().setPlayerAnimation('jump');
+    } else if (isMoving) {
+      useGameStore.getState().setPlayerAnimation('run');
+    } else {
+      useGameStore.getState().setPlayerAnimation('idle');
+    }
+
+    // Apply bobbing to gunGroupRef
+    if (gunGroupRef.current) {
+      const t = state.clock.elapsedTime * 10;
+      if (useGameStore.getState().playerAnimation === 'run') {
+        gunGroupRef.current.position.y = -0.1 + Math.sin(t) * 0.05;
+        gunGroupRef.current.position.x = 0.3 + Math.cos(t * 0.5) * 0.02;
+      } else {
+        gunGroupRef.current.position.y = -0.1 + Math.sin(t * 0.2) * 0.01;
+      }
     }
 
     // Ground check
@@ -374,15 +650,146 @@ export function Player() {
     const rayDir = new THREE.Vector3(0, -1, 0);
     const ray = new rapier.Ray(rayStart, rayDir);
     const hit = world.castRay(ray, 0.5, true);
+    const wasGrounded = isGrounded.current;
     isGrounded.current = !!hit;
-
-    // Jump
-    let jumpVel = velocity.y;
-    if ((k.space || (isMobile && mobileControls.jump)) && isGrounded.current) {
-      jumpVel = Math.sqrt(jumpHeight * 2 * gravity);
+    
+    if (isGrounded.current) {
+      jumpCount.current = 0;
     }
 
-    body.current.setLinvel({ x: direction.x, y: jumpVel, z: direction.z }, true);
+    const gravityValue = dimStats.gravity;
+    
+    // Jump / Double Jump
+    let jumpVel = velocity.y;
+    const now = Date.now();
+    if ((k.space || (isMobile && mobileControls.jump) || gpJump) && now - lastJumpTime.current > 250 && energy >= 10) {
+      if (isGrounded.current) {
+        const classJumpMod = playerClass === 'mage' ? 1.2 : 1.0;
+        jumpVel = Math.sqrt(jumpHeight * classJumpMod * 2 * Math.abs(gravityValue));
+        jumpCount.current = 1;
+        lastJumpTime.current = now;
+        updateStats({ energy: energy - 10 });
+        soundService.playSFX('jump');
+      } else if (jumpCount.current === 1) {
+        // Double Jump
+        jumpVel = Math.sqrt(jumpHeight * 1.5 * 2 * Math.abs(gravityValue));
+        jumpCount.current = 2;
+        lastJumpTime.current = now;
+        updateStats({ energy: energy - 15 });
+        addParticles([pos.x, pos.y, pos.z], '#ffffff');
+        soundService.playSFX('jump');
+      }
+    }
+
+    // Advanced Gravity Logic: Apply custom acceleration and terminal velocity
+    if (!isGrounded.current) {
+      jumpVel += gravityValue * delta;
+      if (jumpVel < -terminalVelocity) jumpVel = -terminalVelocity;
+    }
+
+    // Vaulting
+    if (!isGrounded.current && !isVaulting.current && k.w && energy >= 20) {
+      const vaultRay = new rapier.Ray(new THREE.Vector3(pos.x, pos.y + 0.2, pos.z), forward);
+      const vaultHit = world.castRay(vaultRay, 1.0, true);
+      
+      if (vaultHit) {
+        // Check if there's space above
+        const clearRay = new rapier.Ray(new THREE.Vector3(pos.x, pos.y + 1.5, pos.z), forward);
+        const clearHit = world.castRay(clearRay, 1.0, true);
+        
+        if (!clearHit) {
+          isVaulting.current = true;
+          vaultTime.current = Date.now();
+          body.current.setLinvel({ x: velocity.x, y: 8, z: velocity.z }, true);
+          updateStats({ energy: energy - 20 });
+          soundService.playSFX('jump');
+          useGameStore.getState().addEvent('VAULTING!');
+        }
+      }
+    }
+    
+    if (isVaulting.current && Date.now() - vaultTime.current > 500) {
+      isVaulting.current = false;
+    }
+
+    // Wall Running
+    let isWallRunning = false;
+    let wallSide: 'left' | 'right' | null = null;
+
+    if (!isGrounded.current && k.w && energy > 0) {
+      const leftRay = new rapier.Ray(new THREE.Vector3(pos.x, pos.y + 0.5, pos.z), right.clone().multiplyScalar(-1));
+      const rightRay = new rapier.Ray(new THREE.Vector3(pos.x, pos.y + 0.5, pos.z), right);
+      
+      const leftHit = world.castRay(leftRay, 0.8, true);
+      const rightHit = world.castRay(rightRay, 0.8, true);
+
+      if (leftHit) {
+        isWallRunning = true;
+        wallSide = 'left';
+      } else if (rightHit) {
+        isWallRunning = true;
+        wallSide = 'right';
+      }
+    }
+
+    if (isWallRunning !== isWallRunningStore || wallSide !== wallRunSideStore) {
+      setWallRunning(isWallRunning, wallSide);
+    }
+
+    // Stamina/Energy & Overload Recovery
+    if (!k.shift && energy < 100) {
+      updateStats({ energy: energy + delta * 5 });
+    }
+    if (overload > 0) {
+      updateStats({ overload: Math.max(0, overload - delta * 3) });
+    }
+
+    if (isWallRunning) {
+      jumpVel = Math.max(jumpVel, 0.5); // Counter gravity slightly
+      currentVel.multiplyScalar(1.3); // Speed boost
+      updateStats({ energy: Math.max(0, energy - 10 * delta) });
+      
+      // Tilt camera
+      const targetTilt = wallSide === 'left' ? -0.15 : 0.15;
+      camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, targetTilt, delta * 10);
+    } else {
+      camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, 0, delta * 10);
+    }
+
+    // Sliding Logic
+    if (k.c && isGrounded.current && !isSliding.current && k.shift && (Math.abs(moveX) > 0.1 || Math.abs(moveZ) > 0.1)) {
+      isSliding.current = true;
+      slideTime.current = now;
+      // soundService.playSFX('slide'); // Slide SFX not implemented yet, using jump for now or skipping
+    }
+    
+    if (isSliding.current) {
+      const elapsed = now - slideTime.current;
+      if (elapsed > 800 || !isGrounded.current) {
+        isSliding.current = false;
+      } else {
+        const slideFactor = 1.0 - (elapsed / 800);
+        currentVel.multiplyScalar(1.5 + slideFactor);
+        camera.position.y -= 0.5; // Lower camera
+      }
+    }
+
+    // Dash - V.I.J.O ENERGY DASH
+    if (k.shift && (energy >= 20 || overload > 85) && now - lastDashTime.current > 1000) {
+      const dashDir = new THREE.Vector3();
+      dashDir.addScaledVector(forward, moveZ);
+      dashDir.addScaledVector(right, moveX);
+      if (dashDir.lengthSq() === 0) dashDir.copy(forward);
+      dashDir.normalize().multiplyScalar(35);
+      
+      body.current!.setLinvel({ x: dashDir.x, y: velocity.y, z: dashDir.z }, true);
+      lastDashTime.current = now;
+      updateStats({ energy: Math.max(0, energy - 20), overload: Math.min(100, overload + 15) });
+      addParticles([pos.x, pos.y, pos.z], overload > 85 ? '#ffffff' : '#00ffcc', 30);
+      soundService.playSFX('dash_vijo');
+    } else {
+      body.current!.setLinvel({ x: currentVel.x, y: jumpVel, z: currentVel.z }, true);
+    }
 
     // Camera FOV and Shake
     if ('fov' in camera) {
@@ -396,16 +803,161 @@ export function Player() {
       camera.position.y += (Math.random() - 0.5) * shake;
     }
 
+    // ============== PORT ELIZABETH WEATHER SYMPTOMS ==============
+    const peWeather = useGameStore.getState().environment.peWeather;
+    if (peWeather && playerState === 'active') {
+      const cond = peWeather.condition;
+      
+      // 1. HOT -> screen is wiggly (ambient sin wave wobbly offsets)
+      if (cond === 'hot') {
+        const t = state.clock.elapsedTime * 4.5;
+        camera.position.x += Math.sin(t) * 0.045;
+        camera.position.y += Math.cos(t * 1.5) * 0.035;
+      }
+      
+      // 2. COLD -> shiver (high frequency screen vibrating shakes)
+      if (cond === 'cold') {
+        const shiverFactor = Math.sin(state.clock.elapsedTime * 65.0) * 0.015;
+        camera.position.x += shiverFactor;
+        camera.position.y += shiverFactor;
+      }
+      
+      // 3. RAINY -> forces you to look down (gently slide pitch/rotation downwards)
+      if (cond === 'rainy') {
+        // We look down gently to protect eyes
+        if (camera.rotation.x > -0.6) {
+          camera.rotation.x -= 0.0035;
+        }
+      }
+      
+      // 4. HAIL -> Find shelter or take ticking damage!
+      if (cond === 'hail') {
+        // Cast ray straight up from player's head position (pos.y + 1)
+        const currentPos = body.current!.translation();
+        const rayStart = new rapier.Ray(
+          { x: currentPos.x, y: currentPos.y + 1.2, z: currentPos.z },
+          { x: 0, y: 1, z: 0 }
+        );
+        // Cast up with max dist 150
+        const hit = world.castRay(rayStart, 150, true);
+        const isSheltered = hit !== null && hit.timeOfImpact < 50;
+
+        if (!isSheltered) {
+          const currentTime = Date.now();
+          if (currentTime - lastHailDamageTime.current > 1400) {
+            lastHailDamageTime.current = currentTime;
+            useGameStore.getState().takeDamage(3);
+            useGameStore.getState().addEvent('⚠️ HAILSTORM BLASTING IN PE: TAKE SHELTER UNDER ROOFS!');
+            soundService.playSFX('hit');
+          }
+        }
+      }
+    }
+    // =============================================================
+
+    // Weapon Sway
+    const swayAmount = 0.05;
+    const swaySpeed = 2;
+    const targetSway = new THREE.Vector3(
+      Math.sin(state.clock.elapsedTime * swaySpeed) * swayAmount * (velocity.x / SPEED),
+      Math.cos(state.clock.elapsedTime * swaySpeed * 2) * swayAmount * (velocity.z / SPEED),
+      0
+    );
+    swayRef.current.lerp(targetSway, 0.1);
+
     // Sync gun to camera
     if (gunGroupRef.current) {
-      gunGroupRef.current.position.copy(camera.position);
+      gunGroupRef.current.position.copy(camera.position).add(swayRef.current.clone().applyQuaternion(camera.quaternion));
       gunGroupRef.current.quaternion.copy(camera.quaternion);
     }
+
+    // Sync flashlight/spotlight to camera
+    if (flashlightGroupRef.current) {
+      flashlightGroupRef.current.position.copy(camera.position);
+      flashlightGroupRef.current.quaternion.copy(camera.quaternion);
+    }
+
+    // Handle spotlight flickering based on instability
+    if (isFlashlightActive && instability > 15) {
+      const flickerChance = (instability / 100) * 0.22;
+      isFlickeringRef.current = Math.random() < flickerChance;
+    } else {
+      isFlickeringRef.current = false;
+    }
+
+    if (spotlightRef.current) {
+      spotlightRef.current.intensity = isFlickeringRef.current ? 0.3 : 11.5;
+    }
     
-    // Recover recoil
+    // Recover recoil and inspect animations
     if (gunVisualRef.current) {
-      gunVisualRef.current.position.z = THREE.MathUtils.lerp(gunVisualRef.current.position.z, -0.6, delta * 15);
-      gunVisualRef.current.rotation.x = THREE.MathUtils.lerp(gunVisualRef.current.rotation.x, 0, delta * 15);
+      const isInspecting = useGameStore.getState().isInspecting;
+      const inspectStartTime = useGameStore.getState().inspectStartTime || 0;
+
+      if (isInspecting) {
+        const elapsed = (Date.now() - inspectStartTime) / 1000;
+        // Position weapon centrally and closer to view
+        gunVisualRef.current.position.x = THREE.MathUtils.lerp(gunVisualRef.current.position.x, 0.0, delta * 5);
+        gunVisualRef.current.position.y = THREE.MathUtils.lerp(gunVisualRef.current.position.y, -0.15, delta * 5);
+        gunVisualRef.current.position.z = THREE.MathUtils.lerp(gunVisualRef.current.position.z, -0.5, delta * 5);
+
+        // Continuous rotation showing off all angles
+        const targetRotY = (elapsed * 1.5) % (Math.PI * 2);
+        const targetRotX = Math.sin(elapsed) * 0.25;
+        const targetRotZ = Math.cos(elapsed) * 0.15;
+
+        gunVisualRef.current.rotation.y = targetRotY;
+        gunVisualRef.current.rotation.x = targetRotX;
+        gunVisualRef.current.rotation.z = targetRotZ;
+      } else if (currentWeapon.isMelee && isAttacking) {
+        // Swing animation
+        gunVisualRef.current.position.x = THREE.MathUtils.lerp(gunVisualRef.current.position.x, 0.6, delta * 20);
+        gunVisualRef.current.position.y = THREE.MathUtils.lerp(gunVisualRef.current.position.y, -0.4, delta * 20);
+        gunVisualRef.current.position.z = THREE.MathUtils.lerp(gunVisualRef.current.position.z, 0.2, delta * 20);
+        gunVisualRef.current.rotation.y = THREE.MathUtils.lerp(gunVisualRef.current.rotation.y, Math.PI / 2, delta * 20);
+        gunVisualRef.current.rotation.x = THREE.MathUtils.lerp(gunVisualRef.current.rotation.x, -Math.PI / 4, delta * 20);
+        gunVisualRef.current.rotation.z = THREE.MathUtils.lerp(gunVisualRef.current.rotation.z, 0, delta * 20);
+      } else {
+        // Return to standard first-person position
+        gunVisualRef.current.position.x = THREE.MathUtils.lerp(gunVisualRef.current.position.x, 0.6, delta * 15);
+        gunVisualRef.current.position.y = THREE.MathUtils.lerp(gunVisualRef.current.position.y, -0.4, delta * 15);
+        gunVisualRef.current.position.z = THREE.MathUtils.lerp(gunVisualRef.current.position.z, -0.8, delta * 15);
+        gunVisualRef.current.rotation.y = THREE.MathUtils.lerp(gunVisualRef.current.rotation.y, 0, delta * 15);
+        gunVisualRef.current.rotation.x = THREE.MathUtils.lerp(gunVisualRef.current.rotation.x, 0, delta * 15);
+        gunVisualRef.current.rotation.z = THREE.MathUtils.lerp(gunVisualRef.current.rotation.z, 0, delta * 15);
+      }
+    }
+
+    // Targeting logic
+    const targetingRaycaster = new THREE.Raycaster();
+    targetingRaycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+    const targetingRayStart = camera.position.clone().add(targetingRaycaster.ray.direction.clone().multiplyScalar(0.8));
+    const targetingRay = new rapier.Ray(targetingRayStart, targetingRaycaster.ray.direction);
+    const targetingHit = world.castRay(targetingRay, 100, true);
+
+    if (targetingHit) {
+      const collider = targetingHit.collider;
+      const rb = collider.parent();
+      if (rb && rb.userData) {
+        const userData = rb.userData as { name?: string };
+        if (userData.name && (userData.name.startsWith('bot-') || (userData.name !== 'player' && !userData.name.startsWith('obstacle') && !userData.name.startsWith('wall') && userData.name !== 'floor' && userData.name !== 'ceiling'))) {
+          if (useGameStore.getState().targetedEnemyId !== userData.name) {
+            useGameStore.getState().setTargetedEnemyId(userData.name);
+          }
+        } else {
+          if (useGameStore.getState().targetedEnemyId !== null) {
+            useGameStore.getState().setTargetedEnemyId(null);
+          }
+        }
+      } else {
+        if (useGameStore.getState().targetedEnemyId !== null) {
+          useGameStore.getState().setTargetedEnemyId(null);
+        }
+      }
+    } else {
+      if (useGameStore.getState().targetedEnemyId !== null) {
+        useGameStore.getState().setTargetedEnemyId(null);
+      }
     }
 
     // Build Preview
@@ -456,9 +1008,14 @@ export function Player() {
     }
 
     // Emit position to server
-    const now = Date.now();
     if (now - lastEmitTime.current > 50) {
-      updatePlayerPosition([pos.x, pos.y, pos.z], camera.rotation.y);
+      const isDashing = now - lastDashTime.current < 200;
+      updatePlayerPosition([pos.x, pos.y, pos.z], camera.rotation.y, isDashing);
+      // Note: updatePlayerPosition in store uses get() to find isSliding, 
+      // but we should ensure it's updated in the store if it's not already.
+      if (useGameStore.getState().isSliding !== isSliding.current) {
+        useGameStore.setState({ isSliding: isSliding.current });
+      }
       lastEmitTime.current = now;
     }
   });
@@ -467,6 +1024,9 @@ export function Player() {
     const handleClick = (e: MouseEvent) => {
       if (e.button === 0) {
         triggerFire();
+      } else if (e.button === 1) {
+        e.preventDefault();
+        triggerPing();
       } else if (e.button === 2) {
         triggerBuild();
       }
@@ -480,11 +1040,23 @@ export function Player() {
     };
   }, [gameState, playerState, camera, world, rapier, hitEnemy, addParticles, addLaser, currentWeapon, gl, isInventoryOpen, isBuildMode, selectedBlock]);
 
-  const color = playerState === 'disabled' ? '#444' : (team === 'amber' ? '#f59e0b' : (team === 'blue' ? '#3b82f6' : '#f59e0b'));
+  useEffect(() => {
+    if (body.current) {
+      body.current.setTranslation({ x: 0, y: 1.6, z: 0 }, true);
+      body.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      body.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    }
+  }, [mapSeed]);
+
+  const color = playerState === 'disabled' ? '#444' : 
+    (isGlitch ? '#ff0000' : 
+    (team === 'amber' ? '#f59e0b' : 
+    (team === 'blue' ? '#3b82f6' : '#f59e0b')));
 
   const armMaterial = (
     <meshStandardMaterial 
       color={
+        isGlitch ? '#ff0000' :
         selectedSkin === 'gold' ? '#ffd700' : 
         selectedSkin === 'ruby' ? '#ff0000' :
         selectedSkin === 'emerald' ? '#00ff44' :
@@ -507,6 +1079,7 @@ export function Player() {
         0.8
       } 
       emissive={
+        isGlitch ? '#ff0000' :
         selectedSkin === 'gold' ? '#ffd700' : 
         selectedSkin === 'ruby' ? '#660000' :
         selectedSkin === 'emerald' ? '#00ff44' :
@@ -516,30 +1089,65 @@ export function Player() {
       }
       emissiveIntensity={
         playerState === 'disabled' ? 0 : 
+        (isGlitch ? 2 :
         (selectedSkin === 'neon' ? 0.8 : 
          selectedSkin === 'emerald' ? 1.2 :
          selectedSkin === 'void' ? 0 :
-         0.4)
+         0.4))
       }
-      transparent={selectedSkin === 'stealth' || selectedSkin === 'diamond'}
-      opacity={selectedSkin === 'stealth' ? 0.4 : selectedSkin === 'diamond' ? 0.6 : 1}
+      transparent={selectedSkin === 'stealth' || selectedSkin === 'diamond' || isGlitch}
+      opacity={isGlitch ? 0.8 : (selectedSkin === 'stealth' ? 0.4 : selectedSkin === 'diamond' ? 0.6 : 1)}
     />
   );
 
   return (
     <>
-      {!isMobile && <PointerLockControls />}
+      {!isMobile && gameState === 'playing' && (
+        <PointerLockControls 
+          onLock={() => useGameStore.getState().setPointerLocked(true)}
+          onUnlock={() => useGameStore.getState().setPointerLocked(false)}
+          pointerSpeed={mouseSensitivity}
+        />
+      )}
       <RigidBody
         ref={body}
         colliders={false}
         mass={1}
         type="dynamic"
-        position={[0, 2, 0]}
+        position={[0, 10, 0]}
         enabledRotations={[false, false, false]}
         userData={{ name: 'player' }}
         friction={0}
+        onCollisionEnter={({ other }) => {
+          if (useGameStore.getState().gameMode !== 'infection') return;
+          
+          const otherName = other.rigidBodyObject?.userData?.name;
+          if (!otherName) return;
+
+          const isMeGlitch = useGameStore.getState().isGlitch;
+          
+          // If I am a glitch, I infect others
+          if (isMeGlitch) {
+            if (otherName.startsWith('bot-') || (otherName !== 'player' && !otherName.startsWith('obstacle'))) {
+              infectPlayer(otherName);
+            }
+          } else {
+            // If I am a human, I check if the other is a glitch
+            const otherPlayer = useGameStore.getState().otherPlayers[otherName];
+            const otherEnemy = useGameStore.getState().enemies.find(e => e.id === otherName);
+            
+            if ((otherPlayer && otherPlayer.isGlitch) || (otherEnemy && otherEnemy.isGlitch)) {
+              useGameStore.getState().hitPlayer();
+            }
+          }
+        }}
       >
         <CapsuleCollider args={[0.5, 0.2]} position={[0, 0.7, 0]} friction={0} />
+        
+        {/* Hidden detection helper for hallway entity raycasting */}
+        <mesh name="player" visible={false} position={[0, 0.7, 0]}>
+          <capsuleGeometry args={[0.5, 0.4]} />
+        </mesh>
         
         {/* Player Model (Visible in Third Person) */}
         {isThirdPerson && (
@@ -551,6 +1159,9 @@ export function Player() {
               accessories={selectedAccessories} 
               state={playerState} 
               isMe 
+              isGlitch={isGlitch}
+              infectionTimer={infectionLevel}
+              activeStreakPower={activeStreakPower}
             />
           </group>
         )}
@@ -605,28 +1216,47 @@ export function Player() {
           </group>
 
           <group ref={gunVisualRef} position={[0.6, -0.4, -0.8]} scale={1.5}>
-            {currentWeapon.id === 'sword' || currentWeapon.id === 'axe' || currentWeapon.id === 'scythe' ? (
+            {currentWeapon.id === 'sword' ? (
+              <group rotation={[0, -Math.PI / 2, 0]}>
+                {/* Blade */}
+                <mesh position={[0.4, 0, 0]} castShadow>
+                  <boxGeometry args={[0.8, 0.05, 0.1]} />
+                  <meshStandardMaterial color="#00d4ff" emissive="#00d4ff" emissiveIntensity={0.5} />
+                </mesh>
+                {/* Handle */}
+                <mesh position={[-0.1, 0, 0]} castShadow>
+                  <boxGeometry args={[0.3, 0.08, 0.08]} />
+                  <meshStandardMaterial color="#222" />
+                </mesh>
+                {/* Guard */}
+                <mesh position={[0.05, 0, 0]} castShadow>
+                  <boxGeometry args={[0.05, 0.3, 0.15]} />
+                  <meshStandardMaterial color="#444" />
+                </mesh>
+              </group>
+            ) : currentWeapon.id === 'axe' ? (
+              <group rotation={[0, -Math.PI / 2, 0]}>
+                {/* Handle */}
+                <mesh position={[0, 0, 0]} castShadow>
+                  <boxGeometry args={[0.8, 0.05, 0.05]} />
+                  <meshStandardMaterial color="#4d2600" />
+                </mesh>
+                {/* Axe Head */}
+                <mesh position={[0.3, 0.15, 0]} castShadow>
+                  <boxGeometry args={[0.3, 0.4, 0.05]} />
+                  <meshStandardMaterial color="#888" metalness={0.9} />
+                </mesh>
+              </group>
+            ) : currentWeapon.id === 'scythe' ? (
               <group rotation={[Math.PI / 2, 0, 0]}>
                 <mesh castShadow>
-                  <boxGeometry args={[currentWeapon.id === 'sword' ? 0.05 : 0.1, 1.2, 0.1]} />
-                  <meshStandardMaterial 
-                    color={currentWeapon.id === 'sword' ? "#fff" : "#888"} 
-                    emissive={currentWeapon.id === 'sword' ? "#00ffff" : "#ff0000"} 
-                    emissiveIntensity={1} 
-                  />
+                  <boxGeometry args={[0.1, 1.2, 0.1]} />
+                  <meshStandardMaterial color="#888" emissive="#ff0000" emissiveIntensity={1} />
                 </mesh>
-                {currentWeapon.id === 'axe' && (
-                  <mesh position={[0, 0.4, 0.1]} castShadow>
-                    <boxGeometry args={[0.4, 0.3, 0.05]} />
-                    <meshStandardMaterial color="#666" />
-                  </mesh>
-                )}
-                {currentWeapon.id === 'scythe' && (
-                  <mesh position={[0.3, 0.5, 0]} rotation={[0, 0, -Math.PI / 4]} castShadow>
-                    <boxGeometry args={[0.6, 0.1, 0.05]} />
-                    <meshStandardMaterial color="#333" />
-                  </mesh>
-                )}
+                <mesh position={[0.3, 0.5, 0]} rotation={[0, 0, -Math.PI / 4]} castShadow>
+                  <boxGeometry args={[0.6, 0.1, 0.05]} />
+                  <meshStandardMaterial color="#333" />
+                </mesh>
                 <mesh position={[0, -0.6, 0]}>
                   <boxGeometry args={[0.1, 0.3, 0.15]} />
                   <meshStandardMaterial color="#222" />
@@ -689,6 +1319,19 @@ export function Player() {
                   <meshBasicMaterial color="#ff0000" />
                 </mesh>
               </group>
+            ) : currentWeapon.id === 'knife' ? (
+              <group rotation={[0, -Math.PI / 2, 0]}>
+                {/* Blade */}
+                <mesh position={[0.15, 0, 0]} castShadow>
+                  <boxGeometry args={[0.3, 0.03, 0.05]} />
+                  <meshStandardMaterial color="#aaa" metalness={1} />
+                </mesh>
+                {/* Handle */}
+                <mesh position={[-0.05, 0, 0]} castShadow>
+                  <boxGeometry args={[0.15, 0.05, 0.05]} />
+                  <meshStandardMaterial color="#111" />
+                </mesh>
+              </group>
             ) : (
               <>
                 {/* Main body */}
@@ -744,6 +1387,35 @@ export function Player() {
             />
           </group>
         </group>
+      )}
+      {/* Spotlight / Flashlight beam */}
+      {isFlashlightActive && (
+        <group ref={flashlightGroupRef}>
+          {spotlightTargetRef.current && <primitive object={spotlightTargetRef.current} />}
+          <spotLight
+            ref={spotlightRef}
+            castShadow
+            intensity={11.5}
+            distance={40}
+            angle={Math.PI / 4}
+            penumbra={0.7}
+            decay={1.5}
+            color="#fef08a"
+            position={[0.25, -0.2, -0.2]}
+            target={spotlightTargetRef.current || undefined}
+          />
+        </group>
+      )}
+
+      {!isMobile && gameState === 'playing' && !useGameStore.getState().isPointerLocked && (
+        <Html center zIndexRange={[100, 200]}>
+          <div className="flex items-center justify-center pointer-events-none whitespace-nowrap">
+            <div className="bg-zinc-950/80 border border-amber-400/50 p-8 rounded-3xl backdrop-blur-md text-center w-80">
+              <h2 className="text-3xl font-black text-white italic tracking-tighter mb-2">SYSTEM READY</h2>
+              <p className="text-amber-400 font-bold uppercase tracking-widest text-xs animate-pulse">Click anywhere to initialize controls</p>
+            </div>
+          </div>
+        </Html>
       )}
     </>
   );

@@ -26,6 +26,7 @@ export function Effects() {
 
 function Laser({ start, end, color }: { start: [number, number, number], end: [number, number, number], color: string }) {
   const ref = useRef<THREE.Mesh>(null);
+  const isTimeWarpActive = useGameStore(state => state.isTimeWarpActive);
   
   const { position, rotation, length } = useMemo(() => {
     const s = new THREE.Vector3(...start);
@@ -46,7 +47,8 @@ function Laser({ start, end, color }: { start: [number, number, number], end: [n
   useFrame((_, delta) => {
     if (ref.current) {
       const mat = ref.current.material as THREE.MeshBasicMaterial;
-      mat.opacity = Math.max(0, mat.opacity - delta * 4);
+      const timeWarpFactor = isTimeWarpActive ? 0.2 : 1.0;
+      mat.opacity = Math.max(0, mat.opacity - delta * 4 * timeWarpFactor);
     }
   });
 
@@ -60,6 +62,7 @@ function Laser({ start, end, color }: { start: [number, number, number], end: [n
 
 function ParticleBurst({ position, color }: { position: [number, number, number], color: string }) {
   const group = useRef<THREE.Group>(null);
+  const isTimeWarpActive = useGameStore(state => state.isTimeWarpActive);
   
   const particles = useMemo(() => {
     return Array.from({ length: 15 }).map(() => ({
@@ -73,11 +76,14 @@ function ParticleBurst({ position, color }: { position: [number, number, number]
 
   useFrame((_, delta) => {
     if (group.current) {
+      const timeWarpFactor = isTimeWarpActive ? 0.2 : 1.0;
+      const effectiveDelta = delta * timeWarpFactor;
+      
       group.current.children.forEach((child, i) => {
-        child.position.addScaledVector(particles[i].velocity, delta);
+        child.position.addScaledVector(particles[i].velocity, effectiveDelta);
         const mat = (child as THREE.Mesh).material as THREE.MeshBasicMaterial;
-        mat.opacity = Math.max(0, mat.opacity - delta * 3);
-        child.scale.setScalar(Math.max(0.001, child.scale.x - delta * 2));
+        mat.opacity = Math.max(0, mat.opacity - effectiveDelta * 3);
+        child.scale.setScalar(Math.max(0.001, child.scale.x - effectiveDelta * 2));
       });
     }
   });
