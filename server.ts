@@ -996,14 +996,24 @@ Keep your responses descriptive, clear, and relatively concise (2-4 paragraphs m
           }
         } else if (subject === 'math') {
           mockReply = `📐 **A.U.R.A Online - Mathematics Core:**\n\nYou have entered the **Mathematical Mountains**! Here, mathematics is represented as three-dimensional structural puzzles. By solving geometric equations, you can construct massive bridges and towers.\n\nLet me know if you would like to analyze the **Pythagorean Theorem** (a² + b² = c²), explore 3D vectors, or practice spatial logic challenges!`;
+        } else if (subject === 'physics') {
+          mockReply = `⚛️ **A.U.R.A Online - Quantum & Kinetic Physics:**\n\nWelcome to the **Physics Laboratories**! Here, you can test gravity on different planets or toggling vacuum chambers to eliminate air drag. Try dropping a bowling ball and a feather inside our Galileo Drop simulator!`;
         } else if (subject === 'chemistry') {
           mockReply = `🧪 **A.U.R.A Online - Chemistry Synthesizer:**\n\nWelcome to the safe **Chemistry Research Center**! Here, molecular bonding is fully simulated without real-world hazards.\n\nWould you like to learn about **covalent vs. ionic bonds**, create water by bonding **Hydrogen** and **Oxygen**, or study how catalysts accelerate chemical reactions?`;
         } else if (subject === 'history') {
-          mockReply = `⏳ **A.U.R.A Online - Chrono-Portal Archive:**\n\nTime Portal active! You can travel straight to **Ancient Rome** (admiring the Colosseum's structural arches) or **Ancient Egypt** (studying the engineering behind the Great Pyramids).\n\nWhat era shall we examine next, explorer?`;
+          mockReply = `⏳ **A.U.R.A Online - Chrono-Portal Archive:**\n\nTime Portal active! Decrypt ancient scripts using our Rosetta Stone Translator, or travel straight to Ancient Egypt to explore the pyramids.\n\nWhat era shall we examine next, explorer?`;
+        } else if (subject === 'geography') {
+          mockReply = `🌍 **A.U.R.A Online - Earth & Climate Geography:**\n\nYou are inside the **Geography Dimension**! Use the planetary controls to orbit the Earth, observe transform plate boundaries like the San Andreas Fault, or dive into the deep Mariana Trench!`;
         } else if (subject === 'space') {
           mockReply = `🌌 **A.U.R.A Online - Cosmos Navigation:**\n\nAstronaut systems ready! We are orbitally locked around the **Space Exploration Dimension**. Notice the planet orbits adhere to Kepler's Laws.\n\nAsk me about gas giants, stellar nucleosynthesis, or how gravitational time dilation affects space flight!`;
+        } else if (subject === 'coding') {
+          mockReply = `💻 **A.U.R.A Online - Algorithmic Logic Compiler:**\n\nWelcome to the **Coding Island** compiler! Here, you can compile algorithms and loops to direct ByteBot step-by-step. Adjust the loop count to see the iteration cycles in action!`;
+        } else if (subject === 'language') {
+          mockReply = `🗣️ **A.U.R.A Online - Lexicon Translation Matrix:**\n\nYou have discovered the **Language City** phonetic translation tower! Choose from Spanish, French, or Japanese to decipher native phrases, pronunciations, and etymology.`;
+        } else if (subject === 'arts') {
+          mockReply = `🎨 **A.U.R.A Online - Chromatic Spectrums:**\n\nWelcome to the **Creative Arts District** light prism laboratory! Mix primary colors of light (Red, Green, Blue) to observe additive spectrum science. How will you paint the universe?`;
         } else {
-          mockReply = `🤖 **A.U.R.A Online - Multi-Disciplinary Hub:**\n\nHello, student! I am A.U.R.A, your AI guide inside **Infinity Academy VR**.\n\nI am fully optimized to answer your questions about biology, mathematics, chemistry, space, coding, history, and languages. How can I assist your educational journey today?`;
+          mockReply = `🤖 **A.U.R.A Online - Multi-Disciplinary Hub:**\n\nHello, student! I am A.U.R.A, your AI guide inside **Infinity Academy VR**.\n\nI am fully optimized to answer your questions about biology, mathematics, physics, chemistry, space, geography, coding, languages, history, and arts. How can I assist your educational journey today?`;
         }
 
         return res.json({ success: true, reply: mockReply, note: "Offline simulated core active." });

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type ActiveDimensionType = 'hub' | 'biology' | 'math' | 'chemistry' | 'history' | 'space' | 'coding' | 'arts';
+export type ActiveDimensionType = 'hub' | 'biology' | 'math' | 'physics' | 'chemistry' | 'history' | 'geography' | 'space' | 'coding' | 'language' | 'arts';
 export type ControlPlatformType = 'pc' | 'vr' | 'mobile' | 'console';
 
 export interface EduBadge {
@@ -59,19 +59,24 @@ export const useEduStore = create<EduState>((set, get) => ({
   xp: 120,
   level: 1,
   discoveredObjects: [],
-  unlockedDimensions: ['hub', 'biology', 'math', 'chemistry', 'space'],
+  unlockedDimensions: ['hub', 'biology', 'math', 'physics', 'chemistry', 'history', 'geography', 'space', 'coding', 'language', 'arts'],
   badges: [
     { id: 'first_steps', name: 'Academy Initiate', description: 'Enter the portal system of Infinity Academy', icon: 'Sparkles', unlocked: true },
     { id: 'cell_explorer', name: 'Microscopic Voyager', description: 'Shrink down and locate the Mitochondria in a cell', icon: 'Zap', unlocked: false },
     { id: 'double_helix', name: 'Genetics Cryptographer', description: 'Interact with the DNA Helix nucleotides', icon: 'Dna', unlocked: false },
     { id: 'beating_pulse', name: 'Cardiologist Apprentice', description: 'Perform bio-scanner analysis on the human heart', icon: 'HeartPulse', unlocked: false },
     { id: 'cosmic_traveler', name: 'Astro-Mechanic', description: 'Analyze the gravitational orbit simulator', icon: 'Orbit', unlocked: false },
+    { id: 'gravity_defier', name: 'Galileo Heirs', description: 'Calibrate the mass and gravity accelerator drop system', icon: 'Activity', unlocked: false },
+    { id: 'code_island_chief', name: 'Binary Architect', description: 'Assemble logic-gate loops to automate the mini-bot', icon: 'Code', unlocked: false },
+    { id: 'time_traveler', name: 'Egyptologist', description: 'Decrypt the Hieroglyphic Rosetta Stone slab', icon: 'BookOpen', unlocked: false }
   ],
   missions: [
     { id: 'enter_portals', title: 'Operational Briefing', description: 'Explore the Portal Room to view connected worlds.', status: 'completed', xp: 50 },
     { id: 'explore_cell', title: 'Cellular Analysis', description: 'Shrink into the Biology Kingdom and locate the cell Mitochondria.', status: 'active', xp: 150 },
     { id: 'scan_heart', title: 'Circulatory Rhythm', description: 'Scan the pulsating human heart to examine blood-flow channels.', status: 'pending', xp: 200 },
     { id: 'bond_atoms', title: 'Molecular Symphony', description: 'Simulate covalent atom bonding in the Chemistry lab.', status: 'pending', xp: 250 },
+    { id: 'test_gravity', title: 'Gravity Lab Drop', description: 'Examine gravitational pull on various planet masses.', status: 'pending', xp: 180 },
+    { id: 'egyptian_history', title: 'Rosetta Cipher', description: 'Scan Ancient Hieroglyphs in the History Portal.', status: 'pending', xp: 300 }
   ],
   selectedObject: null,
   vrLaserActive: true,
@@ -128,6 +133,29 @@ export const useEduStore = create<EduState>((set, get) => ({
         updatedBadges[idx].unlockedAt = new Date().toLocaleTimeString();
         get().gainXP(200);
         get().completeMission('scan_heart');
+      }
+    } else if (id === 'gravity_simulation') {
+      const idx = updatedBadges.findIndex(b => b.id === 'gravity_defier');
+      if (idx !== -1 && !updatedBadges[idx].unlocked) {
+        updatedBadges[idx].unlocked = true;
+        updatedBadges[idx].unlockedAt = new Date().toLocaleTimeString();
+        get().gainXP(180);
+        get().completeMission('test_gravity');
+      }
+    } else if (id === 'rosetta_stone') {
+      const idx = updatedBadges.findIndex(b => b.id === 'time_traveler');
+      if (idx !== -1 && !updatedBadges[idx].unlocked) {
+        updatedBadges[idx].unlocked = true;
+        updatedBadges[idx].unlockedAt = new Date().toLocaleTimeString();
+        get().gainXP(300);
+        get().completeMission('egyptian_history');
+      }
+    } else if (id === 'compiler_loop') {
+      const idx = updatedBadges.findIndex(b => b.id === 'code_island_chief');
+      if (idx !== -1 && !updatedBadges[idx].unlocked) {
+        updatedBadges[idx].unlocked = true;
+        updatedBadges[idx].unlockedAt = new Date().toLocaleTimeString();
+        get().gainXP(250);
       }
     }
     set({ badges: updatedBadges });

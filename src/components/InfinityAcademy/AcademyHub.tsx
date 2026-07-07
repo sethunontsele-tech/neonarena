@@ -3,6 +3,14 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useEduStore, ActiveDimensionType } from './eduStore';
 import { BiologyKingdom } from './BiologyKingdom';
+import { MathMountains } from './MathMountains';
+import { PhysicsLabs } from './PhysicsLabs';
+import { ChemistryCenter } from './ChemistryCenter';
+import { HistoryPortals } from './HistoryPortals';
+import { GeographyPlanet } from './GeographyPlanet';
+import { CodingIsland } from './CodingIsland';
+import { LanguageCity } from './LanguageCity';
+import { ArtsDistrict } from './ArtsDistrict';
 import { AURA3DModel } from './AURA';
 import { Html } from '@react-three/drei';
 
@@ -22,14 +30,38 @@ export function AcademyHub() {
   // Position cameras based on active dimension to simulate deep flight transitions
   useEffect(() => {
     if (activeDimension === 'hub') {
-      targetCamPos.current.set(0, 2, 7);
+      targetCamPos.current.set(0, 2, 7.5);
       targetCamLook.current.set(0, 1.2, 0);
     } else if (activeDimension === 'biology') {
       targetCamPos.current.set(0, 1.5, 4.5);
       targetCamLook.current.set(0, 1, -2);
     } else if (activeDimension === 'math') {
-      targetCamPos.current.set(-1, 2, 3);
-      targetCamLook.current.set(-5, 1, -5);
+      targetCamPos.current.set(0, 1.5, 3.5);
+      targetCamLook.current.set(0, 1, -2);
+    } else if (activeDimension === 'physics') {
+      targetCamPos.current.set(0, 1.5, 3.5);
+      targetCamLook.current.set(0, 1, -2);
+    } else if (activeDimension === 'chemistry') {
+      targetCamPos.current.set(0, 1.5, 3.5);
+      targetCamLook.current.set(0, 1, -2);
+    } else if (activeDimension === 'history') {
+      targetCamPos.current.set(0, 1.5, 3.5);
+      targetCamLook.current.set(0, 1, -2);
+    } else if (activeDimension === 'geography') {
+      targetCamPos.current.set(0, 1.5, 3.5);
+      targetCamLook.current.set(0, 1, -2);
+    } else if (activeDimension === 'space') {
+      targetCamPos.current.set(0, 1.5, 3.5);
+      targetCamLook.current.set(0, 1, -2);
+    } else if (activeDimension === 'coding') {
+      targetCamPos.current.set(0, 1.5, 3.5);
+      targetCamLook.current.set(0, 1, -2);
+    } else if (activeDimension === 'language') {
+      targetCamPos.current.set(0, 1.5, 3.5);
+      targetCamLook.current.set(0, 1, -2);
+    } else if (activeDimension === 'arts') {
+      targetCamPos.current.set(0, 1.5, 3.5);
+      targetCamLook.current.set(0, 1, -2);
     } else {
       targetCamPos.current.set(0, 2.5, 6);
       targetCamLook.current.set(0, 1.5, -2);
@@ -54,10 +86,16 @@ export function AcademyHub() {
   });
 
   const portalsList: Array<{ id: ActiveDimensionType; name: string; color: string; position: [number, number, number]; desc: string }> = [
-    { id: 'biology', name: 'Biology Kingdom', color: '#ec4899', position: [-3, 1.2, -1], desc: 'Shrink into cell matrices and explore human physiology.' },
-    { id: 'math', name: 'Mathematical Mountains', color: '#f59e0b', position: [-1.2, 1.2, -2.5], desc: 'Solve three-dimensional geometry, logic & algebraic structures.' },
-    { id: 'chemistry', name: 'Chemistry Center', color: '#10b981', position: [1.2, 1.2, -2.5], desc: 'Synthesize elements and study safe atomic bonding.' },
-    { id: 'space', name: 'Space Dimension', color: '#3b82f6', position: [3, 1.2, -1], desc: 'Orbits, stellar nurseries, and astronaut navigation.' },
+    { id: 'biology', name: 'Biology Kingdom', color: '#ec4899', position: [-4.2, 1.2, -1.5], desc: 'Shrink into cell matrices and explore human physiology.' },
+    { id: 'math', name: 'Mathematical Mountains', color: '#f59e0b', position: [-3.5, 1.2, -3.0], desc: 'Solve three-dimensional geometry, logic & algebraic structures.' },
+    { id: 'physics', name: 'Physics Labs', color: '#a855f7', position: [-2.0, 1.2, -4.0], desc: 'Experiment with gravitational acceleration, mass drops, and levers.' },
+    { id: 'chemistry', name: 'Chemistry Center', color: '#10b981', position: [0.0, 1.2, -4.5], desc: 'Synthesize elements and study safe atomic bonding.' },
+    { id: 'history', name: 'History Time Portals', color: '#e11d48', position: [2.0, 1.2, -4.0], desc: 'Unravel civilizations of Ancient Egypt and historic milestones.' },
+    { id: 'geography', name: 'Geography Planet', color: '#06b6d4', position: [3.5, 1.2, -3.0], desc: 'Examine tectonic shifts, climates, and oceanic topography.' },
+    { id: 'space', name: 'Space Dimension', color: '#3b82f6', position: [4.2, 1.2, -1.5], desc: 'Orbits, stellar nurseries, and astronaut navigation.' },
+    { id: 'coding', name: 'Coding Island', color: '#6366f1', position: [-3.0, 1.2, 1.5], desc: 'Program mini-robots and study computational logic trees.' },
+    { id: 'language', name: 'Language City', color: '#14b8a6', position: [0.0, 1.2, 2.5], desc: 'Master global phonetic ciphers and translational matrices.' },
+    { id: 'arts', name: 'Creative Arts District', color: '#f43f5e', position: [3.0, 1.2, 1.5], desc: 'Experiment with light spectrum colors and volumetric sculptures.' },
   ];
 
   return (
@@ -228,151 +266,92 @@ export function AcademyHub() {
         </group>
       )}
 
-      {/* --- CONNECTED DIMENSION: MATHEMATICAL MOUNTAINS PREVIEW --- */}
+      {/* --- CONNECTED DIMENSION: MATHEMATICAL MOUNTAINS --- */}
       {activeDimension === 'math' && (
         <group>
-          <Html position={[0, 5, -5]} center distanceFactor={10}>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
             <div className="flex flex-col items-center text-center select-none pointer-events-none">
               <span className="text-[10px] font-black tracking-[0.4em] text-amber-400 uppercase animate-pulse">ALGEBRAIC VECTORS LAB</span>
               <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(245,158,11,0.3)]">
                 MATHEMATICAL MOUNTAINS
               </h1>
-              <p className="text-[10px] text-zinc-500 font-bold uppercase mt-2 bg-zinc-950/80 border border-white/5 px-4 py-1.5 rounded-full backdrop-blur">
-                Interact with geometric vectors and mechanical builds
-              </p>
             </div>
           </Html>
-
-          {/* Render beautiful mathematical shapes */}
-          <group position={[0, 1, -2]}>
-            <mesh onClick={() => setSelectedObject({
-              id: 'pythagoras',
-              name: 'Pythagorean Bridge Theorem',
-              category: 'Geometry',
-              description: 'In a right-angled triangle, the square of the hypotenuse is equal to the sum of the squares of the other two sides: a² + b² = c².',
-              funFact: 'This theorem was used by ancient Babylonian and Indian mathematicians hundreds of years before Pythagoras was even born!'
-            })}>
-              <coneGeometry args={[1, 2, 4]} />
-              <meshStandardMaterial color="#f59e0b" wireframe />
-            </mesh>
-            <mesh position={[2, 0, -1]} onClick={() => setSelectedObject({
-              id: 'vectors',
-              name: 'Three-Dimensional Vector Coordinates',
-              category: 'Spatial Math',
-              description: 'A mathematical quantity having both direction and magnitude, plotted along X, Y, and Z axes to build physical space.',
-              funFact: 'Without 3D vectors, computer game graphics and modern physics engines could not exist!'
-            })}>
-              <boxGeometry args={[1.2, 1.2, 1.2]} />
-              <meshStandardMaterial color="#eab308" wireframe />
-            </mesh>
-
-            {/* Quick return teleport */}
-            <Html distanceFactor={6} position={[0, 1.8, 0]} center>
-              <button 
-                onClick={() => setDimension('hub')}
-                className="bg-zinc-950/95 border border-cyan-400/40 hover:border-cyan-400 px-4 py-2 rounded-2xl text-[9px] font-black text-cyan-400 hover:text-white uppercase tracking-widest transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-2xl whitespace-nowrap"
-              >
-                ↩ Teleport to Hub Lobby
-              </button>
-            </Html>
-          </group>
+          <MathMountains />
         </group>
       )}
 
-      {/* --- CONNECTED DIMENSION: CHEMISTRY RESEARCH CENTER PREVIEW --- */}
+      {/* --- CONNECTED DIMENSION: PHYSICS LABORATORIES --- */}
+      {activeDimension === 'physics' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-purple-400 uppercase animate-pulse">GRAVITY drop chamber</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+                PHYSICS LABORATORIES
+              </h1>
+            </div>
+          </Html>
+          <PhysicsLabs />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: CHEMISTRY RESEARCH CENTER --- */}
       {activeDimension === 'chemistry' && (
         <group>
-          <Html position={[0, 5, -5]} center distanceFactor={10}>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
             <div className="flex flex-col items-center text-center select-none pointer-events-none">
               <span className="text-[10px] font-black tracking-[0.4em] text-emerald-400 uppercase animate-pulse">SYNTHESIZER ENGAGED</span>
               <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(16,182,129,0.3)]">
-                CHEMISTRY RESEARCH CENTER
+                CHEMISTRY CENTER
               </h1>
-              <p className="text-[10px] text-zinc-500 font-bold uppercase mt-2 bg-zinc-950/80 border border-white/5 px-4 py-1.5 rounded-full backdrop-blur">
-                Synthesize safe virtual molecular models
-              </p>
             </div>
           </Html>
-
-          {/* Molecular bonds structure model */}
-          <group position={[0, 1, -2]}>
-            {/* Oxygen sphere */}
-            <mesh onClick={() => setSelectedObject({
-              id: 'water_oxygen',
-              name: 'Oxygen atom (O)',
-              category: 'Atomic Science',
-              description: 'A highly reactive nonmetal element that readily forms oxides with most elements, constituting 21% of Earth\'s atmosphere.',
-              funFact: 'Liquid oxygen is highly magnetic and can be suspended between the poles of a powerful magnet!'
-            })}>
-              <sphereGeometry args={[0.6, 32, 32]} />
-              <meshStandardMaterial color="#ef4444" emissive="#b91c1c" emissiveIntensity={0.2} />
-            </mesh>
-            {/* Hydrogen 1 */}
-            <group position={[-0.9, -0.6, 0]}>
-              <mesh onClick={() => setSelectedObject({
-                id: 'water_hydrogen',
-                name: 'Hydrogen Atom (H)',
-                category: 'Atomic Science',
-                description: 'The chemical element with the symbol H and atomic number 1. It is the lightest and most abundant chemical substance in the Universe.',
-                funFact: 'About 75% of the baryonic mass of the entire universe is composed of hydrogen!'
-              })}>
-                <sphereGeometry args={[0.35, 16, 16]} />
-                <meshStandardMaterial color="#3b82f6" />
-              </mesh>
-              {/* Bond tube */}
-              <mesh position={[0.45, 0.3, 0]} rotation={[0, 0, -0.6]}>
-                <cylinderGeometry args={[0.06, 0.06, 0.7, 8]} />
-                <meshStandardMaterial color="#e4e4e7" />
-              </mesh>
-            </group>
-            {/* Hydrogen 2 */}
-            <group position={[0.9, -0.6, 0]}>
-              <mesh onClick={() => setSelectedObject({
-                id: 'water_hydrogen',
-                name: 'Hydrogen Atom (H)',
-                category: 'Atomic Science',
-                description: 'Crucial for molecular reactions and organic life.',
-                funFact: 'Water molecules bond at a precise angle of 104.5 degrees!'
-              })}>
-                <sphereGeometry args={[0.35, 16, 16]} />
-                <meshStandardMaterial color="#3b82f6" />
-              </mesh>
-              {/* Bond tube */}
-              <mesh position={[-0.45, 0.3, 0]} rotation={[0, 0, 0.6]}>
-                <cylinderGeometry args={[0.06, 0.06, 0.7, 8]} />
-                <meshStandardMaterial color="#e4e4e7" />
-              </mesh>
-            </group>
-
-            {/* Quick return teleport */}
-            <Html distanceFactor={6} position={[0, 1.8, 0]} center>
-              <button 
-                onClick={() => setDimension('hub')}
-                className="bg-zinc-950/95 border border-cyan-400/40 hover:border-cyan-400 px-4 py-2 rounded-2xl text-[9px] font-black text-cyan-400 hover:text-white uppercase tracking-widest transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-2xl whitespace-nowrap"
-              >
-                ↩ Teleport to Hub Lobby
-              </button>
-            </Html>
-          </group>
+          <ChemistryCenter />
         </group>
       )}
 
-      {/* --- CONNECTED DIMENSION: SPACE DIMENSION PREVIEW --- */}
+      {/* --- CONNECTED DIMENSION: HISTORY TIME PORTALS --- */}
+      {activeDimension === 'history' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-rose-400 uppercase animate-pulse">EGYPTIAN ROSETTA CIPHER</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(225,29,72,0.3)]">
+                HISTORY TIME PORTALS
+              </h1>
+            </div>
+          </Html>
+          <HistoryPortals />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: GEOGRAPHY PLANET --- */}
+      {activeDimension === 'geography' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-cyan-400 uppercase animate-pulse">TECTONIC PLATE SCANNER</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+                GEOGRAPHY PLANET
+              </h1>
+            </div>
+          </Html>
+          <GeographyPlanet />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: SPACE DIMENSION --- */}
       {activeDimension === 'space' && (
         <group>
-          <Html position={[0, 5, -5]} center distanceFactor={10}>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
             <div className="flex flex-col items-center text-center select-none pointer-events-none">
               <span className="text-[10px] font-black tracking-[0.4em] text-blue-400 uppercase animate-pulse">ORBITAL GRAVITATIONAL SIMULATOR</span>
               <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                 SPACE EXPLORATION
               </h1>
-              <p className="text-[10px] text-zinc-500 font-bold uppercase mt-2 bg-zinc-950/80 border border-white/5 px-4 py-1.5 rounded-full backdrop-blur">
-                Analyze planet orbits and solar mass dynamics
-              </p>
             </div>
           </Html>
-
-          {/* Glowing Star and orbiting planet */}
           <group position={[0, 1, -2]}>
             {/* Sun Star */}
             <mesh onClick={() => setSelectedObject({
@@ -394,17 +373,77 @@ export function AcademyHub() {
 
             {/* Planet */}
             <PlanetOrbiter />
-
-            {/* Quick return teleport */}
-            <Html distanceFactor={6} position={[0, 1.8, 0]} center>
-              <button 
-                onClick={() => setDimension('hub')}
-                className="bg-zinc-950/95 border border-cyan-400/40 hover:border-cyan-400 px-4 py-2 rounded-2xl text-[9px] font-black text-cyan-400 hover:text-white uppercase tracking-widest transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-2xl whitespace-nowrap"
-              >
-                ↩ Teleport to Hub Lobby
-              </button>
-            </Html>
           </group>
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: CODING ISLAND --- */}
+      {activeDimension === 'coding' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-indigo-400 uppercase animate-pulse">ALGORITHMIC COMPILER LOGIC</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+                CODING ISLAND
+              </h1>
+            </div>
+          </Html>
+          <CodingIsland />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: LANGUAGE CITY --- */}
+      {activeDimension === 'language' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-teal-400 uppercase animate-pulse">PHONETIC LEXICON MATRIX</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(20,184,166,0.3)]">
+                LANGUAGE CITY
+              </h1>
+            </div>
+          </Html>
+          <LanguageCity />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: CREATIVE ARTS DISTRICT --- */}
+      {activeDimension === 'arts' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-rose-400 uppercase animate-pulse">CHROMATIC SPECTRUM MIXER</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(244,63,94,0.3)]">
+                CREATIVE ARTS DISTRICT
+              </h1>
+            </div>
+          </Html>
+          <ArtsDistrict />
+        </group>
+      )}
+
+      {/* Central Teleport back pedestal for all active dimensions */}
+      {activeDimension !== 'hub' && (
+        <group 
+          position={[0, 0, 1.8]}
+          onClick={(e) => {
+            e.stopPropagation();
+            setDimension('hub');
+          }}
+        >
+          <mesh position={[0, -0.05, 0]}>
+            <cylinderGeometry args={[0.8, 0.85, 0.1, 32]} />
+            <meshStandardMaterial color="#18181b" roughness={0.4} />
+          </mesh>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+            <ringGeometry args={[0.7, 0.75, 32]} />
+            <meshBasicMaterial color="#22d3ee" transparent opacity={0.6} />
+          </mesh>
+          <Html distanceFactor={6} position={[0, 0.8, 0]} center>
+            <button className="bg-zinc-950/95 border border-cyan-400/40 hover:border-cyan-400 px-4 py-2 rounded-2xl text-[9px] font-black text-cyan-400 hover:text-white uppercase tracking-widest transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-2xl whitespace-nowrap">
+              ↩ Teleport to Hub Lobby
+            </button>
+          </Html>
         </group>
       )}
     </group>
