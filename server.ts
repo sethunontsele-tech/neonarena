@@ -11,6 +11,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection } from 'firebase/firestore';
+import { GoogleGenAI } from '@google/genai';
 
 dotenv.config();
 
@@ -912,6 +913,105 @@ async function startServer() {
         }
       }
     });
+  });
+
+  // Enable JSON request body parsing
+  app.use(express.json());
+
+  // A.U.R.A AI Teacher API Endpoint for Infinity Academy VR
+  app.post('/api/academy/ai-teacher', async (req, res) => {
+    try {
+      const { message, subject = 'general', history = [] } = req.body;
+      const apiKey = process.env.GEMINI_API_KEY;
+
+      if (apiKey) {
+        // Lazy-initialize GoogleGenAI to prevent crashing if the key is not set
+        const ai = new GoogleGenAI({
+          apiKey: apiKey,
+          httpOptions: {
+            headers: {
+              'User-Agent': 'aistudio-build',
+            }
+          }
+        });
+
+        // Set up custom instructions per subject
+        let subjectContext = "general scientific and academic inquiries";
+        if (subject === 'biology') {
+          subjectContext = "cellular biology, DNA exploration, organ anatomy, ecosystems, and human physiology";
+        } else if (subject === 'math') {
+          subjectContext = "geometry, spatial vectors, algebra, physics-based mechanical building, and logic puzzles";
+        } else if (subject === 'physics') {
+          subjectContext = "gravity, electromagnetism, kinetic energy, thermodynamics, and simple robotics";
+        } else if (subject === 'chemistry') {
+          subjectContext = "the periodic table, molecular bonding, elements, safe virtual chemical reactions, and synthesis";
+        } else if (subject === 'history') {
+          subjectContext = "Ancient Rome, Greece, Egypt, Medieval periods, and major historical world progress milestones";
+        } else if (subject === 'geography') {
+          subjectContext = "Earth ecosystems, plate tectonics, climate patterns, oceans, and high-altitude mountain formations";
+        } else if (subject === 'space') {
+          subjectContext = "the solar system, orbital mechanics, cosmic nebula, black holes, spacecraft engineering, and astro-navigation";
+        } else if (subject === 'coding') {
+          subjectContext = "computational algorithms, state managers, logic gates, automation, and virtual robot programming";
+        }
+
+        const systemInstruction = `You are A.U.R.A (Academy Universal Research Assistant), the advanced holographic teacher guiding students in "Infinity Academy VR" - a futuristic immersive learning multiverse.
+Your expertise is in: ${subjectContext}.
+Deliver accurate, deeply educational, yet engaging and inspiring responses. Speak with a helpful, friendly, and highly encouraging tone, using futuristic/holographic styling (e.g. "Scanning database...", "Replicating model...", "Analyzing neural networks...").
+Keep your responses descriptive, clear, and relatively concise (2-4 paragraphs max). Feel free to use markdown and clean bullet points to summarize concepts.`;
+
+        // Format chat history
+        const formattedHistory = history.map((chat: { sender: string; text: string }) => ({
+          role: chat.sender === 'user' ? 'user' : 'model',
+          parts: [{ text: chat.text }]
+        }));
+
+        // Call Gemini 3.5 Flash
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.5-flash',
+          contents: [
+            ...formattedHistory,
+            { parts: [{ text: message }] }
+          ],
+          config: {
+            systemInstruction: systemInstruction,
+            temperature: 0.7,
+          }
+        });
+
+        const reply = response.text || "Scanning frequencies... Connection stable, but my neural buffers are currently empty. Please repeat your query.";
+        return res.json({ success: true, reply });
+      } else {
+        // Gracious, offline, highly interactive local AI response generator
+        let mockReply = "";
+        const lowerMessage = message.toLowerCase();
+
+        if (subject === 'biology') {
+          if (lowerMessage.includes('cell') || lowerMessage.includes('shrink')) {
+            mockReply = `🧬 **A.U.R.A Online - Biology Database Access:**\n\nFantastic choice! We have successfully decipihered and simulated a 3D human cell at **10,000,000x magnification**.\n\nAs you walk around, notice the **mitochondria** (the powerhouses generating ATP), the wrapping **endoplasmic reticulum**, and the central **nucleus** housing the chromosomes. Go ahead and click on any organelle to examine its detailed protein map!`;
+          } else if (lowerMessage.includes('dna')) {
+            mockReply = `🧬 **A.U.R.A Online - DNA Helix Scan:**\n\nYou are standing beside a massive double-helix polymer strand! Notice the complementary nucleotide base pairs:\n\n* **Adenine (A)** pairs with **Thymine (T)**\n* **Cytosine (C)** pairs with **Guanine (G)**\n\nThese four letters compose the universal programming code of all terrestrial life forms!`;
+          } else {
+            mockReply = `🧬 **A.U.R.A Online - Biology Module:**\n\nWelcome to the **Biology Kingdom**! Ask me anything about the human body, cell structures, organs (like our beating heart simulation), or general ecology. I can guide your learning path!`;
+          }
+        } else if (subject === 'math') {
+          mockReply = `📐 **A.U.R.A Online - Mathematics Core:**\n\nYou have entered the **Mathematical Mountains**! Here, mathematics is represented as three-dimensional structural puzzles. By solving geometric equations, you can construct massive bridges and towers.\n\nLet me know if you would like to analyze the **Pythagorean Theorem** (a² + b² = c²), explore 3D vectors, or practice spatial logic challenges!`;
+        } else if (subject === 'chemistry') {
+          mockReply = `🧪 **A.U.R.A Online - Chemistry Synthesizer:**\n\nWelcome to the safe **Chemistry Research Center**! Here, molecular bonding is fully simulated without real-world hazards.\n\nWould you like to learn about **covalent vs. ionic bonds**, create water by bonding **Hydrogen** and **Oxygen**, or study how catalysts accelerate chemical reactions?`;
+        } else if (subject === 'history') {
+          mockReply = `⏳ **A.U.R.A Online - Chrono-Portal Archive:**\n\nTime Portal active! You can travel straight to **Ancient Rome** (admiring the Colosseum's structural arches) or **Ancient Egypt** (studying the engineering behind the Great Pyramids).\n\nWhat era shall we examine next, explorer?`;
+        } else if (subject === 'space') {
+          mockReply = `🌌 **A.U.R.A Online - Cosmos Navigation:**\n\nAstronaut systems ready! We are orbitally locked around the **Space Exploration Dimension**. Notice the planet orbits adhere to Kepler's Laws.\n\nAsk me about gas giants, stellar nucleosynthesis, or how gravitational time dilation affects space flight!`;
+        } else {
+          mockReply = `🤖 **A.U.R.A Online - Multi-Disciplinary Hub:**\n\nHello, student! I am A.U.R.A, your AI guide inside **Infinity Academy VR**.\n\nI am fully optimized to answer your questions about biology, mathematics, chemistry, space, coding, history, and languages. How can I assist your educational journey today?`;
+        }
+
+        return res.json({ success: true, reply: mockReply, note: "Offline simulated core active." });
+      }
+    } catch (error: any) {
+      console.error('Error in AI Teacher endpoint:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
   });
 
   // Vite middleware for development

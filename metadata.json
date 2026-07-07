@@ -1,9 +1,12 @@
 {
   "name": "NeonArena-v.1",
-  "description": "A high-quality, AAA-style multiplayer FPS with advanced movement, customization, competitive game modes, and a Gemini-powered AI structure builder.",
+  "description": "An immersive, 3D interactive educational metaverse called Infinity Academy VR, featuring modular portals, deep scientific biological simulations, and a real-time Gemini AI Teacher companion.",
   "requestFramePermissions": [
     "microphone",
     "geolocation",
     "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }
