@@ -40,7 +40,7 @@ import { soundService } from './services/soundService';
 import { InfinityAcademyVR } from './components/InfinityAcademyVR';
 import { getAbilitiesForWeapon } from './data/abilities';
 import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, UserPlus, UserCheck, UserX, Terminal, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers } from 'lucide-react';
-import { auth, signInWithGoogle, logout, searchUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriends, getFriendRequests, createClan, getClan, joinClan, leaveClan, getTopClans, getUserProfile, ClanData } from './firebase';
+import { auth, signInWithGoogle, logout, searchUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriends, getFriendRequests, createClan, getClan, joinClan, leaveClan, getTopClans, getUserProfile, ClanData, saveLoadoutPreset, getLoadoutPreset } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
 function TeleportHUD() {
@@ -587,6 +587,8 @@ const InventoryModal = ({ onClose }: { onClose: () => void }) => {
   const currentWeaponIndex = useGameStore(state => state.currentWeaponIndex);
   const switchWeapon = useGameStore(state => state.switchWeapon);
   const equipToHotbar = useGameStore(state => state.equipToHotbar);
+  const user = useGameStore(state => state.user);
+
   const [filter, setFilter] = useState<WeaponCategory | 'all'>('all');
   const [search, setSearch] = useState('');
   const [assigningSlot, setAssigningSlot] = useState<number | null>(null);
@@ -595,6 +597,27 @@ const InventoryModal = ({ onClose }: { onClose: () => void }) => {
   const [deckActive, setDeckActive] = useState(false);
   const [deckSlots, setDeckSlots] = useState<(WeaponType | null)[]>(Array(10).fill(null));
   const [activeDeckSlot, setActiveDeckSlot] = useState<number | null>(null);
+
+  // Preset states
+  const [isPresetSaving, setIsPresetSaving] = useState(false);
+  const [isPresetLoading, setIsPresetLoading] = useState(false);
+  const [hasSavedPreset, setHasSavedPreset] = useState(false);
+
+  useEffect(() => {
+    const fetchPresetStatus = async () => {
+      if (user) {
+        try {
+          const preset = await getLoadoutPreset(user.uid);
+          if (preset && preset.length === 10) {
+            setHasSavedPreset(true);
+          }
+        } catch (err) {
+          console.error("Error checking preset status:", err);
+        }
+      }
+    };
+    fetchPresetStatus();
+  }, [user]);
 
   const filteredWeapons = availableWeapons.map(id => WEAPONS[id]).filter(w => {
     const matchesFilter = filter === 'all' || w.category === filter;
@@ -723,12 +746,31 @@ const InventoryModal = ({ onClose }: { onClose: () => void }) => {
                   </div>
 
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       const initialDeck = Array(10).fill(null);
                       initialDeck[0] = weapon.id; // Lock Slot 1 to this chosen item!
-                      // Pre-fill next slots with default available weapons so they are never empty
-                      for (let i = 1; i < 10; i++) {
-                        initialDeck[i] = availableWeapons[i % availableWeapons.length] || 'pistol';
+                      
+                      let loadedPreset: string[] | null = null;
+                      if (user) {
+                        try {
+                          const preset = await getLoadoutPreset(user.uid);
+                          if (preset && preset.length === 10) {
+                            loadedPreset = preset;
+                          }
+                        } catch (err) {
+                          console.error("Error fetching preset during equip:", err);
+                        }
+                      }
+
+                      if (loadedPreset) {
+                        for (let i = 1; i < 10; i++) {
+                          initialDeck[i] = (loadedPreset[i] as WeaponType) || availableWeapons[i % availableWeapons.length] || 'pistol';
+                        }
+                      } else {
+                        // Pre-fill next slots with default available weapons so they are never empty
+                        for (let i = 1; i < 10; i++) {
+                          initialDeck[i] = availableWeapons[i % availableWeapons.length] || 'pistol';
+                        }
                       }
                       setDeckSlots(initialDeck);
                       setDeckActive(true);
@@ -861,7 +903,69 @@ const InventoryModal = ({ onClose }: { onClose: () => void }) => {
                 </div>
 
                 {/* Save Action */}
-                <div className="flex justify-end gap-4 border-t border-white/10 pt-4 mt-auto">
+                <div className="flex justify-between items-center border-t border-white/10 pt-4 mt-auto">
+                  {user ? (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={isPresetSaving}
+                        onClick={async () => {
+                          setIsPresetSaving(true);
+                          const finalLoadout = deckSlots.map((item) => item || 'pistol');
+                          try {
+                            await saveLoadoutPreset(user.uid, finalLoadout);
+                            soundService.playSFX('achievement');
+                            useGameStore.getState().addEvent('💾 PRESET SAVED TO CLOUD PROFILE!');
+                            setHasSavedPreset(true);
+                          } catch (err) {
+                            console.error("Failed to save preset:", err);
+                            alert("Failed to save preset to Firebase profile.");
+                          } finally {
+                            setIsPresetSaving(false);
+                          }
+                        }}
+                        className="bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-amber-500/30 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                      >
+                        {isPresetSaving ? 'Saving Preset...' : 'Save Preset'}
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={isPresetLoading || !hasSavedPreset}
+                        onClick={async () => {
+                          setIsPresetLoading(true);
+                          try {
+                            const preset = await getLoadoutPreset(user.uid);
+                            if (preset && preset.length === 10) {
+                              const nextSlots = [...deckSlots];
+                              // Slot 1 is locked to selected item (deckSlots[0]), load others
+                              for (let i = 1; i < 10; i++) {
+                                nextSlots[i] = (preset[i] as WeaponType) || 'pistol';
+                              }
+                              setDeckSlots(nextSlots);
+                              soundService.playSFX('ui_click');
+                              useGameStore.getState().addEvent('🎒 PRESET LOADED SUCCESSFULLY!');
+                            } else {
+                              alert("No saved loadout preset found on your profile.");
+                            }
+                          } catch (err) {
+                            console.error("Failed to load preset:", err);
+                            alert("Failed to load preset from Firebase profile.");
+                          } finally {
+                            setIsPresetLoading(false);
+                          }
+                        }}
+                        className="bg-zinc-800 hover:bg-zinc-700 text-cyan-400 border border-cyan-500/30 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100"
+                      >
+                        {isPresetLoading ? 'Loading Preset...' : 'Load Preset'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider flex items-center bg-white/5 px-4 py-3 rounded-xl border border-white/5">
+                      Sign in to save/load presets to your profile
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => {

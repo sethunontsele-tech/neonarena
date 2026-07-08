@@ -78,6 +78,7 @@ export interface UserProfile {
     outgoingRequests: string[];
   };
   trophies: Trophy[];
+  savedLoadout?: string[];
   isAdmin?: boolean;
 }
 
@@ -144,6 +145,20 @@ export async function saveUserProfile(profile: Partial<UserProfile>) {
   } catch (error) {
     handleFirestoreError(error, 'update', `users/${auth.currentUser.uid}`);
   }
+}
+
+export async function saveLoadoutPreset(uid: string, loadout: string[]) {
+  const docRef = doc(db, "users", uid);
+  try {
+    await setDoc(docRef, { savedLoadout: loadout }, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, 'update', `users/${uid}`);
+  }
+}
+
+export async function getLoadoutPreset(uid: string): Promise<string[] | null> {
+  const profile = await getUserProfile(uid);
+  return profile?.savedLoadout || null;
 }
 
 export type PlayerStats = UserProfile['stats'] & { 

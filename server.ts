@@ -8,6 +8,7 @@ import { createServer as createViteServer } from 'vite';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection } from 'firebase/firestore';
@@ -15,7 +16,7 @@ import { GoogleGenAI } from '@google/genai';
 
 dotenv.config();
 
-const firebaseConfig = {
+let firebaseConfig = {
   apiKey: process.env.VITE_FIREBASE_API_KEY,
   authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.VITE_FIREBASE_PROJECT_ID,
@@ -23,6 +24,26 @@ const firebaseConfig = {
   messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.VITE_FIREBASE_APP_ID,
 };
+
+// Fallback to local config file if env vars are missing
+if (!firebaseConfig.projectId) {
+  try {
+    const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+    if (fs.existsSync(configPath)) {
+      const fileConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      firebaseConfig = {
+        apiKey: fileConfig.apiKey || firebaseConfig.apiKey,
+        authDomain: fileConfig.authDomain || firebaseConfig.authDomain,
+        projectId: fileConfig.projectId || firebaseConfig.projectId,
+        storageBucket: fileConfig.storageBucket || firebaseConfig.storageBucket,
+        messagingSenderId: fileConfig.messagingSenderId || firebaseConfig.messagingSenderId,
+        appId: fileConfig.appId || firebaseConfig.appId,
+      };
+    }
+  } catch (err) {
+    console.error('Failed to read fallback firebase configuration:', err);
+  }
+}
 
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);

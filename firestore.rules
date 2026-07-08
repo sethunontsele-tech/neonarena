@@ -69,7 +69,7 @@ service cloud.firestore {
       allow create: if isOwner(uid) && isValidUserProfile(incoming()) && 
                     (!('isAdmin' in incoming()) || isAdmin());
       allow update: if isOwner(uid) && isValidUserProfile(incoming()) && 
-                    (incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'gamertag', 'avatarUrl', 'clanId', 'customization', 'stats', 'rank', 'progression', 'economy', 'battlePass', 'social', 'trophies']) || isAdmin());
+                    (incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'gamertag', 'avatarUrl', 'clanId', 'customization', 'stats', 'rank', 'progression', 'economy', 'battlePass', 'social', 'trophies', 'savedLoadout']) || isAdmin());
     }
 
     match /trophies/{trophyId} {
