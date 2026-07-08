@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Camera, Eye, Layers, Settings, X, Cpu, Zap, Activity, Shield, Sparkles, 
-  RefreshCw, Check, AlertTriangle, Monitor, Play, Sliders, Info, HardDrive, HelpCircle
+  RefreshCw, Check, AlertTriangle, Monitor, Play, Sliders, Info, HardDrive, 
+  HelpCircle, Smartphone, RotateCw, Wifi, Battery, Radio
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { soundService } from '../services/soundService';
@@ -152,10 +153,13 @@ interface MixedRealityCamerasProps {
 }
 
 export function MixedRealityCameras({ onClose }: MixedRealityCamerasProps) {
-  // Game state variables
   const addEvent = useGameStore(state => state.addEvent);
   
-  // Local state
+  // 1. DEVICE TYPE EMULATION STATE
+  // 'vr_headset' (Meta Quest 3S), 'android_14' (Android 14 ARCore), 'android_16' (Android 16 Spatial/Neural)
+  const [deviceType, setDeviceType] = useState<'vr_headset' | 'android_14' | 'android_16'>('vr_headset');
+  
+  // Device specifics
   const [activeFeedMode, setActiveFeedMode] = useState<'passthrough' | 'depth' | 'tracking' | 'guardian'>('passthrough');
   const [selectedAppId, setSelectedAppId] = useState<string>('newtons_room_mr');
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
@@ -168,13 +172,22 @@ export function MixedRealityCameras({ onClose }: MixedRealityCamerasProps) {
   const [spatialGlitchActive, setSpatialGlitchActive] = useState<boolean>(false);
   const [roomLighting, setRoomLighting] = useState<'day' | 'neon' | 'pitch_dark'>('neon');
 
+  // VR Specifics
+  const [ipdCalibration, setIpdCalibration] = useState<number>(64); // 58mm - 72mm
+  const [refreshRate, setRefreshRate] = useState<90 | 120>(90);
+  const [showStereoscopic, setShowStereoscopic] = useState<boolean>(false);
+
+  // Mobile Phone Specifics
+  const [mobileOrientation, setMobileOrientation] = useState<'portrait' | 'landscape'>('landscape');
+  const [planeDetectionSpeed, setPlaneDetectionSpeed] = useState<number>(80); // Android 14
+  const [neuralAccuracy, setNeuralAccuracy] = useState<number>(92); // Android 16 Neural Link
+  const [uwbEnabled, setUwbEnabled] = useState<boolean>(true);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number | null>(null);
 
   const selectedApp = MR_APPS_CATALOG.find(a => a.id === selectedAppId) || MR_APPS_CATALOG[0];
 
-  // Initialize simulated room entities
   const scannedFurniture = [
     { name: "Executive Desk", x: 45, y: 65, w: 110, h: 45, confidence: 98 },
     { name: "Ergonomic Office Chair", x: 170, y: 120, w: 55, h: 55, confidence: 96 },
@@ -196,11 +209,11 @@ export function MixedRealityCameras({ onClose }: MixedRealityCamerasProps) {
             videoRef.current.srcObject = stream;
             videoRef.current.play().catch(e => console.log('Video play interrupted:', e));
           }
-          addEvent(`📷 [CAMERA ACTIVATED] Bound user web camera to Quest 3S passthrough emulation matrix.`);
+          addEvent(`📷 [CAMERA ACTIVATED] Bound user web camera to passthrough emulation matrix.`);
         } catch (err) {
           console.error("Camera access denied:", err);
           setUseRealCamera(false);
-          addEvent(`⚠️ [CAMERA ACCESS DENIED] Defaulting to high-fidelity synthesized room matrix.`);
+          addEvent(`⚠️ [CAMERA ACCESS DENIED] Defaulting to high-fidelity synthesized spatial matrix.`);
         }
       }
       enableWebcam();
@@ -298,270 +311,367 @@ export function MixedRealityCameras({ onClose }: MixedRealityCamerasProps) {
       const accent = selectedApp.simulationConfig.accentColor;
       const color = selectedApp.simulationConfig.objectColor;
 
-      // 1. DRAW SIMULATED BACKGROUND SURROUNDINGS (if not using webcam)
-      if (!useRealCamera) {
-        // Soft backdrop
-        if (roomLighting === 'day') {
-          ctx.fillStyle = '#1e293b'; // Slate gray day room
-        } else if (roomLighting === 'pitch_dark') {
-          ctx.fillStyle = '#030712'; // Absolute dark night room
-        } else {
-          ctx.fillStyle = '#0a0518'; // Cosmic neon violet
-        }
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // STEREOSCOPIC DOUBLE EYE RENDERING IF ENABLED IN VR
+      const isStereo = deviceType === 'vr_headset' && showStereoscopic;
+      const renderPasses = isStereo ? [
+        { eye: 'left', clipX: 0, clipY: 0, clipW: canvas.width / 2, clipH: canvas.height, dX: -ipdCalibration / 4 },
+        { eye: 'right', clipX: canvas.width / 2, clipY: 0, clipW: canvas.width / 2, clipH: canvas.height, dX: ipdCalibration / 4 }
+      ] : [
+        { eye: 'mono', clipX: 0, clipY: 0, clipW: canvas.width, clipH: canvas.height, dX: 0 }
+      ];
 
-        // Ambient cyberCity isometric blocks or grids representing scanned physical floor
-        ctx.strokeStyle = roomLighting === 'neon' ? 'rgba(167, 139, 250, 0.08)' : 'rgba(255, 255, 255, 0.03)';
-        ctx.lineWidth = 1;
-        const gridGap = 40;
-        for (let x = 0; x < canvas.width; x += gridGap) {
-          ctx.beginPath();
-          ctx.moveTo(x, 0);
-          ctx.lineTo(x, canvas.height);
-          ctx.stroke();
-        }
-        for (let y = 0; y < canvas.height; y += gridGap) {
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(canvas.width, y);
-          ctx.stroke();
-        }
-
-        // Draw basic representations of furniture
-        scannedFurniture.forEach(f => {
-          ctx.fillStyle = roomLighting === 'neon' ? 'rgba(34, 211, 238, 0.05)' : 'rgba(255, 255, 255, 0.02)';
-          ctx.strokeStyle = roomLighting === 'neon' ? 'rgba(34, 211, 238, 0.15)' : 'rgba(255, 255, 255, 0.05)';
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.roundRect(f.x, f.y, f.w, f.h, 8);
-          ctx.fill();
-          ctx.stroke();
-        });
-      }
-
-      // Add spatial scanline tracking interference noise if active
-      if (spatialGlitchActive || Math.random() > 0.99) {
-        ctx.fillStyle = 'rgba(34, 211, 238, 0.1)';
-        ctx.fillRect(0, Math.random() * canvas.height, canvas.width, Math.random() * 20 + 5);
-      }
-
-      // 2. APPLY OVERLAYS DEPENDING ON SYSTEM VIEWPORT MODE
-      
-      // Mode A: DUAL COLOR PASSTHROUGH (Slight overlay + vignette)
-      if (activeFeedMode === 'passthrough') {
-        const grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 100, canvas.width/2, canvas.height/2, 300);
-        grad.addColorStop(0, 'rgba(0,0,0,0)');
-        grad.addColorStop(1, 'rgba(6, 182, 212, 0.12)'); // Cyans passthrough glow
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Active app holographic integration overlay
-        ctx.font = 'bold 8px monospace';
-        ctx.fillStyle = 'rgba(6, 182, 212, 0.5)';
-        ctx.fillText(`QUEST 3S RGB DUAL-CAM: 18 PPD STABLE`, 20, 25);
-      }
-
-      // Mode B: SPATIAL DEPTH MESH (Wireframes over objects)
-      else if (activeFeedMode === 'depth') {
-        ctx.strokeStyle = 'rgba(34, 211, 238, 0.5)';
-        ctx.lineWidth = 1;
-
-        // Draw structural wireframes over everything
-        scannedFurniture.forEach(f => {
-          ctx.strokeRect(f.x, f.y, f.w, f.h);
-          
-          // Draw diagonal triangulation lines to simulate mesh facets
-          ctx.strokeStyle = 'rgba(34, 211, 238, 0.2)';
-          ctx.beginPath();
-          ctx.moveTo(f.x, f.y);
-          ctx.lineTo(f.x + f.w, f.y + f.h);
-          ctx.moveTo(f.x + f.w, f.y);
-          ctx.lineTo(f.x, f.y + f.h);
-          ctx.stroke();
-          ctx.strokeStyle = 'rgba(34, 211, 238, 0.5)';
-        });
-
-        // Dynamic depth contours
-        ctx.strokeStyle = 'rgba(236, 72, 153, 0.25)';
+      renderPasses.forEach(pass => {
+        ctx.save();
+        
+        // Define clipping zone for stereoscopic split screen
         ctx.beginPath();
-        const scanY = (Date.now() / 15) % canvas.height;
-        ctx.moveTo(0, scanY);
-        for (let x = 0; x < canvas.width; x += 10) {
-          const dy = Math.sin((x + scanY) / 10) * 15 * (depthSensitivity / 100);
-          ctx.lineTo(x, scanY + dy);
-        }
-        ctx.stroke();
+        ctx.rect(pass.clipX, pass.clipY, pass.clipW, pass.clipH);
+        ctx.clip();
 
-        ctx.font = 'bold 8px monospace';
-        ctx.fillStyle = '#ec4899';
-        ctx.fillText(`INFRARED DEPTH SCANNER: ${depthSensitivity}% GAIN`, 20, 25);
-      }
+        // Translate to apply lens disparity offsets
+        ctx.translate(pass.dX, 0);
 
-      // Mode C: IR HAND & CONTROLLER TRACKING CONSTELLATION
-      else if (activeFeedMode === 'tracking') {
-        // Draw Touch Plus Controller nodes
-        const ctrlX = 140 + Math.sin(Date.now() / 1000) * 80;
-        const ctrlY = 120 + Math.cos(Date.now() / 1200) * 40;
+        // 1. DRAW SIMULATED BACKGROUND SURROUNDINGS (if not using webcam)
+        if (!useRealCamera) {
+          // Soft backdrop
+          if (roomLighting === 'day') {
+            ctx.fillStyle = '#1e293b'; 
+          } else if (roomLighting === 'pitch_dark') {
+            ctx.fillStyle = '#030712'; 
+          } else {
+            ctx.fillStyle = '#0a0518'; 
+          }
+          ctx.fillRect(pass.clipX - Math.abs(pass.dX), 0, pass.clipW + Math.abs(pass.dX) * 2, canvas.height);
 
-        // Controller shell representation
-        ctx.strokeStyle = 'rgba(251, 191, 36, 0.6)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(ctrlX, ctrlY, 20 * irGridScale, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // IR tracking rings points
-        ctx.fillStyle = '#fbbf24';
-        for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
-          const px = ctrlX + Math.cos(a) * 20 * irGridScale;
-          const py = ctrlY + Math.sin(a) * 20 * irGridScale;
-          ctx.beginPath();
-          ctx.arc(px, py, 3, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // Virtual hand bones trace representation
-        const handX = 350 + Math.sin(Date.now() / 800) * 30;
-        const handY = 180 + Math.cos(Date.now() / 900) * 20;
-
-        ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
-        ctx.beginPath();
-        ctx.moveTo(handX, handY); // wrist
-        ctx.lineTo(handX - 20, handY - 40); // thumb
-        ctx.moveTo(handX, handY);
-        ctx.lineTo(handX, handY - 50); // index
-        ctx.moveTo(handX, handY);
-        ctx.lineTo(handX + 15, handY - 48); // middle
-        ctx.moveTo(handX, handY);
-        ctx.lineTo(handX + 30, handY - 35); // pinky
-        ctx.stroke();
-
-        // Joints points
-        ctx.fillStyle = '#22c55e';
-        const joints = [
-          [handX, handY], [handX - 20, handY - 40], [handX, handY - 50],
-          [handX + 15, handY - 48], [handX + 30, handY - 35],
-          [handX - 10, handY - 20], [handX + 8, handY - 24]
-        ];
-        joints.forEach(j => {
-          ctx.beginPath();
-          ctx.arc(j[0], j[1], 3.5, 0, Math.PI * 2);
-          ctx.fill();
-        });
-
-        ctx.font = 'bold 8px monospace';
-        ctx.fillStyle = '#fbbf24';
-        ctx.fillText(`IR LED MATRIX: TOUCH PLUS & 25-POINT SKELETAL HANDS`, 20, 25);
-      }
-
-      // Mode D: MR BOUNDARY GUARDIAN MATRIX
-      else if (activeFeedMode === 'guardian') {
-        ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
-        ctx.lineWidth = 1.5;
-
-        // Draw spatial fence polygons
-        ctx.beginPath();
-        ctx.moveTo(25, 25);
-        ctx.lineTo(canvas.width - 25, 25);
-        ctx.lineTo(canvas.width - 25, canvas.height - 25);
-        ctx.lineTo(25, canvas.height - 25);
-        ctx.closePath();
-        ctx.stroke();
-
-        // Draw vertical stripes to represent the guardian wall grid
-        const gridX = 12;
-        ctx.strokeStyle = 'rgba(6, 182, 212, 0.15)';
-        for (let col = 30; col < canvas.width; col += 30) {
-          ctx.beginPath();
-          ctx.moveTo(col, 25);
-          ctx.lineTo(col, canvas.height - 25);
-          ctx.stroke();
-        }
-
-        // Draw safe-boundary overlay warning text in middle if controllers near border
-        const isNearBorder = Math.sin(Date.now() / 600) > 0.4;
-        if (isNearBorder) {
-          ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
-          ctx.fillRect(25, 25, canvas.width - 50, canvas.height - 50);
-
-          ctx.strokeStyle = '#ef4444';
-          ctx.lineWidth = 3;
-          ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
-
-          ctx.font = 'black 11px monospace';
-          ctx.fillStyle = '#ef4444';
-          ctx.textAlign = 'center';
-          ctx.fillText(`⚠️ [GUARDIAN RESTRICTION] EXCEEDING ROOM PLAY AREA`, canvas.width / 2, canvas.height / 2);
-          ctx.textAlign = 'left';
-        }
-
-        ctx.font = 'bold 8px monospace';
-        ctx.fillStyle = '#06b6d4';
-        ctx.fillText(`GUARDIAN WALL MATRIX: ROOM MAPPING ACTIVE`, 20, 25);
-      }
-
-      // 3. RENDER THE ACTIVE MR APP SIMULATION (floating augmentations)
-      simulatedParticles.forEach(p => {
-        ctx.fillStyle = color;
-        ctx.shadowColor = accent;
-        ctx.shadowBlur = 6;
-
-        // Draw appropriate styling depending on particleType
-        if (selectedApp.simulationConfig.particleType === 'vectors') {
-          // Force arrows
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(p.x + p.dx * 8, p.y + p.dy * 8);
-          ctx.stroke();
-
-          ctx.beginPath();
-          ctx.arc(p.x + p.dx * 8, p.y + p.dy * 8, 2, 0, Math.PI * 2);
-          ctx.fill();
-        } 
-        else if (selectedApp.simulationConfig.particleType === 'neon') {
-          // Long light paths
-          ctx.strokeStyle = color;
-          ctx.lineWidth = p.size;
-          ctx.beginPath();
-          ctx.moveTo(p.x - p.dx * 10, p.y - p.dy * 10);
-          ctx.lineTo(p.x, p.y);
-          ctx.stroke();
-        }
-        else if (selectedApp.simulationConfig.particleType === 'hologram') {
-          // Floating CAD boxes
-          ctx.strokeStyle = color;
+          // Ambient grid representing scanned floor
+          ctx.strokeStyle = roomLighting === 'neon' 
+            ? (deviceType === 'android_16' ? 'rgba(6, 182, 212, 0.15)' : 'rgba(167, 139, 250, 0.08)')
+            : 'rgba(255, 255, 255, 0.03)';
           ctx.lineWidth = 1;
-          ctx.strokeRect(p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
-        }
-        else if (selectedApp.simulationConfig.particleType === 'text') {
-          // Floating spanish vocabulary tags
-          ctx.font = 'bold 9px sans-serif';
-          ctx.fillText(p.label || 'Vaso', p.x, p.y);
-        }
-        else {
-          // Standard glowing floating spheres
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fill();
+          const gridGap = 40;
+          for (let x = -80; x < canvas.width + 80; x += gridGap) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+          }
+          for (let y = 0; y < canvas.height; y += gridGap) {
+            ctx.beginPath();
+            ctx.moveTo(-80, y);
+            ctx.lineTo(canvas.width + 80, y);
+            ctx.stroke();
+          }
+
+          // ARCore Plane detection overlay (Android 14 / 16)
+          if (deviceType === 'android_14') {
+            ctx.fillStyle = 'rgba(234, 179, 8, 0.03)';
+            ctx.fillRect(0, canvas.height * 0.4, canvas.width, canvas.height * 0.6);
+            
+            // Draw plane dots
+            ctx.fillStyle = 'rgba(234, 179, 8, 0.5)';
+            const speedScale = (planeDetectionSpeed / 100) * 10;
+            const seed = Date.now() / 150;
+            for (let px = 20; px < canvas.width; px += 25) {
+              for (let py = Math.floor(canvas.height * 0.45); py < canvas.height; py += 25) {
+                const shift = Math.sin((px + py + seed) * 0.05) * speedScale;
+                ctx.beginPath();
+                ctx.arc(px + shift, py + shift, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+              }
+            }
+          }
+
+          // Android 16 futuristic neural network lines
+          if (deviceType === 'android_16') {
+            ctx.strokeStyle = 'rgba(6, 182, 212, 0.12)';
+            ctx.lineWidth = 0.5;
+            scannedFurniture.forEach((f, i) => {
+              scannedFurniture.forEach((f2, j) => {
+                if (i !== j && Math.abs(i - j) <= 2) {
+                  ctx.beginPath();
+                  ctx.moveTo(f.x + f.w/2, f.y + f.h/2);
+                  ctx.lineTo(f2.x + f2.w/2, f2.y + f2.h/2);
+                  ctx.stroke();
+                }
+              });
+            });
+          }
+
+          // Draw basic representations of furniture
+          scannedFurniture.forEach(f => {
+            if (deviceType === 'android_14') {
+              ctx.fillStyle = 'rgba(234, 179, 8, 0.05)';
+              ctx.strokeStyle = 'rgba(234, 179, 8, 0.25)';
+            } else if (deviceType === 'android_16') {
+              ctx.fillStyle = 'rgba(6, 182, 212, 0.08)';
+              ctx.strokeStyle = 'rgba(6, 182, 212, 0.35)';
+            } else {
+              ctx.fillStyle = roomLighting === 'neon' ? 'rgba(34, 211, 238, 0.05)' : 'rgba(255, 255, 255, 0.02)';
+              ctx.strokeStyle = roomLighting === 'neon' ? 'rgba(34, 211, 238, 0.15)' : 'rgba(255, 255, 255, 0.05)';
+            }
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.roundRect(f.x, f.y, f.w, f.h, 8);
+            ctx.fill();
+            ctx.stroke();
+
+            // Label detected item on mobile
+            if (deviceType !== 'vr_headset') {
+              ctx.fillStyle = deviceType === 'android_16' ? '#22d3ee' : '#eab308';
+              ctx.font = 'bold 7px sans-serif';
+              ctx.fillText(`${f.name} (${f.confidence}% anchor)`, f.x + 4, f.y + 12);
+            }
+          });
         }
 
-        // Clear shadow blur for general speed
-        ctx.shadowBlur = 0;
+        // Add spatial scanline tracking interference noise if active
+        if (spatialGlitchActive || Math.random() > 0.99) {
+          ctx.fillStyle = deviceType === 'android_16' ? 'rgba(6, 182, 212, 0.15)' : 'rgba(236, 72, 153, 0.1)';
+          ctx.fillRect(pass.clipX, Math.random() * canvas.height, pass.clipW, Math.random() * 20 + 5);
+        }
+
+        // 2. APPLY OVERLAYS DEPENDING ON SYSTEM VIEWPORT MODE
+        
+        // Mode A: DUAL COLOR PASSTHROUGH (Slight overlay + vignette)
+        if (activeFeedMode === 'passthrough') {
+          const grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 100, canvas.width/2, canvas.height/2, 300);
+          grad.addColorStop(0, 'rgba(0,0,0,0)');
+          grad.addColorStop(1, deviceType === 'android_16' ? 'rgba(6, 182, 212, 0.16)' : 'rgba(6, 182, 212, 0.12)'); 
+          ctx.fillStyle = grad;
+          ctx.fillRect(pass.clipX - Math.abs(pass.dX), 0, pass.clipW + Math.abs(pass.dX)*2, canvas.height);
+
+          // Active app holographic integration overlay
+          ctx.font = 'bold 8px monospace';
+          ctx.fillStyle = deviceType === 'android_16' ? '#22d3ee' : 'rgba(6, 182, 212, 0.6)';
+          
+          let title = `QUEST 3S RGB DUAL-CAM: 18 PPD STABLE`;
+          if (deviceType === 'android_14') title = `ANDROID 14: ARCORE API FRAMEWORK ACTIVE`;
+          if (deviceType === 'android_16') title = `ANDROID 16 NEURAL SPACE API: ACTIVE STABILIZATION`;
+          ctx.fillText(title, pass.clipX + 20, 25);
+        }
+
+        // Mode B: SPATIAL DEPTH MESH (Wireframes over objects)
+        else if (activeFeedMode === 'depth') {
+          ctx.strokeStyle = deviceType === 'android_16' ? 'rgba(34, 211, 238, 0.7)' : 'rgba(34, 211, 238, 0.5)';
+          ctx.lineWidth = 1;
+
+          // Draw structural wireframes over everything
+          scannedFurniture.forEach(f => {
+            ctx.strokeRect(f.x, f.y, f.w, f.h);
+            
+            // Draw diagonal triangulation lines to simulate mesh facets
+            ctx.strokeStyle = deviceType === 'android_16' ? 'rgba(34, 211, 238, 0.35)' : 'rgba(34, 211, 238, 0.2)';
+            ctx.beginPath();
+            ctx.moveTo(f.x, f.y);
+            ctx.lineTo(f.x + f.w, f.y + f.h);
+            ctx.moveTo(f.x + f.w, f.y);
+            ctx.lineTo(f.x, f.y + f.h);
+            ctx.stroke();
+            ctx.strokeStyle = deviceType === 'android_16' ? 'rgba(34, 211, 238, 0.7)' : 'rgba(34, 211, 238, 0.5)';
+          });
+
+          // Dynamic depth contours
+          ctx.strokeStyle = deviceType === 'android_16' ? 'rgba(6, 182, 212, 0.45)' : 'rgba(236, 72, 153, 0.25)';
+          ctx.beginPath();
+          const scanY = (Date.now() / 15) % canvas.height;
+          ctx.moveTo(pass.clipX, scanY);
+          for (let x = pass.clipX; x < pass.clipX + pass.clipW; x += 10) {
+            const dy = Math.sin((x + scanY) / 10) * 15 * (depthSensitivity / 100);
+            ctx.lineTo(x, scanY + dy);
+          }
+          ctx.stroke();
+
+          ctx.font = 'bold 8px monospace';
+          ctx.fillStyle = deviceType === 'android_16' ? '#22d3ee' : '#ec4899';
+          ctx.fillText(`INFRARED DEPTH SCANNER: ${depthSensitivity}% GAIN`, pass.clipX + 20, 25);
+        }
+
+        // Mode C: IR HAND & CONTROLLER TRACKING CONSTELLATION
+        else if (activeFeedMode === 'tracking') {
+          // Draw Touch Plus Controller nodes or mobile pointer
+          const ctrlX = pass.clipX + pass.clipW * 0.3 + Math.sin(Date.now() / 1000) * 60;
+          const ctrlY = 120 + Math.cos(Date.now() / 1200) * 40;
+
+          // Controller / Device pointer shell representation
+          ctx.strokeStyle = deviceType === 'android_16' ? 'rgba(34, 211, 238, 0.8)' : 'rgba(251, 191, 36, 0.6)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(ctrlX, ctrlY, 20 * irGridScale, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // IR tracking rings points
+          ctx.fillStyle = deviceType === 'android_16' ? '#22d3ee' : '#fbbf24';
+          for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+            const px = ctrlX + Math.cos(a) * 20 * irGridScale;
+            const py = ctrlY + Math.sin(a) * 20 * irGridScale;
+            ctx.beginPath();
+            ctx.arc(px, py, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Hand skeletal trace / Mobile gyro pointer path
+          const handX = pass.clipX + pass.clipW * 0.7 + Math.sin(Date.now() / 800) * 25;
+          const handY = 180 + Math.cos(Date.now() / 900) * 20;
+
+          ctx.strokeStyle = deviceType === 'android_16' ? 'rgba(6, 182, 212, 0.8)' : 'rgba(34, 197, 94, 0.6)';
+          ctx.beginPath();
+          ctx.moveTo(handX, handY); // wrist
+          ctx.lineTo(handX - 20, handY - 40); // thumb
+          ctx.moveTo(handX, handY);
+          ctx.lineTo(handX, handY - 50); // index
+          ctx.moveTo(handX, handY);
+          ctx.lineTo(handX + 15, handY - 48); // middle
+          ctx.moveTo(handX, handY);
+          ctx.lineTo(handX + 30, handY - 35); // pinky
+          ctx.stroke();
+
+          // Joints points
+          ctx.fillStyle = deviceType === 'android_16' ? '#22d3ee' : '#22c55e';
+          const joints = [
+            [handX, handY], [handX - 20, handY - 40], [handX, handY - 50],
+            [handX + 15, handY - 48], [handX + 30, handY - 35]
+          ];
+          joints.forEach(j => {
+            ctx.beginPath();
+            ctx.arc(j[0], j[1], 3.5, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          ctx.font = 'bold 8px monospace';
+          ctx.fillStyle = deviceType === 'android_16' ? '#22d3ee' : '#fbbf24';
+          
+          let feedText = `IR LED MATRIX: TOUCH PLUS & 25-POINT SKELETAL HANDS`;
+          if (deviceType !== 'vr_headset') feedText = `GYROSCOPE & SENSOR FUSION: IMU 6DoF CORRELATION`;
+          ctx.fillText(feedText, pass.clipX + 20, 25);
+        }
+
+        // Mode D: MR BOUNDARY GUARDIAN / SAFE WINDOW
+        else if (activeFeedMode === 'guardian') {
+          ctx.strokeStyle = deviceType === 'android_16' ? 'rgba(34, 211, 238, 0.6)' : 'rgba(6, 182, 212, 0.4)';
+          ctx.lineWidth = 1.5;
+
+          // Draw spatial fence polygons
+          ctx.beginPath();
+          ctx.moveTo(pass.clipX + 15, 25);
+          ctx.lineTo(pass.clipX + pass.clipW - 15, 25);
+          ctx.lineTo(pass.clipX + pass.clipW - 15, canvas.height - 25);
+          ctx.lineTo(pass.clipX + 15, canvas.height - 25);
+          ctx.closePath();
+          ctx.stroke();
+
+          // Draw vertical stripes to represent the guardian wall grid
+          ctx.strokeStyle = 'rgba(6, 182, 212, 0.15)';
+          for (let col = pass.clipX + 30; col < pass.clipX + pass.clipW; col += 30) {
+            ctx.beginPath();
+            ctx.moveTo(col, 25);
+            ctx.lineTo(col, canvas.height - 25);
+            ctx.stroke();
+          }
+
+          // Danger zone warning if near border
+          const isNearBorder = Math.sin(Date.now() / 600) > 0.4;
+          if (isNearBorder) {
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+            ctx.fillRect(pass.clipX + 15, 25, pass.clipW - 30, canvas.height - 50);
+
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(pass.clipX + 15, 25, pass.clipW - 30, canvas.height - 50);
+
+            ctx.font = 'black 9px monospace';
+            ctx.fillStyle = '#ef4444';
+            ctx.textAlign = 'center';
+            ctx.fillText(`⚠️ EXCEEDING STABLE PLAY BOUNDARIES`, pass.clipX + pass.clipW / 2, canvas.height / 2);
+            ctx.textAlign = 'left';
+          }
+
+          ctx.font = 'bold 8px monospace';
+          ctx.fillStyle = '#06b6d4';
+          ctx.fillText(`SPATIAL LIMIT GUARDIAN ACTIVE`, pass.clipX + 20, 25);
+        }
+
+        // 3. RENDER THE ACTIVE MR APP SIMULATION (floating augmentations)
+        simulatedParticles.forEach(p => {
+          // Adjust particles x relative to eyes if stereoscopic
+          const px = isStereo 
+            ? (pass.eye === 'left' ? p.x * 0.5 : canvas.width / 2 + p.x * 0.5)
+            : p.x;
+          
+          ctx.fillStyle = color;
+          ctx.shadowColor = accent;
+          ctx.shadowBlur = 6;
+
+          // Draw appropriate styling depending on particleType
+          if (selectedApp.simulationConfig.particleType === 'vectors') {
+            // Force arrows
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(px, p.y);
+            ctx.lineTo(px + p.dx * 8, p.y + p.dy * 8);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(px + p.dx * 8, p.y + p.dy * 8, 2, 0, Math.PI * 2);
+            ctx.fill();
+          } 
+          else if (selectedApp.simulationConfig.particleType === 'neon') {
+            // Long light paths
+            ctx.strokeStyle = color;
+            ctx.lineWidth = p.size;
+            ctx.beginPath();
+            ctx.moveTo(px - p.dx * 10, p.y - p.dy * 10);
+            ctx.lineTo(px, p.y);
+            ctx.stroke();
+          }
+          else if (selectedApp.simulationConfig.particleType === 'hologram') {
+            // Floating CAD boxes
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(px - p.size, p.y - p.size, p.size * 2, p.size * 2);
+          }
+          else if (selectedApp.simulationConfig.particleType === 'text') {
+            // Floating spanish vocabulary tags
+            ctx.font = 'bold 9px sans-serif';
+            ctx.fillText(p.label || 'Vaso', px, p.y);
+          }
+          else {
+            // Standard glowing floating spheres
+            ctx.beginPath();
+            ctx.arc(px, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          ctx.shadowBlur = 0;
+        });
+
+        // 4. DRAW VR SPECIFIC EYE RING OR EMBELLISHMENT
+        if (isStereo) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(pass.clipX + pass.clipW / 2, canvas.height / 2, Math.min(pass.clipW, canvas.height) / 2 - 5, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(255,255,255,0.4)';
+          ctx.font = 'bold 7px monospace';
+          ctx.fillText(`EYE: ${pass.eye.toUpperCase()}`, pass.clipX + 15, canvas.height - 45);
+        }
+
+        ctx.restore();
       });
 
-      // Label details overlay
-      ctx.fillStyle = 'rgba(0,0,0,0.85)';
+      // 5. CONSTANT DRAW: HUD STATUS LINE AT THE BOTTOM (Not affected by stereoscopic offset)
+      ctx.fillStyle = 'rgba(0,0,0,0.92)';
       ctx.fillRect(15, canvas.height - 35, canvas.width - 30, 25);
-      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.strokeStyle = deviceType === 'android_16' ? 'rgba(34, 211, 238, 0.25)' : 'rgba(255,255,255,0.1)';
       ctx.strokeRect(15, canvas.height - 35, canvas.width - 30, 25);
 
       ctx.font = 'bold 8px monospace';
       ctx.fillStyle = '#ffffff';
       ctx.fillText(`SIMULATED: ${selectedApp.name.toUpperCase()} (MR ENGINE ACTIVE)`, 25, canvas.height - 19);
       
-      ctx.fillStyle = accent;
+      ctx.fillStyle = deviceType === 'android_16' ? '#22d3ee' : accent;
       ctx.fillText(`STATUS: INJECTING SPATIAL RECONSTRUCTIONS LIVE`, canvas.width - 240, canvas.height - 19);
 
       // Loop
@@ -573,11 +683,19 @@ export function MixedRealityCameras({ onClose }: MixedRealityCamerasProps) {
     return () => {
       cancelAnimationFrame(frameId);
     };
-  }, [selectedAppId, activeFeedMode, useRealCamera, depthSensitivity, irGridScale, spatialGlitchActive, roomLighting, simulatedParticles]);
+  }, [
+    selectedAppId, activeFeedMode, useRealCamera, depthSensitivity, irGridScale, 
+    spatialGlitchActive, roomLighting, simulatedParticles, deviceType, 
+    ipdCalibration, showStereoscopic, planeDetectionSpeed
+  ]);
 
   const handleInjectTelemetry = () => {
     setTelemetryInjected(true);
-    addEvent(`🛸 [MR TELEMETRY INJECTED] Loaded custom camera configurations from ${selectedApp.name} into sandbox gameplay variables!`);
+    let devLabel = "Meta Quest 3S";
+    if (deviceType === 'android_14') devLabel = "Android 14 (ARCore)";
+    if (deviceType === 'android_16') devLabel = "Android 16 (Neural OS)";
+    
+    addEvent(`🛸 [MR TELEMETRY INJECTED] Synchronized ${selectedApp.name} telemetry over emulated ${devLabel} system!`);
     try {
       soundService.playSFX('spell');
     } catch(e){}
@@ -596,6 +714,14 @@ export function MixedRealityCameras({ onClose }: MixedRealityCamerasProps) {
     }, 1500);
   };
 
+  const handleDeviceChange = (type: 'vr_headset' | 'android_14' | 'android_16') => {
+    setDeviceType(type);
+    try { soundService.playSFX('ui_tab'); } catch(e){}
+    addEvent(`🖥️ [EMULATION SHIFT] Transferred diagnostics feed to emulated ${
+      type === 'vr_headset' ? 'Quest 3S VR Headset' : type === 'android_14' ? 'Android 14 Mobile (ARCore)' : 'Android 16 Mobile (Neural Link OS)'
+    } platform.`);
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.98 }}
@@ -604,21 +730,63 @@ export function MixedRealityCameras({ onClose }: MixedRealityCamerasProps) {
       className="fixed inset-0 bg-zinc-950/98 z-[200] flex flex-col p-6 backdrop-blur-2xl font-sans text-zinc-300 select-none overflow-hidden"
     >
       {/* HEADER BAR */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5 shrink-0">
+      <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4 shrink-0">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-fuchsia-500/10 rounded-2xl border border-fuchsia-400/30 text-fuchsia-400">
             <Camera size={24} className="animate-pulse" />
           </div>
           <div>
             <h1 className="text-2xl font-black text-white uppercase tracking-wider italic flex items-center gap-2">
-              Quest 3S Mixed Reality Camera & Diagnostics Hub
-              <span className="text-[9px] font-black bg-cyan-400/20 text-cyan-300 border border-cyan-400/30 px-2.5 py-0.5 rounded-full uppercase tracking-widest animate-bounce">MR Passthrough</span>
+              Mixed Reality Labs & Diagnostics
+              <span className="text-[9px] font-black bg-cyan-400/20 text-cyan-300 border border-cyan-400/30 px-2.5 py-0.5 rounded-full uppercase tracking-widest animate-bounce">
+                {deviceType === 'vr_headset' ? 'VR Quest 3S' : deviceType === 'android_14' ? 'Android 14 Core' : 'Android 16 Neural'}
+              </span>
             </h1>
             <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold mt-0.5">
-              Examine live low-latency passthrough cameras, spatial boundary meshes, and MR app telemetry matrices
+              Simulate and inspect non-gaming Quest 3S MR application matrices & Mobile device integrations
             </p>
           </div>
         </div>
+        
+        {/* COMPATIBILITY PLATFORM CONTROL SELECTORS */}
+        <div className="flex bg-zinc-900 border border-white/10 p-1 rounded-2xl gap-1">
+          <button
+            onClick={() => handleDeviceChange('vr_headset')}
+            className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+              deviceType === 'vr_headset' 
+                ? 'bg-fuchsia-500 text-black shadow-lg' 
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Monitor size={12} />
+            Quest 3S Headset
+          </button>
+          
+          <button
+            onClick={() => handleDeviceChange('android_14')}
+            className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+              deviceType === 'android_14' 
+                ? 'bg-amber-500 text-black shadow-lg' 
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Smartphone size={12} />
+            Android 14 AR
+          </button>
+
+          <button
+            onClick={() => handleDeviceChange('android_16')}
+            className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+              deviceType === 'android_16' 
+                ? 'bg-cyan-500 text-black shadow-lg' 
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Zap size={12} />
+            Android 16 Neural OS
+          </button>
+        </div>
+
         <button 
           onClick={onClose}
           className="p-3 hover:bg-white/5 border border-white/10 rounded-2xl text-zinc-400 hover:text-white transition-all cursor-pointer"
@@ -634,124 +802,275 @@ export function MixedRealityCameras({ onClose }: MixedRealityCamerasProps) {
         <div className="col-span-7 bg-zinc-900/40 border border-white/5 rounded-3xl p-5 flex flex-col min-h-0 relative">
           
           {/* CAMERA FEED NAVIGATION MODES */}
-          <div className="grid grid-cols-4 gap-2 mb-4 shrink-0">
-            {[
-              { id: 'passthrough', label: 'Color Passthrough', desc: 'Dual-Color RGB, 18 PPD', icon: Eye, color: 'text-cyan-400 border-cyan-500/20 bg-cyan-500/5' },
-              { id: 'depth', label: 'Spatial Mesh', desc: 'ToF Depth Contours', icon: Layers, color: 'text-pink-400 border-pink-500/20 bg-pink-500/5' },
-              { id: 'tracking', label: 'IR Constellation', desc: '25-Point Hand/Controller', icon: Activity, color: 'text-amber-400 border-amber-500/20 bg-amber-500/5' },
-              { id: 'guardian', label: 'Boundary Guardian', desc: 'Virtual Safe Fence', icon: Shield, color: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5' }
-            ].map(mode => {
-              const isActive = activeFeedMode === mode.id;
-              return (
-                <button
-                  key={mode.id}
-                  onClick={() => {
-                    setActiveFeedMode(mode.id as any);
-                    try { soundService.playSFX('ui_click'); } catch(e){}
-                  }}
-                  className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                    isActive 
-                      ? 'bg-white/10 border-white/30 text-white shadow-[0_0_15px_rgba(255,255,255,0.05)]' 
-                      : 'bg-zinc-950/50 border-transparent text-zinc-400 hover:bg-white/5'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <mode.icon size={13} className={isActive ? 'text-white' : mode.color.split(' ')[0]} />
-                    <span className="text-[10px] font-black uppercase tracking-wider">{mode.label}</span>
-                  </div>
-                  <span className="text-[8px] text-zinc-500 uppercase mt-1 leading-none">{mode.desc}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* MAIN MONITOR FRAME */}
-          <div className="flex-1 bg-black rounded-3xl border border-white/10 overflow-hidden relative min-h-0 flex items-center justify-center">
-            
-            {/* Real Webcam Stream hidden background if active */}
-            {useRealCamera && (
-              <video 
-                ref={videoRef}
-                className="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-none scale-x-[-1]"
-                muted
-                playsInline
-                autoPlay
-              />
-            )}
-
-            {/* Simulated overlay / augmentation lines */}
-            <canvas 
-              ref={canvasRef}
-              width={540}
-              height={320}
-              className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
-            />
-
-            {/* Static Grid Calibration HUD overlay */}
-            <div className="absolute top-4 right-4 bg-black/80 border border-white/10 px-3 py-1.5 rounded-full flex items-center gap-2 text-[8px] font-mono tracking-widest text-zinc-500 uppercase z-20">
-              <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
-              CALIBRATED FEED: STABLE
+          <div className="flex justify-between items-center mb-3 shrink-0">
+            <div className="grid grid-cols-4 gap-2 flex-1">
+              {[
+                { id: 'passthrough', label: 'Color Passthrough', desc: 'Dual-Color RGB, 18 PPD', icon: Eye, color: 'text-cyan-400 border-cyan-500/20 bg-cyan-500/5' },
+                { id: 'depth', label: 'Spatial Mesh', desc: 'ToF Depth Contours', icon: Layers, color: 'text-pink-400 border-pink-500/20 bg-pink-500/5' },
+                { id: 'tracking', label: 'IR Constellation', desc: '25-Point Hand/Controller', icon: Activity, color: 'text-amber-400 border-amber-500/20 bg-amber-500/5' },
+                { id: 'guardian', label: 'Boundary Guardian', desc: 'Virtual Safe Fence', icon: Shield, color: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5' }
+              ].map(mode => {
+                const isActive = activeFeedMode === mode.id;
+                return (
+                  <button
+                    key={mode.id}
+                    onClick={() => {
+                      setActiveFeedMode(mode.id as any);
+                      try { soundService.playSFX('ui_click'); } catch(e){}
+                    }}
+                    className={`p-2 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      isActive 
+                        ? 'bg-white/10 border-white/30 text-white shadow-[0_0_15px_rgba(255,255,255,0.05)]' 
+                        : 'bg-zinc-950/50 border-transparent text-zinc-400 hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <mode.icon size={12} className={isActive ? 'text-white' : mode.color.split(' ')[0]} />
+                      <span className="text-[9px] font-black uppercase tracking-wider">{mode.label}</span>
+                    </div>
+                    <span className="text-[7px] text-zinc-500 uppercase mt-0.5 leading-none">{mode.desc}</span>
+                  </button>
+                );
+              })}
             </div>
 
-            {spatialGlitchActive && (
-              <div className="absolute inset-0 bg-red-500/10 backdrop-blur-sm z-30 flex items-center justify-center">
-                <div className="text-center p-4 bg-black border border-red-500/30 rounded-2xl">
-                  <AlertTriangle className="text-red-500 w-8 h-8 mx-auto mb-2 animate-bounce" />
-                  <div className="text-[10px] font-black text-red-400 uppercase tracking-widest">TEMPORARY SPATIAL ANCHOR DESYNC</div>
-                  <div className="text-[8px] text-zinc-500 uppercase mt-0.5">Recalibrating accelerometer gravity multipliers...</div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* INTERACTIVE DIAGNOSTIC SLIDERS */}
-          <div className="mt-4 grid grid-cols-3 gap-4 bg-zinc-950/40 p-4 rounded-2xl border border-white/5 shrink-0">
-            <div>
-              <div className="flex items-center justify-between text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">
-                <span>Depth Range sensitivity</span>
-                <span className="text-pink-400">{depthSensitivity}%</span>
-              </div>
-              <input 
-                type="range"
-                min="20"
-                max="100"
-                value={depthSensitivity}
-                onChange={e => setDepthSensitivity(parseInt(e.target.value))}
-                className="w-full accent-pink-500"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">
-                <span>IR Constellation Grid</span>
-                <span className="text-amber-400">{irGridScale.toFixed(1)}x</span>
-              </div>
-              <input 
-                type="range"
-                min="0.5"
-                max="2.0"
-                step="0.1"
-                value={irGridScale}
-                onChange={e => setIrGridScale(parseFloat(e.target.value))}
-                className="w-full accent-amber-500"
-              />
-            </div>
-
-            <div className="flex items-center justify-between pl-4 border-l border-white/5">
-              <div className="flex flex-col">
-                <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Web Camera Input</span>
-                <span className="text-[7px] text-zinc-600 uppercase mt-0.5">Uses real-time webcam feed</span>
-              </div>
+            {/* Rotation toggle if mobile device */}
+            {deviceType !== 'vr_headset' && (
               <button
-                onClick={() => setUseRealCamera(!useRealCamera)}
-                className={`w-11 h-6 rounded-full p-1 transition-colors ${
-                  useRealCamera ? 'bg-cyan-400' : 'bg-zinc-800'
-                }`}
+                onClick={() => {
+                  setMobileOrientation(prev => prev === 'portrait' ? 'landscape' : 'portrait');
+                  try { soundService.playSFX('ui_click'); } catch(e){}
+                }}
+                className="ml-3 px-3 py-2 bg-zinc-950/50 hover:bg-white/5 border border-white/10 rounded-xl text-zinc-400 hover:text-white flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer"
+                title="Rotate Mobile Display"
               >
-                <div className={`w-4 h-4 rounded-full bg-black transition-transform ${
-                  useRealCamera ? 'translate-x-5' : 'translate-x-0'
-                }`} />
+                <RotateCw size={12} className="animate-spin-slow" />
+                {mobileOrientation}
               </button>
+            )}
+          </div>
+
+          {/* MAIN MONITOR FRAME EMULATION WRAPPER */}
+          <div className="flex-1 bg-black rounded-3xl border border-white/10 overflow-hidden relative min-h-0 flex items-center justify-center p-4">
+            
+            {/* STYLING BASED ON SELECTED DEVICE */}
+            <div 
+              className={`transition-all duration-300 relative overflow-hidden bg-zinc-950 flex items-center justify-center ${
+                deviceType === 'vr_headset' 
+                  ? 'w-full h-full rounded-2xl border border-fuchsia-500/20' 
+                  : deviceType === 'android_14'
+                    ? mobileOrientation === 'portrait'
+                      ? 'w-[260px] h-full border-[8px] border-zinc-800 rounded-[32px] shadow-2xl relative'
+                      : 'w-full max-w-[560px] h-[250px] border-[8px] border-zinc-800 rounded-[32px] shadow-2xl relative'
+                    : // Android 16 holographic OS
+                      mobileOrientation === 'portrait'
+                        ? 'w-[260px] h-full border border-cyan-400/40 bg-cyan-950/10 rounded-[32px] shadow-[0_0_20px_rgba(34,211,238,0.15)] relative'
+                        : 'w-full max-w-[560px] h-[250px] border border-cyan-400/40 bg-cyan-950/10 rounded-[32px] shadow-[0_0_20px_rgba(34,211,238,0.15)] relative'
+              }`}
+            >
+              {/* REAL WEBCAM IF TOGGLED */}
+              {useRealCamera && (
+                <video 
+                  ref={videoRef}
+                  className="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-none scale-x-[-1]"
+                  muted
+                  playsInline
+                  autoPlay
+                />
+              )}
+
+              {/* CANVAS SIMULATION LAYER */}
+              <canvas 
+                ref={canvasRef}
+                width={deviceType === 'vr_headset' ? 540 : mobileOrientation === 'portrait' ? 260 : 540}
+                height={deviceType === 'vr_headset' ? 320 : mobileOrientation === 'portrait' ? 320 : 250}
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-10"
+              />
+
+              {/* ANDROID 14 TOP STATUS BAR AND PUNCH HOLE */}
+              {deviceType === 'android_14' && (
+                <>
+                  {/* Status Bar */}
+                  <div className="absolute top-0 inset-x-0 h-6 bg-black/40 px-4 flex justify-between items-center text-[7px] font-bold text-white uppercase tracking-wider z-20">
+                    <span>09:22</span>
+                    <div className="flex items-center gap-1.5">
+                      <Wifi size={8} />
+                      <Battery size={10} className="text-emerald-400" />
+                      <span>88%</span>
+                    </div>
+                  </div>
+                  {/* Punch Hole Camera */}
+                  <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-black rounded-full border border-white/5 z-30" />
+                </>
+              )}
+
+              {/* ANDROID 16 TRANSITIONAL GLOWING BARS */}
+              {deviceType === 'android_16' && (
+                <>
+                  <div className="absolute top-0 inset-x-0 h-6 bg-cyan-950/40 px-4 flex justify-between items-center text-[7px] font-black text-cyan-300 uppercase tracking-widest z-20">
+                    <span>NEURAL SYNC ON</span>
+                    <div className="flex items-center gap-1.5">
+                      <Radio size={8} className="animate-pulse text-cyan-400" />
+                      <span>UWB 240Hz</span>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-16 h-1 bg-cyan-400/40 rounded-full z-20" />
+                </>
+              )}
+
+              {/* CALIBRATION STATUS OVERLAY */}
+              <div className="absolute top-8 right-4 bg-black/80 border border-white/10 px-2.5 py-1 rounded-full flex items-center gap-1.5 text-[7px] font-mono tracking-widest text-zinc-400 uppercase z-20">
+                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
+                CALIBRATED
+              </div>
+
+              {/* SPATIAL ANCHOR DESYNC EFFECT */}
+              {spatialGlitchActive && (
+                <div className="absolute inset-0 bg-red-500/10 backdrop-blur-sm z-30 flex items-center justify-center">
+                  <div className="text-center p-3 bg-black border border-red-500/30 rounded-2xl max-w-[200px]">
+                    <AlertTriangle className="text-red-500 w-6 h-6 mx-auto mb-1 animate-bounce" />
+                    <div className="text-[9px] font-black text-red-400 uppercase tracking-widest leading-none">SPATIAL DESYNC</div>
+                    <div className="text-[7px] text-zinc-500 uppercase mt-1 leading-normal">Re-aligning core gravity vectors...</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* DYNAMIC DIAGNOSTIC PANEL (SLIDERS CHANGE ACCORDING TO DEVICE MODE) */}
+          <div className="mt-3 bg-zinc-950/60 p-4 rounded-2xl border border-white/5 shrink-0">
+            <h4 className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-3 pb-2 border-b border-white/5 flex items-center gap-1.5">
+              <Sliders size={12} className="text-fuchsia-400" />
+              {deviceType === 'vr_headset' ? 'Quest 3S Engine Config' : deviceType === 'android_14' ? 'Android 14 ARCore Diagnostics' : 'Android 16 Quantum OS Diagnostics'}
+            </h4>
+
+            <div className="grid grid-cols-3 gap-4">
+              {/* SLIDER A: DEPENDS ON DEVICE */}
+              {deviceType === 'vr_headset' ? (
+                <div>
+                  <div className="flex items-center justify-between text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">
+                    <span>IPD Lens Calibration</span>
+                    <span className="text-fuchsia-400">{ipdCalibration} mm</span>
+                  </div>
+                  <input 
+                    type="range"
+                    min="58"
+                    max="72"
+                    value={ipdCalibration}
+                    onChange={e => setIpdCalibration(parseInt(e.target.value))}
+                    className="w-full accent-fuchsia-500"
+                  />
+                </div>
+              ) : deviceType === 'android_14' ? (
+                <div>
+                  <div className="flex items-center justify-between text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">
+                    <span>Plane Recognition Rate</span>
+                    <span className="text-amber-400">{planeDetectionSpeed} Hz</span>
+                  </div>
+                  <input 
+                    type="range"
+                    min="20"
+                    max="120"
+                    value={planeDetectionSpeed}
+                    onChange={e => setPlaneDetectionSpeed(parseInt(e.target.value))}
+                    className="w-full accent-amber-500"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">
+                    <span>Neural Link Sync</span>
+                    <span className="text-cyan-400">{neuralAccuracy}%</span>
+                  </div>
+                  <input 
+                    type="range"
+                    min="50"
+                    max="100"
+                    value={neuralAccuracy}
+                    onChange={e => setNeuralAccuracy(parseInt(e.target.value))}
+                    className="w-full accent-cyan-400"
+                  />
+                </div>
+              )}
+
+              {/* SLIDER B: DEPTH RANGE */}
+              <div>
+                <div className="flex items-center justify-between text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">
+                  <span>ToF Depth Sensitivity</span>
+                  <span className="text-pink-400">{depthSensitivity}%</span>
+                </div>
+                <input 
+                  type="range"
+                  min="20"
+                  max="100"
+                  value={depthSensitivity}
+                  onChange={e => setDepthSensitivity(parseInt(e.target.value))}
+                  className="w-full accent-pink-500"
+                />
+              </div>
+
+              {/* CONTROL C: DEVICE SPECIFIC TOGGLES */}
+              {deviceType === 'vr_headset' ? (
+                <div className="flex items-center justify-between pl-4 border-l border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Stereoscopic (3D)</span>
+                    <span className="text-[7px] text-zinc-600 uppercase mt-0.5">Dual-eye rendering</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowStereoscopic(!showStereoscopic);
+                      try { soundService.playSFX('ui_click'); } catch(e){}
+                    }}
+                    className={`w-11 h-6 rounded-full p-1 transition-colors ${
+                      showStereoscopic ? 'bg-fuchsia-500' : 'bg-zinc-800'
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded-full bg-black transition-transform ${
+                      showStereoscopic ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </button>
+                </div>
+              ) : deviceType === 'android_14' ? (
+                <div className="flex items-center justify-between pl-4 border-l border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Web Camera feed</span>
+                    <span className="text-[7px] text-zinc-600 uppercase mt-0.5">Integrate webcam</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setUseRealCamera(!useRealCamera);
+                      try { soundService.playSFX('ui_click'); } catch(e){}
+                    }}
+                    className={`w-11 h-6 rounded-full p-1 transition-colors ${
+                      useRealCamera ? 'bg-amber-500' : 'bg-zinc-800'
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded-full bg-black transition-transform ${
+                      useRealCamera ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between pl-4 border-l border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">UWB Spatial Mapping</span>
+                    <span className="text-[7px] text-zinc-600 uppercase mt-0.5">Ultra-Wideband 3D scans</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setUwbEnabled(!uwbEnabled);
+                      try { soundService.playSFX('ui_click'); } catch(e){}
+                    }}
+                    className={`w-11 h-6 rounded-full p-1 transition-colors ${
+                      uwbEnabled ? 'bg-cyan-400' : 'bg-zinc-800'
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded-full bg-black transition-transform ${
+                      uwbEnabled ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -760,16 +1079,16 @@ export function MixedRealityCameras({ onClose }: MixedRealityCamerasProps) {
         {/* RIGHT PANEL: QUEST 3S MIXED REALITY APPLICATIONS DIRECTORY */}
         <div className="col-span-5 bg-black/40 border border-white/5 rounded-3xl p-5 flex flex-col min-h-0">
           
-          <div className="flex items-center justify-between border-b border-white/5 pb-2 mb-4 shrink-0">
+          <div className="flex items-center justify-between border-b border-white/5 pb-2 mb-3 shrink-0">
             <h3 className="text-[10px] font-black tracking-widest text-zinc-400 uppercase flex items-center gap-2">
               <Monitor size={14} className="text-fuchsia-400" />
-              Quest 3S MR App Suite
+              Quest 3S MR App Directory
             </h3>
-            <span className="text-[9px] font-mono font-bold text-cyan-400">7 VR Apps Cataloged</span>
+            <span className="text-[9px] font-mono font-bold text-cyan-400">7 VR Apps Configured</span>
           </div>
 
           {/* SENSE LAB CATALOG LIST */}
-          <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar min-h-0 mb-4">
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar min-h-0 mb-3">
             {MR_APPS_CATALOG.map(app => {
               const isSelected = app.id === selectedAppId;
               return (
@@ -820,7 +1139,7 @@ export function MixedRealityCameras({ onClose }: MixedRealityCamerasProps) {
               {selectedApp.mrUsage}
             </p>
 
-            <div className="p-3 bg-fuchsia-500/5 border border-fuchsia-500/20 rounded-xl">
+            <div className="p-2.5 bg-fuchsia-500/5 border border-fuchsia-500/20 rounded-xl">
               <span className="text-[8px] font-black text-fuchsia-400 uppercase tracking-widest flex items-center gap-1 mb-1">
                 <Info size={11} />
                 Quest 3S MR Fact Sheet
@@ -830,17 +1149,17 @@ export function MixedRealityCameras({ onClose }: MixedRealityCamerasProps) {
               </p>
             </div>
 
-            <div className="flex gap-2 pt-1.5">
+            <div className="flex gap-2 pt-1">
               <button
                 onClick={handleToggleGlitch}
-                className="flex-1 py-2.5 bg-zinc-900 border border-white/5 hover:bg-zinc-850 text-[9px] font-black text-zinc-400 uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                className="flex-1 py-2 bg-zinc-900 border border-white/5 hover:bg-zinc-850 text-[9px] font-black text-zinc-400 uppercase tracking-wider rounded-xl transition-all cursor-pointer"
               >
                 Simulate Spatial Desync
               </button>
               
               <button
                 onClick={handleInjectTelemetry}
-                className="flex-1 py-2.5 bg-fuchsia-500 hover:bg-fuchsia-400 text-black text-[9px] font-black uppercase tracking-wider rounded-xl shadow-[0_0_20px_rgba(217,70,239,0.2)] transition-all flex items-center justify-center gap-1 cursor-pointer"
+                className="flex-1 py-2 bg-fuchsia-500 hover:bg-fuchsia-400 text-black text-[9px] font-black uppercase tracking-wider rounded-xl shadow-[0_0_20px_rgba(217,70,239,0.2)] transition-all flex items-center justify-center gap-1 cursor-pointer"
               >
                 <Check size={11} />
                 {telemetryInjected ? 'Telemetry Injected!' : 'Inject MR Telemetry'}
@@ -853,15 +1172,21 @@ export function MixedRealityCameras({ onClose }: MixedRealityCamerasProps) {
       </div>
 
       {/* FOOTER METRICS BAR */}
-      <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-[10px] uppercase font-semibold text-zinc-500 tracking-wider shrink-0">
+      <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[10px] uppercase font-semibold text-zinc-500 tracking-wider shrink-0">
         <div className="flex gap-6">
           <span className="flex items-center gap-1.5">
             <Cpu size={13} className="text-cyan-500 animate-spin" style={{ animationDuration: '10s' }} />
-            Quest 3S Chipset: <strong className="text-white">Snapdragon XR2 Gen 2</strong>
+            {deviceType === 'vr_headset' ? (
+              <>Quest 3S Chipset: <strong className="text-white">Snapdragon XR2 Gen 2</strong></>
+            ) : deviceType === 'android_14' ? (
+              <>Android 14 API level: <strong className="text-white">ARCore Framework v1.42</strong></>
+            ) : (
+              <>Android 16 Quantum: <strong className="text-cyan-300">Neural Quantum Engine v2</strong></>
+            )}
           </span>
           <span className="flex items-center gap-1.5">
             <Sliders size={13} className="text-amber-500" />
-            Sensor Frequencies: <strong className="text-white">90Hz Passthrough Alignment</strong>
+            Sensor Frequency: <strong className="text-white">{deviceType === 'vr_headset' ? `${refreshRate}Hz Refresh Rate` : deviceType === 'android_14' ? '60Hz Gyro Sync' : '240Hz Ultra-Wideband'}</strong>
           </span>
         </div>
         <div>
