@@ -388,10 +388,17 @@ export async function recordMatch(match: Omit<MatchRecord, 'id'>): Promise<Match
 
 export async function getMatchHistory(uid: string): Promise<MatchRecord[]> {
   const snapshot = await getDocs(collection(db, "matches"));
+  const getTime = (date: any) => {
+    if (!date) return 0;
+    if (typeof date.toMillis === 'function') return date.toMillis();
+    if (typeof date.toDate === 'function') return date.toDate().getTime();
+    if (date instanceof Date) return date.getTime();
+    return new Date(date).getTime();
+  };
   return snapshot.docs
     .map(doc => doc.data() as MatchRecord)
     .filter(m => m.players.some(p => p.uid === uid))
-    .sort((a, b) => b.date.toMillis() - a.date.toMillis())
+    .sort((a, b) => getTime(b.date) - getTime(a.date))
     .slice(0, 20);
 }
 

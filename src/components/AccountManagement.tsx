@@ -8,6 +8,7 @@ import {
 import { useGameStore } from '../store';
 import { ClanHUD } from './ClanHUD';
 import { syncRealLifeEnvironment } from '../services/WeatherService';
+import { saveUserProfile } from '../firebase';
 
 export const AccountManagement: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'settings' | 'security' | 'leaderboard' | 'vehicles' | 'clans'>('profile');
@@ -30,8 +31,13 @@ export const AccountManagement: React.FC<{ onClose?: () => void }> = ({ onClose 
   const handleSave = async () => {
     setIsSaving(true);
     setGamertag(tempGamertag);
-    // In a real app, we'd call saveUserProfile here
-    setTimeout(() => setIsSaving(false), 1000);
+    try {
+      await saveUserProfile({ gamertag: tempGamertag });
+    } catch (err) {
+      console.error("Failed to save gamertag to profile:", err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
