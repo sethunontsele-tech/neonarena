@@ -936,6 +936,38 @@ interface GameStore {
   playerVotedMap: MapType | null;
   generateMapVotingOptions: () => void;
   voteForMap: (map: MapType) => void;
+
+  // Custom Modded World variables
+  moddedSpeedMultiplier: number;
+  moddedGravityMultiplier: number;
+  moddedDamageMultiplier: number;
+  moddedInfiniteAmmo: boolean;
+  moddedColor: string;
+  moddedWeapons: string[];
+  moddedSkyColor: string;
+  moddedCustomMesh: string;
+  moddedBotScale: number;
+  moddedBotSpeedMultiplier: number;
+  moddedIsAggressiveBots: boolean;
+  moddedMapTheme: string;
+  activeWorldId: string | null;
+  activeWorldName: string;
+  applyWorldMods: (mods: {
+    speedMultiplier: number;
+    gravityMultiplier: number;
+    damageMultiplier: number;
+    infiniteAmmo: boolean;
+    color: string;
+    weapons: string[];
+    skyColor: string;
+    customMesh: string;
+    botScale: number;
+    botSpeedMultiplier: number;
+    isAggressiveBots: boolean;
+    mapTheme: string;
+    worldId: string | null;
+    worldName: string;
+  }) => void;
 }
 
 const INITIAL_ENEMIES: EnemyData[] = [
@@ -2671,7 +2703,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   consumeAmmo: () => set(state => {
     const weaponId = state.hotbar[state.currentWeaponIndex];
     const weapon = WEAPONS[weaponId];
-    if (weapon.isMelee) return state;
+    if (weapon.isMelee || state.moddedInfiniteAmmo) return state;
     
     const currentAmmo = state.currentAmmo[weaponId];
     return {
@@ -3120,5 +3152,40 @@ export const useGameStore = create<GameStore>((set, get) => ({
     try {
       soundService.playSFX('ui_click');
     } catch (e) {}
+  },
+
+  // Custom Modded World variables initial state
+  moddedSpeedMultiplier: 1.0,
+  moddedGravityMultiplier: 1.0,
+  moddedDamageMultiplier: 1.0,
+  moddedInfiniteAmmo: false,
+  moddedColor: '#ffffff',
+  moddedWeapons: [],
+  moddedSkyColor: '',
+  moddedCustomMesh: '',
+  moddedBotScale: 1.0,
+  moddedBotSpeedMultiplier: 1.0,
+  moddedIsAggressiveBots: false,
+  moddedMapTheme: 'default',
+  activeWorldId: null,
+  activeWorldName: '',
+  applyWorldMods: (mods) => {
+    set({
+      moddedSpeedMultiplier: mods.speedMultiplier,
+      moddedGravityMultiplier: mods.gravityMultiplier,
+      moddedDamageMultiplier: mods.damageMultiplier,
+      moddedInfiniteAmmo: mods.infiniteAmmo,
+      moddedColor: mods.color,
+      moddedWeapons: mods.weapons,
+      moddedSkyColor: mods.skyColor,
+      moddedCustomMesh: mods.customMesh,
+      moddedBotScale: mods.botScale,
+      moddedBotSpeedMultiplier: mods.botSpeedMultiplier,
+      moddedIsAggressiveBots: mods.isAggressiveBots,
+      moddedMapTheme: mods.mapTheme,
+      activeWorldId: mods.worldId,
+      activeWorldName: mods.worldName
+    });
+    get().addEvent(`⚙️ [MOD COMPILER] Loaded and injected world configs & scripts!`);
   }
 }));

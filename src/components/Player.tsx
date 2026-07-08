@@ -97,6 +97,8 @@ export function Player() {
   const isAttacking = useGameStore(state => state.isAttacking);
   const currentDimension = useGameStore(state => state.currentDimension);
   const dimStats = DIMENSIONS[currentDimension] || DIMENSIONS.core;
+  const moddedSpeedMultiplier = useGameStore(state => state.moddedSpeedMultiplier);
+  const moddedGravityMultiplier = useGameStore(state => state.moddedGravityMultiplier);
   
   const recoilRef = useRef(0);
 
@@ -571,7 +573,7 @@ export function Player() {
     const glitchMod = isGlitch ? 1.15 : 1.0;
 
     const isSprintingActual = isSprinting && energy > 0;
-    const currentSpeed = (isSprintingActual ? sprintSpeed : SPEED) * classSpeedMod * streakSpeedMod * timeWarpMod * glitchMod * dimStats.speedMultiplier;
+    const currentSpeed = (isSprintingActual ? sprintSpeed : SPEED) * classSpeedMod * streakSpeedMod * timeWarpMod * glitchMod * dimStats.speedMultiplier * moddedSpeedMultiplier;
 
     const targetVelocity = new THREE.Vector3();
     targetVelocity.addScaledVector(forward, moveZ);
@@ -657,7 +659,7 @@ export function Player() {
       jumpCount.current = 0;
     }
 
-    const gravityValue = dimStats.gravity;
+    const gravityValue = dimStats.gravity * moddedGravityMultiplier;
     
     // Jump / Double Jump
     let jumpVel = velocity.y;

@@ -45,6 +45,9 @@ export function Enemy({ data }: { data: EnemyData }) {
   const addParticles = useGameStore(state => state.addParticles);
   const isTargeted = useGameStore(state => state.targetedEnemyId === data.id);
   const isTimeWarpActive = useGameStore(state => state.isTimeWarpActive);
+  const moddedBotScale = useGameStore(state => state.moddedBotScale);
+  const moddedBotSpeedMultiplier = useGameStore(state => state.moddedBotSpeedMultiplier);
+  const moddedIsAggressiveBots = useGameStore(state => state.moddedIsAggressiveBots);
 
   const lastShootTime = useRef(0);
   const patrolTarget = useRef(new THREE.Vector3());
@@ -84,8 +87,13 @@ export function Enemy({ data }: { data: EnemyData }) {
     const currentPos = new THREE.Vector3(pos.x, pos.y, pos.z);
 
     // Time Warp Logic: Slow down if near player and time warp is active
-    let localSpeed = ENEMY_SPEED;
+    let localSpeed = ENEMY_SPEED * moddedBotSpeedMultiplier;
     let localShootCooldown = SHOOT_COOLDOWN;
+    
+    if (moddedIsAggressiveBots) {
+      localSpeed *= 1.8;
+      localShootCooldown *= 0.4;
+    }
     
     if (isTimeWarpActive) {
       const playerPos = camera.position.clone();
@@ -260,7 +268,7 @@ export function Enemy({ data }: { data: EnemyData }) {
       userData={{ name: data.id }}
     >
       <CapsuleCollider args={[0.5, 0.5]} position={[0, 1, 0]} />
-      <group ref={groupRef} position={[0, 0, 0]} visible={isVisible}>
+      <group ref={groupRef} position={[0, 0, 0]} visible={isVisible} scale={[moddedBotScale, moddedBotScale, moddedBotScale]}>
         {/* Body */}
         <mesh castShadow position={[0, 1, 0]}>
           {isGlitch ? (
