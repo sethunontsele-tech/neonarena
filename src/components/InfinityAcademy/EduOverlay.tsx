@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Sparkles, Bot, Dna, Compass, Award, CheckCircle2, 
+  Sparkles, Bot, Dna, Compass, Award, CheckCircle2, Camera,
   HelpCircle, Volume2, Gamepad2, Laptop, Monitor, Smartphone, 
   Tv, Eye, ChevronRight, Search, Trophy, Users, ShieldAlert, Zap, Layers 
 } from 'lucide-react';
@@ -166,6 +166,7 @@ export function EduOverlay() {
   const setVrLaserActive = useEduStore(state => state.setVrLaserActive);
   const vrHandTracking = useEduStore(state => state.vrHandTracking);
   const setVrHandTracking = useEduStore(state => state.setVrHandTracking);
+  const setMRCamerasActive = useEduStore(state => state.setMRCamerasActive);
 
   const [activeTab, setActiveTab] = useState<'missions' | 'badges' | 'vrApps' | 'multiplayer' | 'settings'>('missions');
 
@@ -518,6 +519,18 @@ export function EduOverlay() {
                       <div className={`w-3.5 h-3.5 rounded-full bg-white transition-all transform ${
                         vrHandTracking ? 'translate-x-4' : 'translate-x-0'
                       }`} />
+                    </button>
+                  </div>
+
+                  <div className="pt-2 border-t border-white/5">
+                    <button
+                      onClick={() => {
+                        setMRCamerasActive(true);
+                      }}
+                      className="w-full py-2.5 bg-fuchsia-500/10 hover:bg-fuchsia-500 hover:text-black border border-fuchsia-500/30 text-fuchsia-400 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      Quest 3S MR Camera Feed
                     </button>
                   </div>
                 </div>

@@ -6,11 +6,14 @@ import { AcademyHub } from './AcademyHub';
 import { EduOverlay } from './EduOverlay';
 import { AURAChatPanel } from './AURA';
 import { useEduStore } from './eduStore';
+import { MixedRealityCameras } from '../MixedRealityCameras';
 
 export function InfinityAcademyGame({ onBackToLobby }: { onBackToLobby?: () => void }) {
   const [loading, setLoading] = useState(true);
   const [loadingStep, setLoadingStep] = useState(0);
   const activeDimension = useEduStore(state => state.activeDimension);
+  const showMRCameras = useEduStore(state => state.showMRCameras);
+  const setMRCamerasActive = useEduStore(state => state.setMRCamerasActive);
 
   const loadingSequence = [
     "Locating primary Academy coordination grid...",
@@ -160,6 +163,9 @@ export function InfinityAcademyGame({ onBackToLobby }: { onBackToLobby?: () => v
           Virtual Classroom Portal Engine © 2026
         </div>
       </div>
+      {showMRCameras && (
+        <MixedRealityCameras onClose={() => setMRCamerasActive(false)} />
+      )}
     </div>
   );
 }

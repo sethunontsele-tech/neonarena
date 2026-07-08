@@ -32,6 +32,7 @@ import { ThreeDScanner } from './components/ThreeDScanner';
 import { DossierModal } from './components/DossierModal';
 import { WeatherOverlay } from './components/WeatherOverlay';
 import { WorldAndModdingStudio } from './components/WorldAndModdingStudio';
+import { MixedRealityCameras } from './components/MixedRealityCameras';
 import { MVPAnnouncementOverlay } from './components/MVPAnnouncementOverlay';
 import { MapVotingPanel } from './components/MapVotingPanel';
 import { useGameStore, WEAPONS, SPELLS, SpellType, DIMENSIONS, DimensionType, WeaponType } from './store';
@@ -2445,6 +2446,7 @@ export default function App() {
   const [showScanner, setShowScanner] = useState(false);
   const [showDossier, setShowDossier] = useState(false);
   const [showModStudio, setShowModStudio] = useState(false);
+  const [showMRCameras, setShowMRCameras] = useState(false);
   const [instantCopyProgress, setInstantCopyProgress] = useState(0);
   const [isInstantCopying, setIsInstantCopying] = useState(false);
 
@@ -2924,6 +2926,7 @@ export default function App() {
          {showScanner && <ThreeDScanner onClose={() => setShowScanner(false)} />}
         {showDossier && <DossierModal onClose={() => setShowDossier(false)} />}
         {showModStudio && <WorldAndModdingStudio onClose={() => setShowModStudio(false)} />}
+        {showMRCameras && <MixedRealityCameras onClose={() => setShowMRCameras(false)} />}
         {gameState === 'server_browser' && <ServerBrowser onClose={() => setGameState('lobby')} />}
 
         {/* 3D LiDAR World Copier Laser Scanning Screen Overlay */}
@@ -3214,6 +3217,13 @@ export default function App() {
                 >
                   <Cpu size={14} className="group-hover:rotate-12 transition-all" />
                   <span className="text-[10px] font-black uppercase tracking-widest">World Studio</span>
+                </button>
+                <button
+                  onClick={() => setShowMRCameras(true)}
+                  className="flex items-center gap-2 bg-fuchsia-500/10 border border-fuchsia-500/30 px-4 py-2 rounded-xl text-fuchsia-400 hover:bg-fuchsia-500 hover:text-black transition-all group cursor-pointer"
+                >
+                  <Camera size={14} className="group-hover:scale-110 transition-all animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Quest MR Cameras</span>
                 </button>
                 <button
                   onClick={() => setModal('account', true)}
