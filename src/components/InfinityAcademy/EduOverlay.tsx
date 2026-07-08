@@ -626,14 +626,14 @@ export function EduOverlay() {
             Biology
           </button>
           <button 
-            onClick={() => setDimension('math')}
+            onClick={() => setDimension('white_void')}
             className={`px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-              activeDimension === 'math'
-                ? 'bg-amber-500 text-zinc-950 shadow-[0_0_20px_rgba(245,158,11,0.4)]'
+              activeDimension === 'white_void'
+                ? 'bg-slate-100 text-slate-950 shadow-[0_0_20px_rgba(255,255,255,0.4)]'
                 : 'bg-zinc-950/90 border border-white/10 text-zinc-400 hover:text-white'
             }`}
           >
-            Math
+            White Void
           </button>
         </div>
       </div>

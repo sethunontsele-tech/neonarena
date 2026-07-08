@@ -27,6 +27,7 @@ import { PaintingStudio } from './experiences/PaintingStudio';
 import { MicroscopeWorld } from './experiences/MicroscopeWorld';
 import { WeatherMachine } from './experiences/WeatherMachine';
 import { TimeMachine } from './experiences/TimeMachine';
+import { WhiteVoidVR } from './experiences/WhiteVoidVR';
 
 export function AcademyHub() {
   const activeDimension = useEduStore(state => state.activeDimension);
@@ -76,6 +77,9 @@ export function AcademyHub() {
     } else if (activeDimension === 'arts') {
       targetCamPos.current.set(0, 1.5, 3.5);
       targetCamLook.current.set(0, 1, -2);
+    } else if (activeDimension === 'white_void') {
+      targetCamPos.current.set(0, 1.5, 3.2);
+      targetCamLook.current.set(0, 1.4, -2);
     } else {
       targetCamPos.current.set(0, 2.5, 6);
       targetCamLook.current.set(0, 1.5, -2);
@@ -110,6 +114,7 @@ export function AcademyHub() {
     { id: 'coding', name: 'Coding Island', color: '#6366f1', position: [-3.0, 1.2, 1.5], desc: 'Program mini-robots and study computational logic trees.' },
     { id: 'language', name: 'Language City', color: '#14b8a6', position: [0.0, 1.2, 2.5], desc: 'Master global phonetic ciphers and translational matrices.' },
     { id: 'arts', name: 'Creative Arts District', color: '#f43f5e', position: [3.0, 1.2, 1.5], desc: 'Experiment with light spectrum colors and volumetric sculptures.' },
+    { id: 'white_void', name: 'White Void & 100 Apps', color: '#38bdf8', position: [1.5, 1.2, 2.0], desc: 'A pristine laboratory void featuring a movable 3D command tablet and 100 spawnable VR apps.' },
   ];
 
   return (
@@ -664,6 +669,21 @@ export function AcademyHub() {
             </div>
           </Html>
           <TimeMachine />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: WHITE VOID & 100 VR APPS --- */}
+      {activeDimension === 'white_void' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-slate-800 uppercase animate-pulse">PRISTINE TESTING SPATIAL VOID</span>
+              <h1 className="text-4xl font-black text-slate-900 italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(100,116,139,0.2)]">
+                WHITE VOID SYSTEM
+              </h1>
+            </div>
+          </Html>
+          <WhiteVoidVR />
         </group>
       )}
 

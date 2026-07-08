@@ -31,7 +31,8 @@ export type ActiveDimensionType =
   | 'room_scanner'
   | 'escape_room'
   | 'weather_machine'
-  | 'time_machine';
+  | 'time_machine'
+  | 'white_void';
 export type ControlPlatformType = 'pc' | 'vr' | 'mobile' | 'console';
 
 export interface EduBadge {
@@ -96,7 +97,7 @@ export const useEduStore = create<EduState>((set, get) => ({
     'hub', 'biology', 'math', 'physics', 'chemistry', 'history', 'geography', 'space', 'coding', 'language', 'arts',
     'anatomy', 'piano', 'chemistry_lab', 'solar_system', 'dinosaur', 'ocean', 'spaceship', 'alien_zoo', 'city_builder',
     'castle_defense', 'painting_studio', 'aura_hologram', 'classroom', 'microscope', 'natural_disaster', 'racing',
-    'room_scanner', 'escape_room', 'weather_machine', 'time_machine'
+    'room_scanner', 'escape_room', 'weather_machine', 'time_machine', 'white_void'
   ],
   badges: [
     { id: 'first_steps', name: 'Academy Initiate', description: 'Enter the portal system of Infinity Academy', icon: 'Sparkles', unlocked: true },
