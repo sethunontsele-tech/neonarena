@@ -16,11 +16,17 @@ export function AURAChatPanel() {
 
   // Suggested questions based on active dimension
   const suggestions: Record<string, string[]> = {
-    hub: ["What is Infinity Academy?", "Tell me about the different dimensions", "How do I use the portals?"],
-    biology: ["How does a human cell work?", "What does the Mitochondria do?", "Explain the DNA double-helix structures", "Tell me about the beating heart"],
-    math: ["What are spatial vectors?", "Tell me about geometry equations", "Give me a logical structural puzzle"],
-    chemistry: ["How do covalent bonds form?", "What is the molecular formula of water?", "List the common reactive elements"],
-    space: ["What is gravitational time dilation?", "How do planet orbits work?", "Explain nuclear fusion inside stars"]
+    hub: ["What is Infinity Academy?", "Tell me about the different dimensions", "Tell me about the top Quest VR Edu apps"],
+    biology: ["How does a human cell work?", "What does the Mitochondria do?", "Tell me about Human Anatomy VR", "How does 3D Organon Virtual Dissection work?"],
+    math: ["What are spatial vectors?", "Tell me about geometry equations", "How does Gravity Sketch CAD modeling work?", "What is Open Blocks in VR?"],
+    chemistry: ["How do covalent bonds form?", "Explain Energy Encyclopedia VR SMR reactors", "How do turbines and solar towers work?"],
+    space: ["What is gravitational time dilation?", "How do planet orbits work?", "Tell me about Titans of Space PLUS galactic tours"],
+    physics: ["How does Gravity Lab teach physics circuits?", "What is Newton's Room mixed reality?", "Explain the Galileo Drop experiment"],
+    geography: ["Tell me about Wander and Street View in VR", "How does BRINK Traveler do photogrammetry?", "Explain NatGeo Antarctica kayak tours"],
+    language: ["How does Noun Town teach languages?", "Explain IMMERSE conversation with AI avatars"],
+    coding: ["What is ShapesXR prototyping?", "How does ByteBot code compilation work?"],
+    arts: ["How does Open Brush do 3D painting?", "Explain the 48 brush effects in Open Brush"],
+    history: ["What is Rosetta Cipher decryption?", "Explore the Ancient Pyramids"]
   };
 
   const activeSuggestions = suggestions[activeDimension] || suggestions.hub;

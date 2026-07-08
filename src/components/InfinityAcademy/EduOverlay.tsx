@@ -6,6 +6,151 @@ import {
 } from 'lucide-react';
 import { useEduStore, ControlPlatformType, ActiveDimensionType } from './eduStore';
 
+const vrAppsCatalog = [
+  {
+    category: '3D Art & Modeling',
+    apps: [
+      {
+        id: 'open_brush',
+        name: 'Open Brush',
+        desc: 'Paint freely in 3D space with 48 creative brush effects including fire, smoke, and light inside ambient VR canvases.',
+        relation: 'Arts District',
+        funFact: 'Open Brush is the community successor to Tilt Brush, letting artists sculpt with glowing volumetric strokes.'
+      },
+      {
+        id: 'open_blocks',
+        name: 'Open Blocks',
+        desc: 'An open-source, block-based 3D modeling application (forked from Google Blocks) for simple geometric structures.',
+        relation: 'Math Mountains',
+        funFact: 'Swapping complex mouse tools for gestural VR controller tracking makes CAD construction incredibly fun and intuitive.'
+      },
+      {
+        id: 'gravity_sketch',
+        name: 'Gravity Sketch',
+        desc: 'Professional-grade automotive and industrial design CAD in VR. Supports NURBS, subdivision surfaces, and real-time team reviews.',
+        relation: 'Math Mountains',
+        funFact: 'Designers can sketch at full physical scale and export their meshes directly to standard OBJ, FBX, or IGES CAD formats.'
+      },
+      {
+        id: 'shapes_xr',
+        name: 'ShapesXR',
+        desc: 'Rapid mixed-reality UI/UX prototyping and product modeling. Features real-time co-authoring, animations, and Figma/Unity links.',
+        relation: 'Coding Island',
+        funFact: 'ShapesXR allows cross-device reviews where spatial interfaces can be modified instantly by a whole team of avatars.'
+      },
+      {
+        id: 'sketchup_viewer',
+        name: 'SketchUp Viewer',
+        desc: 'Allows architecture students and engineering teams to walk through massive SketchUp building plans at a 1-to-1 scale in VR.',
+        relation: 'Geography Planet',
+        funFact: 'Walking through a blueprint at full scale gives architects an unparalleled intuition of spatial relationships.'
+      }
+    ]
+  },
+  {
+    category: 'Anatomy & Biology',
+    apps: [
+      {
+        id: 'human_anatomy_vr',
+        name: 'Human Anatomy VR',
+        desc: 'Interactive human atlas by Visible Body. Explore 15 complete body systems, 13,000 anatomical structures, and 500+ animated movements.',
+        relation: 'Biology Kingdom',
+        funFact: 'Using "Ant Mode", you can shrink down to a 1:1 scale of organs, dissecting chambers and navigating inside bloodstreams.'
+      },
+      {
+        id: 'organon_3d',
+        name: '3D Organon',
+        desc: 'Hyper-realistic medical anatomy system. Features virtual body dissection, real-time quiz feedback, and Medverse multiplayer study sessions.',
+        relation: 'Biology Kingdom',
+        funFact: 'Organon provides hyper-detailed models where parts can be grabbed, rotated, and isolated with high-performance medical accuracy.'
+      }
+    ]
+  },
+  {
+    category: 'Physics & Engineering Labs',
+    apps: [
+      {
+        id: 'newtons_room',
+        name: "Newton's Room",
+        desc: "Mixed-reality physical puzzle lab using passthrough cameras. Solve Newtonian mechanics puzzles by interacting with force vectors in your actual room.",
+        relation: 'Physics Labs',
+        funFact: 'Anchoring vector force blocks on real physical furniture bridges theoretical physics equations with tactile scenarios.'
+      },
+      {
+        id: 'gravity_lab',
+        name: 'Gravity Lab',
+        desc: 'Physics and electronic puzzle lab set on an abandoned lunar outpost. Bending gravity beams, completing circuits, and designing custom levels.',
+        relation: 'Physics Labs',
+        funFact: 'An integrated custom Level Editor allows student-created physics tests to be played and assessed locally or shared.'
+      },
+      {
+        id: 'energy_encyclopedia',
+        name: 'Energy Encyclopedia VR',
+        desc: 'Assemble and operate nuclear reactors (fission, SMR, fusion) and renewable systems (solar towers, hydro turbines, windmills).',
+        relation: 'Chemistry Center',
+        funFact: 'Includes 30+ interactive power generation models, transforming abstract thermodynamics into a hands-on learning experience.'
+      }
+    ]
+  },
+  {
+    category: 'Geography & Field Trips',
+    apps: [
+      {
+        id: 'wander',
+        name: 'Wander',
+        desc: 'Teleport anywhere on Earth using Google Street View data. Features voice search and full Wikipedia reference integration.',
+        relation: 'Geography Planet',
+        funFact: 'Walking actual city streets in VR supports instant geographic inquiry and historical travel using past imagery logs.'
+      },
+      {
+        id: 'brink_traveler',
+        name: 'BRINK Traveler',
+        desc: 'Visually stunning geography field trips utilizing photogrammetric 3D scans of actual national parks, canyons, and day/night cycles.',
+        relation: 'Geography Planet',
+        funFact: 'Canyons and trails are reconstructed with millimeter-level precision, giving an absolute sensation of presence.'
+      },
+      {
+        id: 'natgeo_explore',
+        name: 'NatGeo Explore VR',
+        desc: 'Documentary expeditions. Kayak through Antarctic icebergs to spot penguins, or explore Machu Picchu Incan ruins with photo matching.',
+        relation: 'Geography Planet',
+        funFact: 'Includes voice narrated archaeological guides while matching historic photos to exact landscape targets.'
+      }
+    ]
+  },
+  {
+    category: 'Astronomy & Space Science',
+    apps: [
+      {
+        id: 'titans_of_space',
+        name: 'Titans of Space PLUS',
+        desc: 'Shrink the entire cosmos to arm-reach size, tour holographic planets, take zero-g moon walks, and listen to a 2-hour audio guide.',
+        relation: 'Space Dimension',
+        funFact: 'Venture beyond our solar system to stand next to giant red stars, directly comparing their sizes to our yellow sun.'
+      }
+    ]
+  },
+  {
+    category: 'Languages & Culture',
+    apps: [
+      {
+        id: 'noun_town',
+        name: 'Noun Town',
+        desc: 'Gamified vocabulary simulator. Master 1,000+ words in Spanish, Spanish, or Japanese by interacting with NPCs via speech recognition.',
+        relation: 'Language City',
+        funFact: 'The virtual town restores its bright colors as you successfully pronounce words and solve language puzzles.'
+      },
+      {
+        id: 'immerse',
+        name: 'IMMERSE',
+        desc: 'AI-driven conversation training. Practice realistic situations like restaurant ordering or job interviews with conversational AI avatars.',
+        relation: 'Language City',
+        funFact: 'IMMERSE targets conversational confidence, preparing students for real-world speech without any social anxiety.'
+      }
+    ]
+  }
+];
+
 export function EduOverlay() {
   const activeDimension = useEduStore(state => state.activeDimension);
   const setDimension = useEduStore(state => state.setDimension);
@@ -22,7 +167,7 @@ export function EduOverlay() {
   const vrHandTracking = useEduStore(state => state.vrHandTracking);
   const setVrHandTracking = useEduStore(state => state.setVrHandTracking);
 
-  const [activeTab, setActiveTab] = useState<'missions' | 'badges' | 'multiplayer' | 'settings'>('missions');
+  const [activeTab, setActiveTab] = useState<'missions' | 'badges' | 'vrApps' | 'multiplayer' | 'settings'>('missions');
 
   const getPlatformIcon = (platform: ControlPlatformType) => {
     switch (platform) {
@@ -114,7 +259,7 @@ export function EduOverlay() {
         {/* LEFT TABBED CONSOLE (Quests, Badges, Online Lab) */}
         <div className="w-80 h-full bg-zinc-950/90 border border-white/10 rounded-3xl pointer-events-auto backdrop-blur-xl flex flex-col overflow-hidden shadow-2xl">
           {/* Tab Navigation header */}
-          <div className="grid grid-cols-4 border-b border-white/10 text-[9px] font-black uppercase tracking-wider text-center">
+          <div className="grid grid-cols-5 border-b border-white/10 text-[8px] font-black uppercase tracking-wider text-center shrink-0">
             <button 
               onClick={() => setActiveTab('missions')}
               className={`py-3 transition-all cursor-pointer ${
@@ -130,6 +275,14 @@ export function EduOverlay() {
               }`}
             >
               Badges
+            </button>
+            <button 
+              onClick={() => setActiveTab('vrApps')}
+              className={`py-3 transition-all cursor-pointer ${
+                activeTab === 'vrApps' ? 'bg-white/5 text-cyan-400 border-b border-cyan-400' : 'text-zinc-500 hover:text-white'
+              }`}
+            >
+              VR Lib
             </button>
             <button 
               onClick={() => setActiveTab('multiplayer')}
@@ -219,6 +372,64 @@ export function EduOverlay() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* VR Library / Quest Apps Catalog */}
+            {activeTab === 'vrApps' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-1 border-b border-white/5">
+                  <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">VR Quest Apps Catalog</span>
+                  <span className="text-[8px] font-mono font-bold text-cyan-400">14 Apps Simulated</span>
+                </div>
+                
+                <p className="text-[9px] font-medium leading-relaxed text-zinc-500 uppercase">
+                  Explore top real-world educational VR software. Click an app to load its full 3D telemetry specs in the right dossier!
+                </p>
+
+                {vrAppsCatalog.map((cat, cIdx) => (
+                  <div key={cIdx} className="space-y-2">
+                    <span className="text-[8px] font-black text-cyan-500 uppercase tracking-wider block bg-cyan-950/25 px-2 py-1 rounded-md border border-cyan-500/10">
+                      {cat.category}
+                    </span>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {cat.apps.map((app) => {
+                        const isSelected = selectedObject?.id === app.id;
+                        return (
+                          <button
+                            key={app.id}
+                            onClick={() => {
+                              setSelectedObject({
+                                id: app.id,
+                                name: app.name,
+                                category: cat.category,
+                                description: app.desc,
+                                funFact: app.funFact
+                              });
+                            }}
+                            className={`w-full text-left p-2.5 rounded-2xl border transition-all flex flex-col justify-between cursor-pointer ${
+                              isSelected
+                                ? 'bg-cyan-500/10 border-cyan-400 text-white shadow-[0_0_12px_rgba(6,182,212,0.15)] animate-pulse'
+                                : 'bg-white/5 border-white/5 text-zinc-400 hover:border-white/15'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <h6 className="text-[9px] font-black uppercase tracking-wide text-white">
+                                {app.name}
+                              </h6>
+                              <span className="text-[7px] font-black bg-white/5 text-zinc-500 px-1.5 py-0.5 rounded uppercase border border-white/5">
+                                {app.relation}
+                              </span>
+                            </div>
+                            <p className="text-[9px] text-zinc-400 font-medium leading-relaxed mt-1 line-clamp-2">
+                              {app.desc}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
