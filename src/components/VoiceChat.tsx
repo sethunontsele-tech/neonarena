@@ -35,10 +35,13 @@ export function VoiceChat() {
         });
       } catch (err) {
         console.error('Failed to get local stream:', err);
+        // Automatically set isMuted to true and inform the user of the permission failure
+        useGameStore.setState({ isMuted: true });
+        useGameStore.getState().addEvent('⚠️ MICROPHONE PERMISSION DENIED - VOICE CHAT DISABLED');
       }
     }
 
-    if (socket && !localStreamRef.current) {
+    if (socket && !isMuted && !localStreamRef.current) {
       setupLocalStream();
     }
 
@@ -46,6 +49,12 @@ export function VoiceChat() {
       localStreamRef.current.getAudioTracks().forEach(track => {
         track.enabled = !isMuted;
       });
+    }
+
+    // Stop streams when muted to free up hardware resources and clear browser indicators
+    if (isMuted && localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current = null;
     }
 
     return () => {
