@@ -3,10 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import React, { Suspense, useMemo } from 'react';
 import * as THREE from 'three';
 import { Physics } from '@react-three/rapier';
+import { createXRStore, XR, useXR } from '@react-three/xr';
+
+export const xrStore = createXRStore();
 import { Arena } from './Arena';
 import { Player } from './Player';
 import { Enemy } from './Enemy';
@@ -38,6 +41,22 @@ function LoadingPlaceholder() {
       <meshStandardMaterial color="#333" wireframe />
     </mesh>
   );
+}
+
+function ARTransparentHandler() {
+  const { scene } = useThree();
+  const xr = useXR();
+  const isAR = (xr as any)?.mode === 'immersive-ar' || (xr?.session as any)?.mode === 'immersive-ar';
+
+  React.useEffect(() => {
+    if (isAR) {
+      scene.background = null;
+    } else {
+      scene.background = new THREE.Color('#000000');
+    }
+  }, [isAR, scene]);
+
+  return null;
 }
 
 function GameLoop() {
@@ -133,75 +152,79 @@ export function Game() {
         powerPreference: "high-performance", 
         antialias: false, 
         preserveDrawingBuffer: false, 
-        failIfMajorPerformanceCaveat: false 
+        failIfMajorPerformanceCaveat: false,
+        alpha: true
       }} 
       camera={{ fov: 75 }} 
       onCreated={({ scene }) => { scene.background = new THREE.Color('#000000'); }}
     >
-      <ambientLight intensity={0.5} />
-      <Sky />
-      
-      <Physics gravity={[0, -20, 0]}>
-        <Suspense fallback={<LoadingPlaceholder />}>
-          <GameLoop />
-          <Arena />
-          
-          {!isReplaying && <Player />}
-          
-          {/* Render Players & Enemies (Live or Replay) */}
-        {isReplaying && snapshot ? (
-          <>
-            {Object.entries(snapshot.players).map(([id, data]: [string, any]) => (
-              <OtherPlayer key={id} id={id} data={data} />
-            ))}
-            {(snapshot as any).enemies?.map((enemy: any) => (
-              <Enemy key={enemy.id} data={enemy} />
-            ))}
-          </>
-        ) : (
-          <>
-            {enemies.map(enemy => (
-              <Enemy key={enemy.id} data={enemy} />
-            ))}
-            {otherPlayerIds.map(id => (
-              <OtherPlayer key={id} id={id} />
-            ))}
-          </>
-        )}
-
-        {/* Render Vehicles (Live or Replay) */}
-        {isReplaying && snapshot ? (
-          Object.entries(snapshot.vehicles).map(([id, data]: [string, any]) => (
-            <Vehicle key={id} data={data} />
-          ))
-        ) : (
-          Object.values(vehicles).map(vehicle => (
-            <Vehicle key={vehicle.id} data={vehicle} />
-          ))
-        )}
-
-        {jumpPads.map(pad => (
-          <JumpPad key={pad.id} position={pad.position} power={pad.power} />
-        ))}
-        <AlienAnimal />
-        {petFollower !== 'none' && petFollower !== null && <AlienPet ownerPosition={playerPosVector} type={petFollower as any} />}
-        <PowerUps />
-        <Flags />
-        <Projectiles />
-        <Effects />
-        <Pings />
+      <XR store={xrStore}>
+        <ARTransparentHandler />
+        <ambientLight intensity={0.5} />
+        <Sky />
         
-        {/* VOID PROTOCOL: BACKROOMS INFINITE Custom Features */}
-        <Soundscape />
-        <Portal />
-        <HallwayEntity />
-        </Suspense>
-      </Physics>
+        <Physics gravity={[0, -20, 0]}>
+          <Suspense fallback={<LoadingPlaceholder />}>
+            <GameLoop />
+            <Arena />
+            
+            {!isReplaying && <Player />}
+            
+            {/* Render Players & Enemies (Live or Replay) */}
+          {isReplaying && snapshot ? (
+            <>
+              {Object.entries(snapshot.players).map(([id, data]: [string, any]) => (
+                <OtherPlayer key={id} id={id} data={data} />
+              ))}
+              {(snapshot as any).enemies?.map((enemy: any) => (
+                <Enemy key={enemy.id} data={enemy} />
+              ))}
+            </>
+          ) : (
+            <>
+              {enemies.map(enemy => (
+                <Enemy key={enemy.id} data={enemy} />
+              ))}
+              {otherPlayerIds.map(id => (
+                <OtherPlayer key={id} id={id} />
+              ))}
+            </>
+          )}
 
-      <EffectComposer enableNormalPass={false}>
-        <Bloom luminanceThreshold={1.0} mipmapBlur intensity={1.0} radius={0.4} />
-        <Vignette eskil={false} offset={0.1} darkness={1.1} />
-      </EffectComposer>
+          {/* Render Vehicles (Live or Replay) */}
+          {isReplaying && snapshot ? (
+            Object.entries(snapshot.vehicles).map(([id, data]: [string, any]) => (
+              <Vehicle key={id} data={data} />
+            ))
+          ) : (
+            Object.values(vehicles).map(vehicle => (
+              <Vehicle key={vehicle.id} data={vehicle} />
+            ))
+          )}
+
+          {jumpPads.map(pad => (
+            <JumpPad key={pad.id} position={pad.position} power={pad.power} />
+          ))}
+          <AlienAnimal />
+          {petFollower !== 'none' && petFollower !== null && <AlienPet ownerPosition={playerPosVector} type={petFollower as any} />}
+          <PowerUps />
+          <Flags />
+          <Projectiles />
+          <Effects />
+          <Pings />
+          
+          {/* VOID PROTOCOL: BACKROOMS INFINITE Custom Features */}
+          <Soundscape />
+          <Portal />
+          <HallwayEntity />
+          </Suspense>
+        </Physics>
+
+        <EffectComposer enableNormalPass={false}>
+          <Bloom luminanceThreshold={1.0} mipmapBlur intensity={1.0} radius={0.4} />
+          <Vignette eskil={false} offset={0.1} darkness={1.1} />
+        </EffectComposer>
+      </XR>
     </Canvas>
   );
 }

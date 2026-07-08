@@ -3,8 +3,14 @@ import { useFrame } from '@react-three/fiber';
 import { Sky as SkyDrei, Stars, Cloud, Sparkles, Float } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore } from '../store';
+import { useXR } from '@react-three/xr';
 
 export const Sky: React.FC = () => {
+  const xr = useXR();
+  const isAR = (xr as any)?.mode === 'immersive-ar' || (xr?.session as any)?.mode === 'immersive-ar';
+  
+  if (isAR) return null;
+  
   const isReplaying = useGameStore(state => state.isReplaying);
   const currentReplay = useGameStore(state => state.currentReplay);
   const replayTime = useGameStore(state => state.replayTime);

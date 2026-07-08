@@ -5,7 +5,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Game } from './components/Game';
+import { Game, xrStore } from './components/Game';
 import { DynamicCrosshair } from './components/DynamicCrosshair';
 import { TeamStatusHUD } from './components/TeamStatusHUD';
 import { RealLifeSync } from './components/RealLifeSync';
@@ -35,13 +35,14 @@ import { WorldAndModdingStudio } from './components/WorldAndModdingStudio';
 import { MixedRealityCameras } from './components/MixedRealityCameras';
 import { MVPAnnouncementOverlay } from './components/MVPAnnouncementOverlay';
 import { MapVotingPanel } from './components/MapVotingPanel';
+import { WebXRHUD } from './components/WebXRHUD';
 import { useGameStore, WEAPONS, SPELLS, SpellType, DIMENSIONS, DimensionType, WeaponType } from './store';
 import type { WeaponCategory } from './store';
 import { LORE_ENTRIES } from './lore';
 import { soundService } from './services/soundService';
 import { InfinityAcademyVR } from './components/InfinityAcademyVR';
 import { getAbilitiesForWeapon } from './data/abilities';
-import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, UserPlus, UserCheck, UserX, Terminal, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers } from 'lucide-react';
+import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, UserPlus, UserCheck, UserX, Terminal, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone } from 'lucide-react';
 import { auth, signInWithGoogle, logout, searchUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriends, getFriendRequests, createClan, getClan, joinClan, leaveClan, getTopClans, getUserProfile, ClanData, saveLoadoutPreset, getLoadoutPreset } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -2447,6 +2448,7 @@ export default function App() {
   const [showDossier, setShowDossier] = useState(false);
   const [showModStudio, setShowModStudio] = useState(false);
   const [showMRCameras, setShowMRCameras] = useState(false);
+  const [showWebXRPanel, setShowWebXRPanel] = useState(false);
   const [instantCopyProgress, setInstantCopyProgress] = useState(0);
   const [isInstantCopying, setIsInstantCopying] = useState(false);
 
@@ -2848,6 +2850,35 @@ export default function App() {
         </div>
       )}
 
+      {/* WebXR Collapsible Control Panel */}
+      {gameState === 'playing' && (
+        <div className="absolute right-4 top-40 z-[95] flex flex-col items-end gap-2 pointer-events-auto">
+          <button
+            onClick={() => setShowWebXRPanel(!showWebXRPanel)}
+            className={`px-5 py-3 rounded-2xl border-2 transition-all flex items-center gap-2 backdrop-blur-md ${
+              showWebXRPanel 
+                ? 'bg-cyan-500/25 border-cyan-500 text-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.5)] font-black' 
+                : 'bg-zinc-950/80 border-white/10 text-white/60 hover:text-white hover:border-white/30'
+            }`}
+          >
+            <Glasses size={18} className={showWebXRPanel ? 'animate-pulse text-cyan-400' : ''} />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">WebXR</span>
+          </button>
+          <AnimatePresence>
+            {showWebXRPanel && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                className="mt-1 shadow-[0_0_50px_rgba(0,0,0,0.9)] rounded-3xl"
+              >
+                <WebXRHUD />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
       {/* UI Overlay */}
       {(gameState === 'playing' || gameState === 'open_world') && (
         <>
@@ -3151,6 +3182,11 @@ export default function App() {
       {/* Lobby System */}
       {gameState === 'lobby' && (
         <div className="absolute inset-0 bg-black/95 flex flex-col items-center justify-center z-[100] pointer-events-auto backdrop-blur-xl">
+          {/* Floating WebXR Controls */}
+          <div className="absolute top-6 right-6 z-[110] pointer-events-auto">
+            <WebXRHUD />
+          </div>
+
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
