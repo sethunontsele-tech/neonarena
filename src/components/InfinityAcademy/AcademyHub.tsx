@@ -14,6 +14,20 @@ import { ArtsDistrict } from './ArtsDistrict';
 import { AURA3DModel } from './AURA';
 import { Html } from '@react-three/drei';
 
+// Import newly created immersive experiences
+import { AnatomyExplorer } from './experiences/AnatomyExplorer';
+import { PianoTeacher } from './experiences/PianoTeacher';
+import { DinosaurSafari } from './experiences/DinosaurSafari';
+import { OceanExplorer } from './experiences/OceanExplorer';
+import { SpaceshipBridge } from './experiences/SpaceshipBridge';
+import { AlienZoo } from './experiences/AlienZoo';
+import { TinyCityBuilder } from './experiences/TinyCityBuilder';
+import { CastleDefense } from './experiences/CastleDefense';
+import { PaintingStudio } from './experiences/PaintingStudio';
+import { MicroscopeWorld } from './experiences/MicroscopeWorld';
+import { WeatherMachine } from './experiences/WeatherMachine';
+import { TimeMachine } from './experiences/TimeMachine';
+
 export function AcademyHub() {
   const activeDimension = useEduStore(state => state.activeDimension);
   const setDimension = useEduStore(state => state.setDimension);
@@ -419,6 +433,237 @@ export function AcademyHub() {
             </div>
           </Html>
           <ArtsDistrict />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: ANATOMY EXPLORER --- */}
+      {activeDimension === 'anatomy' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-pink-400 uppercase animate-pulse">PHYSIOLOGY SCANNER</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(236,72,153,0.3)]">
+                ANATOMY EXPLORER
+              </h1>
+            </div>
+          </Html>
+          <AnatomyExplorer />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: PIANO TEACHER --- */}
+      {activeDimension === 'piano' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-cyan-400 uppercase animate-pulse">SONIC PATTERN HARMONY</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+                PIANO TEACHER
+              </h1>
+            </div>
+          </Html>
+          <PianoTeacher />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: CHEMISTRY LAB --- */}
+      {activeDimension === 'chemistry_lab' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-emerald-400 uppercase animate-pulse">MOLECULAR BONDING SIMULATION</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(16,182,129,0.3)]">
+                CHEMISTRY CENTER
+              </h1>
+            </div>
+          </Html>
+          <ChemistryCenter />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: SOLAR SYSTEM --- */}
+      {activeDimension === 'solar_system' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-blue-400 uppercase animate-pulse">SOLAR GRAVITATIONAL ORBITS</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                SOLAR SYSTEM ROOM
+              </h1>
+            </div>
+          </Html>
+          <group position={[0, 1, -2]}>
+            {/* Sun Star */}
+            <mesh onClick={() => setSelectedObject({
+              id: 'star',
+              name: 'Main-Sequence Yellow Dwarf Star',
+              category: 'Astrophysics',
+              description: 'A luminous sphere of plasma held together by its own gravity, generating light and heat through nuclear fusion of hydrogen into helium.',
+              funFact: 'The Sun accounts for 99.86% of the entire mass of our Solar System!'
+            })}>
+              <sphereGeometry args={[0.6, 32, 32]} />
+              <meshBasicMaterial color="#fcd34d" />
+            </mesh>
+
+            {/* Orbit paths torus */}
+            <mesh rotation={[Math.PI / 2, 0.2, 0]}>
+              <torusGeometry args={[1.5, 0.01, 8, 64]} />
+              <meshBasicMaterial color="#ffffff" transparent opacity={0.15} />
+            </mesh>
+
+            {/* Planet */}
+            <PlanetOrbiter />
+          </group>
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: DINOSAUR SAFARI --- */}
+      {activeDimension === 'dinosaur' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-emerald-400 uppercase animate-pulse">CRETACEOUS CHRONO-PORTAL</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(16,182,129,0.35)]">
+                DINOSAUR SAFARI
+              </h1>
+            </div>
+          </Html>
+          <DinosaurSafari />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: OCEAN EXPLORER --- */}
+      {activeDimension === 'ocean' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-blue-400 uppercase animate-pulse">AQUATIC DEPTH PROBE</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(59,130,246,0.35)]">
+                OCEAN EXPLORER
+              </h1>
+            </div>
+          </Html>
+          <OceanExplorer />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: SPACESHIP BRIDGE --- */}
+      {activeDimension === 'spaceship' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-indigo-400 uppercase animate-pulse">ORBITAL INTERCEPT STEERING</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(99,102,241,0.35)]">
+                SPACESHIP BRIDGE
+              </h1>
+            </div>
+          </Html>
+          <SpaceshipBridge />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: ALIEN ZOO --- */}
+      {activeDimension === 'alien_zoo' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-fuchsia-400 uppercase animate-pulse">BIOLUMINESCENT FORCEFIELDS</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(217,70,239,0.35)]">
+                ALIEN ZOO
+              </h1>
+            </div>
+          </Html>
+          <AlienZoo />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: TINY CITY BUILDER --- */}
+      {activeDimension === 'city_builder' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-cyan-400 uppercase animate-pulse">METROPOLIS SMARTGRID CORE</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(6,182,212,0.35)]">
+                TINY CITY BUILDER
+              </h1>
+            </div>
+          </Html>
+          <TinyCityBuilder />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: CASTLE DEFENSE --- */}
+      {activeDimension === 'castle_defense' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-amber-500 uppercase animate-pulse">TACTICAL FORTRESS SHIELD</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(245,158,11,0.35)]">
+                CASTLE DEFENSE
+              </h1>
+            </div>
+          </Html>
+          <CastleDefense />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: 3D PAINTING STUDIO --- */}
+      {activeDimension === 'painting_studio' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-pink-500 uppercase animate-pulse">VECTOR SPLINE CANVAS</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(236,72,153,0.35)]">
+                PAINTING STUDIO
+              </h1>
+            </div>
+          </Html>
+          <PaintingStudio />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: MICROSCOPE WORLD --- */}
+      {activeDimension === 'microscope' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-cyan-400 uppercase animate-pulse">MOLECULAR NUCLEOTIDE PROBE</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(6,182,212,0.35)]">
+                MICROSCOPE WORLD
+              </h1>
+            </div>
+          </Html>
+          <MicroscopeWorld />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: WEATHER MACHINE --- */}
+      {activeDimension === 'weather_machine' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-cyan-400 uppercase animate-pulse">ATMOSPHERIC VORTEX COILS</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(6,182,212,0.35)]">
+                WEATHER MACHINE
+              </h1>
+            </div>
+          </Html>
+          <WeatherMachine />
+        </group>
+      )}
+
+      {/* --- CONNECTED DIMENSION: TIME MACHINE --- */}
+      {activeDimension === 'time_machine' && (
+        <group>
+          <Html position={[0, 4.5, -4]} center distanceFactor={10}>
+            <div className="flex flex-col items-center text-center select-none pointer-events-none">
+              <span className="text-[10px] font-black tracking-[0.4em] text-cyan-400 uppercase animate-pulse">TEMPORAL TACHYON COORDINATOR</span>
+              <h1 className="text-4xl font-black text-white italic tracking-wider uppercase mt-1 drop-shadow-[0_0_20px_rgba(6,182,212,0.35)]">
+                TIME MACHINE
+              </h1>
+            </div>
+          </Html>
+          <TimeMachine />
         </group>
       )}
 

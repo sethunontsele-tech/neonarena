@@ -1,6 +1,37 @@
 import { create } from 'zustand';
 
-export type ActiveDimensionType = 'hub' | 'biology' | 'math' | 'physics' | 'chemistry' | 'history' | 'geography' | 'space' | 'coding' | 'language' | 'arts';
+export type ActiveDimensionType = 
+  | 'hub' 
+  | 'biology' 
+  | 'math' 
+  | 'physics' 
+  | 'chemistry' 
+  | 'history' 
+  | 'geography' 
+  | 'space' 
+  | 'coding' 
+  | 'language' 
+  | 'arts'
+  | 'anatomy'
+  | 'piano'
+  | 'chemistry_lab'
+  | 'solar_system'
+  | 'dinosaur'
+  | 'ocean'
+  | 'spaceship'
+  | 'alien_zoo'
+  | 'city_builder'
+  | 'castle_defense'
+  | 'painting_studio'
+  | 'aura_hologram'
+  | 'classroom'
+  | 'microscope'
+  | 'natural_disaster'
+  | 'racing'
+  | 'room_scanner'
+  | 'escape_room'
+  | 'weather_machine'
+  | 'time_machine';
 export type ControlPlatformType = 'pc' | 'vr' | 'mobile' | 'console';
 
 export interface EduBadge {
@@ -61,7 +92,12 @@ export const useEduStore = create<EduState>((set, get) => ({
   xp: 120,
   level: 1,
   discoveredObjects: [],
-  unlockedDimensions: ['hub', 'biology', 'math', 'physics', 'chemistry', 'history', 'geography', 'space', 'coding', 'language', 'arts'],
+  unlockedDimensions: [
+    'hub', 'biology', 'math', 'physics', 'chemistry', 'history', 'geography', 'space', 'coding', 'language', 'arts',
+    'anatomy', 'piano', 'chemistry_lab', 'solar_system', 'dinosaur', 'ocean', 'spaceship', 'alien_zoo', 'city_builder',
+    'castle_defense', 'painting_studio', 'aura_hologram', 'classroom', 'microscope', 'natural_disaster', 'racing',
+    'room_scanner', 'escape_room', 'weather_machine', 'time_machine'
+  ],
   badges: [
     { id: 'first_steps', name: 'Academy Initiate', description: 'Enter the portal system of Infinity Academy', icon: 'Sparkles', unlocked: true },
     { id: 'cell_explorer', name: 'Microscopic Voyager', description: 'Shrink down and locate the Mitochondria in a cell', icon: 'Zap', unlocked: false },
