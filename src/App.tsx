@@ -43,7 +43,7 @@ import { soundService } from './services/soundService';
 import { InfinityAcademyVR } from './components/InfinityAcademyVR';
 import { getAbilitiesForWeapon } from './data/abilities';
 import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, UserPlus, UserCheck, UserX, Terminal, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone } from 'lucide-react';
-import { auth, signInWithGoogle, logout, searchUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriends, getFriendRequests, createClan, getClan, joinClan, leaveClan, getTopClans, getUserProfile, ClanData, saveLoadoutPreset, getLoadoutPreset } from './firebase';
+import { auth, signInWithGoogle, logout, searchUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriends, getFriendRequests, createClan, getClan, joinClan, leaveClan, getTopClans, getUserProfile, ClanData, saveLoadoutPreset, getLoadoutPreset, getLeaderboard } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
 function TeleportHUD() {
@@ -2452,6 +2452,24 @@ export default function App() {
   const [instantCopyProgress, setInstantCopyProgress] = useState(0);
   const [isInstantCopying, setIsInstantCopying] = useState(false);
 
+  // States for Global Rankings in Lobby
+  const [activeLobbySection, setActiveLobbySection] = useState<'operators' | 'rankings'>('operators');
+  const [lobbyRankings, setLobbyRankings] = useState<any[]>([]);
+  const [rankingMetric, setRankingMetric] = useState<string>('totalScore');
+  const [rankingLoading, setRankingLoading] = useState(false);
+
+  const fetchLobbyRankings = async () => {
+    setRankingLoading(true);
+    try {
+      const data = await getLeaderboard(rankingMetric);
+      setLobbyRankings(data);
+    } catch (err) {
+      console.error("Failed to fetch lobby rankings from Firestore:", err);
+    } finally {
+      setRankingLoading(false);
+    }
+  };
+
   const triggerInstantCopy = () => {
     if (isInstantCopying) return;
     setIsInstantCopying(true);
@@ -2493,6 +2511,12 @@ export default function App() {
   const deaths = useGameStore(state => state.deaths);
   const enterLobby = useGameStore(state => state.enterLobby);
   const otherPlayers = useGameStore(state => state.otherPlayers);
+
+  useEffect(() => {
+    if (gameState === 'lobby' && activeLobbySection === 'rankings') {
+      fetchLobbyRankings();
+    }
+  }, [gameState, activeLobbySection, rankingMetric]);
 
   const leaderboard = useMemo(() => {
     const players = [
@@ -3292,41 +3316,159 @@ export default function App() {
             </div>
 
             <div className="flex-1 overflow-y-auto mb-12 space-y-6 pr-4 custom-scrollbar max-h-[50vh]">
-              <div className="space-y-3">
-                <div className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">OPERATORS IN LOBBY</div>
-                {lobbyPlayers.map(player => (
-                  <motion.div 
-                    key={player.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="bg-white/5 p-5 rounded-3xl flex justify-between items-center border border-white/5 hover:border-white/10 transition-all group"
-                  >
-                    <div className="flex items-center gap-5">
-                      <div className="relative">
-                        <div className="w-12 h-12 rounded-2xl rotate-45 flex items-center justify-center overflow-hidden border-2 border-white/10 group-hover:border-white/30 transition-all">
-                          <div className="w-full h-full -rotate-45 scale-150" style={{ backgroundColor: player.color }} />
-                        </div>
-                        {player.isReady && (
-                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-zinc-950 flex items-center justify-center">
-                            <Check size={8} className="text-black" />
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <span className="text-2xl font-black text-white uppercase italic tracking-tight">{player.name}</span>
-                        <div className="text-[8px] font-black text-white/20 uppercase tracking-widest mt-0.5">Tactical Operator</div>
-                      </div>
-                    </div>
-                    <div className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
-                      player.isReady 
-                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]' 
-                        : 'bg-white/5 border-white/10 text-white/20'
-                    }`}>
-                      {player.isReady ? 'Ready' : 'Waiting'}
-                    </div>
-                  </motion.div>
-                ))}
+              {/* Lobby Sections Tab selector */}
+              <div className="flex gap-4 border-b border-white/10 pb-3 mb-4">
+                <button
+                  onClick={() => setActiveLobbySection('operators')}
+                  className={`pb-1 px-1 font-black text-xs uppercase tracking-widest transition-all border-b-2 ${
+                    activeLobbySection === 'operators'
+                      ? 'border-amber-400 text-amber-400'
+                      : 'border-transparent text-white/40 hover:text-white'
+                  }`}
+                >
+                  Operators ({lobbyPlayers.length})
+                </button>
+                <button
+                  onClick={() => setActiveLobbySection('rankings')}
+                  className={`pb-1 px-1 font-black text-xs uppercase tracking-widest transition-all border-b-2 flex items-center gap-1.5 ${
+                    activeLobbySection === 'rankings'
+                      ? 'border-amber-400 text-amber-400'
+                      : 'border-transparent text-white/40 hover:text-white'
+                  }`}
+                >
+                  Global Rankings 🏆
+                </button>
               </div>
+
+              {activeLobbySection === 'operators' ? (
+                <div className="space-y-3">
+                  <div className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">OPERATORS IN LOBBY</div>
+                  {lobbyPlayers.map(player => (
+                    <motion.div 
+                      key={player.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="bg-white/5 p-5 rounded-3xl flex justify-between items-center border border-white/5 hover:border-white/10 transition-all group"
+                    >
+                      <div className="flex items-center gap-5">
+                        <div className="relative">
+                          <div className="w-12 h-12 rounded-2xl rotate-45 flex items-center justify-center overflow-hidden border-2 border-white/10 group-hover:border-white/30 transition-all">
+                            <div className="w-full h-full -rotate-45 scale-150" style={{ backgroundColor: player.color }} />
+                          </div>
+                          {player.isReady && (
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-zinc-950 flex items-center justify-center">
+                              <Check size={8} className="text-black" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <span className="text-2xl font-black text-white uppercase italic tracking-tight">{player.name}</span>
+                          <div className="text-[8px] font-black text-white/20 uppercase tracking-widest mt-0.5">Tactical Operator</div>
+                        </div>
+                      </div>
+                      <div className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
+                        player.isReady 
+                          ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]' 
+                          : 'bg-white/5 border-white/10 text-white/20'
+                      }`}>
+                        {player.isReady ? 'Ready' : 'Waiting'}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">FIRESTORE LEADERBOARD</div>
+                    <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/5 self-stretch sm:self-auto">
+                      {[
+                        { key: 'totalScore', label: 'Score' },
+                        { key: 'totalKills', label: 'Kills' },
+                        { key: 'totalWins', label: 'Wins' }
+                      ].map(metricOpt => (
+                        <button
+                          key={metricOpt.key}
+                          onClick={() => setRankingMetric(metricOpt.key)}
+                          className={`flex-1 sm:flex-none px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wider transition-all ${
+                            rankingMetric === metricOpt.key
+                              ? 'bg-amber-400 text-black shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+                              : 'text-white/40 hover:text-white'
+                          }`}
+                        >
+                          {metricOpt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {rankingLoading ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-center bg-white/5 border border-white/5 rounded-3xl">
+                      <div className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mb-3" />
+                      <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.15em]">FETCHING CYBER MATRIX SCORES...</span>
+                    </div>
+                  ) : lobbyRankings.length === 0 ? (
+                    <div className="text-center py-10 text-white/20 font-black uppercase tracking-widest text-[10px] bg-white/5 border border-white/5 rounded-3xl">
+                      No High Scores Recorded Yet. Be the first!
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {lobbyRankings.map((player, idx) => {
+                        const statsObj = player.stats || {};
+                        const val = statsObj[rankingMetric] || 0;
+                        const lvl = player.progression?.level || 1;
+                        const playerRank = player.rank?.current || 'bronze';
+                        const avatarUrl = player.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.uid || idx}`;
+
+                        return (
+                          <motion.div
+                            key={player.uid || idx}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.04 }}
+                            className="bg-white/5 p-4 rounded-3xl flex justify-between items-center border border-white/5 hover:border-white/10 transition-all"
+                          >
+                            <div className="flex items-center gap-4">
+                              <span className={`text-xl font-black italic w-7 text-center ${
+                                idx === 0 ? 'text-amber-400 font-extrabold text-2xl drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]' :
+                                idx === 1 ? 'text-zinc-300' :
+                                idx === 2 ? 'text-amber-700' : 'text-white/20'
+                              }`}>
+                                #{idx + 1}
+                              </span>
+                              <img 
+                                src={avatarUrl} 
+                                className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 p-0.5 object-cover" 
+                                alt="Profile Avatar"
+                                referrerPolicy="no-referrer"
+                              />
+                              <div>
+                                <span className="text-lg font-black text-white uppercase italic tracking-tight flex items-center gap-1.5">
+                                  {player.gamertag || player.displayName || 'ANONYMOUS'}
+                                  {idx === 0 && <span className="text-[9px] not-italic bg-amber-400 text-black px-1.5 py-0.5 rounded font-black uppercase tracking-widest scale-90">CHAMP</span>}
+                                </span>
+                                <div className="text-[8px] font-black text-white/30 uppercase tracking-widest mt-0.5 flex items-center gap-1">
+                                  <span>Level {lvl}</span>
+                                  <span>•</span>
+                                  <span className="text-amber-400 uppercase">{playerRank.replace('_', ' ')}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="text-right">
+                              <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">
+                                {rankingMetric === 'totalScore' ? 'Score' : rankingMetric === 'totalKills' ? 'Kills' : 'Wins'}
+                              </span>
+                              <div className="text-xl font-black text-amber-400 italic tracking-tighter mt-0.5">
+                                {val.toLocaleString()}
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <MapVotingPanel />
             </div>
