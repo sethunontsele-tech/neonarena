@@ -423,6 +423,38 @@ export function ThreeDScanner({ onClose }: { onClose: () => void }) {
     'System init: ToF Sensors calibrated.',
     'Ready for spatial scan acquisition.'
   ]);
+
+  const [blenderStatus, setBlenderStatus] = useState<{
+    exists: boolean;
+    isPlaceholder: boolean;
+    isValidZip: boolean;
+    size?: number;
+    message?: string;
+  } | null>(null);
+
+  const checkBlenderStatus = async () => {
+    try {
+      const response = await fetch('/api/blender/status');
+      const data = await response.json();
+      if (data.success) {
+        setBlenderStatus({
+          exists: data.exists,
+          isPlaceholder: data.isPlaceholder,
+          isValidZip: data.isValidZip,
+          size: data.size,
+          message: data.message
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    checkBlenderStatus();
+    const interval = setInterval(checkBlenderStatus, 5000);
+    return () => clearInterval(interval);
+  }, []);
   
   // Custom Controls
   const [wireframe, setWireframe] = useState(false);
@@ -473,11 +505,35 @@ export function ThreeDScanner({ onClose }: { onClose: () => void }) {
   };
 
   // Handle start scanning animation
-  const handleStartScan = () => {
+  const handleStartScan = async () => {
     if (scanning) return;
+
+    // Check Blender zip status
+    let isZipValid = false;
+    let zipSize = 0;
+    try {
+      const response = await fetch('/api/blender/status');
+      const data = await response.json();
+      isZipValid = data.success && data.exists && !data.isPlaceholder && data.isValidZip;
+      zipSize = data.size || 0;
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (!isZipValid) {
+      pushLog(`[ERROR] 🔒 SCAN ENGINE LOCKED!`);
+      pushLog(`[SYSTEM] Missing or invalid /blender.zip.`);
+      pushLog(`[SYSTEM] Please replace /blender.zip with a real Blender .zip model.`);
+      try {
+        soundService.playSFX('hit');
+      } catch (e) {}
+      return;
+    }
+
     setScanning(true);
     setScanProgress(0);
     setScanned(false);
+    pushLog(`[SUCCESS] 🔓 Blender model detected (${(zipSize / 1024).toFixed(1)} KB)!`);
     pushLog(`Initiating laser matrix projection...`);
     soundService.playSFX('ui_click');
 

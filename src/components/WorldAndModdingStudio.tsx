@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { soundService } from '../services/soundService';
+import { BlenderZipUpload } from './BlenderZipUpload';
 
 // Define structures
 interface VirtualFile {
@@ -200,6 +201,38 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
   const [compileLog, setCompileLog] = useState<string[]>([]);
   const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
   const [isSuccessToast, setIsSuccessToast] = useState<boolean>(false);
+
+  const [blenderStatus, setBlenderStatus] = useState<{
+    exists: boolean;
+    isPlaceholder: boolean;
+    isValidZip: boolean;
+    size?: number;
+    message?: string;
+  } | null>(null);
+
+  const checkBlenderStatus = async () => {
+    try {
+      const response = await fetch('/api/blender/status');
+      const data = await response.json();
+      if (data.success) {
+        setBlenderStatus({
+          exists: data.exists,
+          isPlaceholder: data.isPlaceholder,
+          isValidZip: data.isValidZip,
+          size: data.size,
+          message: data.message
+        });
+      }
+    } catch (e) {
+      console.error('Error fetching blender status:', e);
+    }
+  };
+
+  useEffect(() => {
+    checkBlenderStatus();
+    const interval = setInterval(checkBlenderStatus, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Initialize from LocalStorage or inject default worlds
   useEffect(() => {
@@ -464,7 +497,7 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
   };
 
   // Compile active mods and inject into standard gameplay
-  const handleCompile = () => {
+  const handleCompile = async () => {
     const activeWorld = worlds.find(w => w.id === activeWorldId);
     if (!activeWorld) return;
 
@@ -477,9 +510,37 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
       setCompileLog([...logs]);
     };
 
-    setTimeout(() => addLog(`[MOD COMPILER v4.2] Loading world files from /worlds/${activeWorld.id}/`), 100);
-    setTimeout(() => addLog(`[MOD COMPILER] Found root folders: 'mods/', 'builds/', 'bots/', 'code/'`), 300);
-    setTimeout(() => addLog(`[MOD COMPILER] scanning C# files in 'mods/'...`), 500);
+    addLog(`[MOD COMPILER v4.2] Verifying system compilation requirements...`);
+
+    let isZipValid = false;
+    let zipSize = 0;
+    try {
+      const response = await fetch('/api/blender/status');
+      const data = await response.json();
+      isZipValid = data.success && data.exists && !data.isPlaceholder && data.isValidZip;
+      zipSize = data.size || 0;
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (!isZipValid) {
+      setTimeout(() => {
+        addLog(`[CRITICAL COMPILER ERROR] 🔒 MOD MAKER COMPILATION LOCKED!`);
+        addLog(`[SYSTEM] File verification failed: No valid Blender .zip found at /blender.zip.`);
+        addLog(`[SYSTEM] Please upload or replace the placeholder at "/blender.zip" with your real Blender zip package (e.g. 20-alienanimal_obj.zip or similar model) to unlock the compiling engine.`);
+        addLog(`[SYSTEM] Automatically linking Blender zip inputs is currently OFFLINE.`);
+        setCompiling(false);
+        try {
+          soundService.playSFX('hit');
+        } catch (e) {}
+      }, 500);
+      return;
+    }
+
+    setTimeout(() => addLog(`[SUCCESS] 🔓 Blender asset package detected at /blender.zip (${(zipSize / 1024).toFixed(1)} KB)! Unpacking assets...`), 100);
+    setTimeout(() => addLog(`[MOD COMPILER v4.2] Loading world files from /worlds/${activeWorld.id}/`), 300);
+    setTimeout(() => addLog(`[MOD COMPILER] Found root folders: 'mods/', 'builds/', 'bots/', 'code/'`), 500);
+    setTimeout(() => addLog(`[MOD COMPILER] scanning C# files in 'mods/'...`), 700);
     
     // Look for variables inside user C# files
     let speedMult = 1.0;
@@ -594,12 +655,34 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
     }, 1800);
   };
 
-  const handleLaunchGame = () => {
+  const handleLaunchGame = async () => {
     const activeWorld = worlds.find(w => w.id === activeWorldId);
     if (!activeWorld) return;
 
+    // Check Blender zip status
+    let isZipValid = false;
+    try {
+      const response = await fetch('/api/blender/status');
+      const data = await response.json();
+      isZipValid = data.success && data.exists && !data.isPlaceholder && data.isValidZip;
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (!isZipValid) {
+      setCompileLog([
+        `[CRITICAL SYSTEM ERROR] 🔒 PLAY LAUNCH BLOCKED!`,
+        `[SYSTEM] Cannot launch modded sandbox without a valid Blender model package at /blender.zip.`,
+        `[SYSTEM] Please upload or replace "/blender.zip" with your real Blender zip archive to unlock gameplay.`
+      ]);
+      try {
+        soundService.playSFX('hit');
+      } catch (e) {}
+      return;
+    }
+
     // First ensure we compiled the latest code
-    handleCompile();
+    await handleCompile();
 
     // Set the map based on the base_map configured in information.json or mapTheme override
     let finalMap: any = 'custom_scan';
@@ -1060,6 +1143,9 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
 
           {/* LAUNCH / COMPILE CONTROLS */}
           <div className="mt-4 pt-3 border-t border-white/5 space-y-3">
+            {/* Blender .zip Upload Zone */}
+            <BlenderZipUpload onUploadSuccess={checkBlenderStatus} className="bg-zinc-950/80 border border-white/10" />
+
             <div className="bg-zinc-950 p-3 rounded-2xl border border-white/5 text-zinc-500 space-y-1.5">
               <div className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Active World Sandbox</div>
               <div className="text-[10px] font-black text-white uppercase italic">

@@ -8,6 +8,8 @@ import {
   Award, Gamepad2, Folder, Download, Wrench, Settings, Cpu, Code2
 } from 'lucide-react';
 import { useEduStore, ActiveDimensionType } from './eduStore';
+import { soundService } from '../../services/soundService';
+import { BlenderZipUpload } from '../BlenderZipUpload';
 
 interface NeonUniverseProps {
   onClose: () => void;
@@ -273,8 +275,36 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
   const handleCompileMod = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCompilingMod(true);
-    setCompilerLogs(['[BUILDER] Compiling mod payload...', '[BUILDER] Directing compilation stream to Express compiler...']);
+    setCompilerLogs(['[BUILDER] Compiling mod payload...', '[BUILDER] Verifying system compilation requirements...']);
     setCompiledSuccessFile(null);
+
+    // Check Blender zip status
+    let isZipValid = false;
+    let zipSize = 0;
+    try {
+      const response = await fetch('/api/blender/status');
+      const data = await response.json();
+      isZipValid = data.success && data.exists && !data.isPlaceholder && data.isValidZip;
+      zipSize = data.size || 0;
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (!isZipValid) {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      setCompilerLogs([
+        `[CRITICAL COMPILER ERROR] 🔒 MOD MAKER COMPILATION LOCKED!`,
+        `[SYSTEM] File verification failed: No valid Blender .zip found at /blender.zip.`,
+        `[SYSTEM] Please upload or replace the placeholder at "/blender.zip" with your real Blender zip package to unlock the compiling engine.`,
+        `[SYSTEM] Automatically linking Blender zip inputs is currently OFFLINE.`
+      ]);
+      addModLoaderLog(`[ERROR] Mod Maker compilation locked. /blender.zip missing or invalid.`);
+      setIsCompilingMod(false);
+      try {
+        soundService.playSFX('hit');
+      } catch (e) {}
+      return;
+    }
 
     try {
       const payload = {
@@ -2090,6 +2120,9 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
                       )}
                     </div>
                   </div>
+
+                  {/* Blender Model Upload Bridge */}
+                  <BlenderZipUpload onUploadSuccess={fetchModsList} className="bg-slate-950/40 border border-slate-800/80" />
 
                   {/* Mod Compiler and Creator Form */}
                   <form onSubmit={handleCompileMod} className="bg-slate-950/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col space-y-3">

@@ -936,8 +936,9 @@ async function startServer() {
     });
   });
 
-  // Enable JSON request body parsing
-  app.use(express.json());
+  // Enable JSON request body parsing with high limits for uploading ZIP archives
+  app.use(express.json({ limit: '150mb' }));
+  app.use(express.urlencoded({ limit: '150mb', extended: true }));
 
   // ====================================================================
   // NEON ARENA - MOD LOADER & MANAGER APIs (.AL & .EXE COMPILED MODS)
@@ -1158,6 +1159,83 @@ async function startServer() {
       res.status(400).json({ success: false, error: 'Unsupported compile format' });
     } catch (error: any) {
       console.error('Error compiling mod:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // 6. GET /api/blender/status: Check if a valid Blender .zip file has been uploaded/placed at /blender.zip
+  app.get('/api/blender/status', (req, res) => {
+    try {
+      const blenderPath = path.join(process.cwd(), 'blender.zip');
+      if (!fs.existsSync(blenderPath)) {
+        return res.json({ 
+          success: true, 
+          exists: false, 
+          isPlaceholder: false,
+          isValidZip: false,
+          message: 'No file found at /blender.zip. Please create or upload a blender.zip file in the root folder.' 
+        });
+      }
+
+      const stat = fs.statSync(blenderPath);
+      const buffer = fs.readFileSync(blenderPath);
+      const contentStr = buffer.toString('utf8');
+      
+      const isPlaceholder = contentStr.includes('PLACEHOLDER_BLENDER_ZIP');
+      
+      // A valid ZIP file starts with the local file header signature: "PK\x03\x04"
+      const hasZipHeader = buffer.length >= 4 && buffer[0] === 0x50 && buffer[1] === 0x4b;
+
+      res.json({
+        success: true,
+        exists: true,
+        size: stat.size,
+        isPlaceholder,
+        isValidZip: hasZipHeader,
+        message: isPlaceholder 
+          ? 'Placeholder blender.zip detected. Please replace it with your actual Blender .zip file.' 
+          : hasZipHeader 
+            ? 'Valid Blender .zip model detected! Mod Maker unlocked.' 
+            : 'File exists at /blender.zip but is not a valid ZIP archive.'
+      });
+    } catch (error: any) {
+      console.error('Error checking blender.zip status:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // 7. POST /api/blender/upload: Accept a base64 encoded ZIP file and save it to /blender.zip
+  app.post('/api/blender/upload', (req, res) => {
+    try {
+      const { base64 } = req.body;
+      if (!base64) {
+        return res.status(400).json({ success: false, error: 'No file data received' });
+      }
+
+      // Remove potential data URI prefix (e.g. "data:application/zip;base64,")
+      const cleanBase64 = base64.replace(/^data:.*,/, '');
+      const buffer = Buffer.from(cleanBase64, 'base64');
+      
+      // Basic signature check: should begin with PK header ("PK\x03\x04" which is 0x50 0x4B 0x03 0x04)
+      const hasZipHeader = buffer.length >= 4 && buffer[0] === 0x50 && buffer[1] === 0x4b;
+      if (!hasZipHeader) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid file format. Uploaded file must be a valid zip archive (starts with PK signature).' 
+        });
+      }
+
+      const blenderPath = path.join(process.cwd(), 'blender.zip');
+      fs.writeFileSync(blenderPath, buffer);
+      console.log(`Saved new blender.zip of size ${buffer.length} bytes.`);
+
+      res.json({ 
+        success: true, 
+        size: buffer.length,
+        message: 'Blender package /blender.zip successfully uploaded and verified!' 
+      });
+    } catch (error: any) {
+      console.error('Error writing blender.zip:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   });
