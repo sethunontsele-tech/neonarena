@@ -458,11 +458,15 @@ export function Player() {
     let gpFire = false;
     let gpSprint = false;
 
+    // Load custom calibration values from physical local storage
+    const customSensitivity = typeof window !== 'undefined' ? (parseFloat(localStorage.getItem('neon_gamepad_sensitivity') || '1.5')) : 1.5;
+    const customDeadzone = typeof window !== 'undefined' ? (parseFloat(localStorage.getItem('neon_gamepad_deadzone') || '0.15')) : 0.15;
+
     if (gp) {
-      gpX = Math.abs(gp.axes[0]) > 0.1 ? gp.axes[0] : 0;
-      gpZ = Math.abs(gp.axes[1]) > 0.1 ? -gp.axes[1] : 0;
-      gpLookX = Math.abs(gp.axes[2]) > 0.1 ? gp.axes[2] : 0;
-      gpLookY = Math.abs(gp.axes[3]) > 0.1 ? gp.axes[3] : 0;
+      gpX = Math.abs(gp.axes[0]) > customDeadzone ? gp.axes[0] : 0;
+      gpZ = Math.abs(gp.axes[1]) > customDeadzone ? -gp.axes[1] : 0;
+      gpLookX = Math.abs(gp.axes[2]) > customDeadzone ? gp.axes[2] : 0;
+      gpLookY = Math.abs(gp.axes[3]) > customDeadzone ? gp.axes[3] : 0;
       gpJump = gp.buttons[0].pressed; // A
       gpFire = gp.buttons[7].pressed; // RT
       gpSprint = gp.buttons[10].pressed; // L3
@@ -554,7 +558,7 @@ export function Player() {
 
     // Look Handling (Gamepad)
     if (gp) {
-      const sensitivity = 2.0 * mouseSensitivity;
+      const sensitivity = 2.0 * mouseSensitivity * customSensitivity;
       camera.rotation.y -= gpLookX * sensitivity * delta;
       camera.rotation.x -= gpLookY * sensitivity * delta;
       camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));

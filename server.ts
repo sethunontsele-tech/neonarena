@@ -939,6 +939,229 @@ async function startServer() {
   // Enable JSON request body parsing
   app.use(express.json());
 
+  // ====================================================================
+  // NEON ARENA - MOD LOADER & MANAGER APIs (.AL & .EXE COMPILED MODS)
+  // ====================================================================
+  const MODS_DIR = path.join(process.cwd(), 'mods');
+
+  // Helper to ensure mods directory exists
+  const ensureModsDir = () => {
+    if (!fs.existsSync(MODS_DIR)) {
+      fs.mkdirSync(MODS_DIR, { recursive: true });
+    }
+  };
+
+  // 1. GET /api/mods: Retrieve list of mods on disk
+  app.get('/api/mods', (req, res) => {
+    try {
+      ensureModsDir();
+      const files = fs.readdirSync(MODS_DIR);
+      const modsList = [];
+
+      for (const file of files) {
+        const filePath = path.join(MODS_DIR, file);
+        const stat = fs.statSync(filePath);
+        if (stat.isFile()) {
+          const ext = path.extname(file).toLowerCase();
+          let parsedData = null;
+          let contentStr = '';
+
+          try {
+            contentStr = fs.readFileSync(filePath, 'utf8');
+            if (ext === '.al') {
+              parsedData = JSON.parse(contentStr);
+            }
+          } catch (e) {
+            // Ignore parse errors or binary files
+          }
+
+          modsList.push({
+            filename: file,
+            size: stat.size,
+            mtime: stat.mtime,
+            ext: ext,
+            content: contentStr.substring(0, 5000), // truncate long files
+            parsed: parsedData
+          });
+        }
+      }
+
+      res.json({ success: true, mods: modsList });
+    } catch (error: any) {
+      console.error('Error fetching mods:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // 2. POST /api/mods/create: Create or overwrite a mod file
+  app.post('/api/mods/create', (req, res) => {
+    try {
+      const { filename, content } = req.body;
+      if (!filename || content === undefined) {
+        return res.status(400).json({ success: false, error: 'Missing filename or content' });
+      }
+
+      // Prevent directory traversal attacks
+      const cleanFilename = path.basename(filename);
+      ensureModsDir();
+      const filePath = path.join(MODS_DIR, cleanFilename);
+
+      fs.writeFileSync(filePath, typeof content === 'object' ? JSON.stringify(content, null, 2) : content);
+      res.json({ success: true, message: `Mod file ${cleanFilename} saved successfully.` });
+    } catch (error: any) {
+      console.error('Error creating mod:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // 3. POST /api/mods/delete: Delete a mod file
+  app.post('/api/mods/delete', (req, res) => {
+    try {
+      const { filename } = req.body;
+      if (!filename) {
+        return res.status(400).json({ success: false, error: 'Missing filename' });
+      }
+
+      const cleanFilename = path.basename(filename);
+      const filePath = path.join(MODS_DIR, cleanFilename);
+
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        res.json({ success: true, message: `Mod file ${cleanFilename} deleted.` });
+      } else {
+        res.status(404).json({ success: false, error: 'Mod file not found' });
+      }
+    } catch (error: any) {
+      console.error('Error deleting mod:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // 4. POST /api/mods/load: Load an .al mod setting and apply to room live settings
+  app.post('/api/mods/load', async (req, res) => {
+    try {
+      const { filename, roomId = 'global' } = req.body;
+      if (!filename) {
+        return res.status(400).json({ success: false, error: 'Missing filename' });
+      }
+
+      const cleanFilename = path.basename(filename);
+      const filePath = path.join(MODS_DIR, cleanFilename);
+
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ success: false, error: 'Mod file not found' });
+      }
+
+      const content = fs.readFileSync(filePath, 'utf8');
+      const modJson = JSON.parse(content);
+
+      if (modJson.settingsOverride) {
+        const room = await getOrCreateRoom(roomId);
+        if (room) {
+          room.settings = {
+            ...room.settings,
+            ...modJson.settingsOverride
+          };
+          // Notify room players
+          io.to(room.id).emit('settingsUpdated', room.settings);
+          io.to(room.id).emit('chatMessage', {
+            id: Math.random().toString(),
+            sender: 'ModLoader',
+            message: `🤖 MOD ACTIVATED: "${modJson.name || cleanFilename}" successfully loaded onto server.`,
+            timestamp: Date.now(),
+            type: 'system'
+          });
+
+          return res.json({ success: true, message: `Mod ${modJson.name || cleanFilename} loaded onto room ${room.id}`, settings: room.settings });
+        }
+      }
+
+      res.status(400).json({ success: false, error: 'Mod file does not contain setting overrides.' });
+    } catch (error: any) {
+      console.error('Error loading mod:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // 5. POST /api/mods/compile: Dynamic compiler simulator to bundle .al or .exe mods
+  app.post('/api/mods/compile', (req, res) => {
+    try {
+      const { modId, name, author, settings, format } = req.body;
+      if (!modId || !name || !format) {
+        return res.status(400).json({ success: false, error: 'Missing mod compilation parameters.' });
+      }
+
+      ensureModsDir();
+      const cleanId = modId.replace(/[^a-zA-Z0-9_]/g, '_');
+      const timeStr = Date.now();
+
+      let buildOutputLogs = [];
+      buildOutputLogs.push(`[COMPILER] Initializing Neon compiler pipeline for format: ${format.toUpperCase()}`);
+      buildOutputLogs.push(`[COMPILER] Target Mod ID: ${modId}`);
+      buildOutputLogs.push(`[COMPILER] Resolving game dependency libraries... Success.`);
+
+      if (format === 'al') {
+        const outFilename = `${cleanId}_v1_0.al`;
+        const outPath = path.join(MODS_DIR, outFilename);
+        const fileContent = {
+          modId,
+          name,
+          version: '1.0.0',
+          author: author || 'Developer',
+          compat: '.al',
+          description: `Compiled Arena Loader mod targeting customizable physics. Built at ${new Date().toISOString()}`,
+          settingsOverride: settings
+        };
+
+        fs.writeFileSync(outPath, JSON.stringify(fileContent, null, 2));
+        buildOutputLogs.push(`[COMPILER] Writing serialized metadata file: ${outFilename}`);
+        buildOutputLogs.push(`[COMPILER] Packing game asset links and settings overrides... Done.`);
+        buildOutputLogs.push(`[COMPILER] Arena Loader mod bundle compilation complete!`);
+
+        return res.json({
+          success: true,
+          filename: outFilename,
+          logs: buildOutputLogs,
+          content: fileContent
+        });
+      } else if (format === 'exe') {
+        const outFilename = `${cleanId}_v1_0.exe`;
+        const outPath = path.join(MODS_DIR, outFilename);
+
+        // Standalone EXE wrapper metadata representation
+        const mockExeContent = `MZ\r\n` + 
+          `[Neon Arena Windows Executable Launcher Mod]\r\n` +
+          `Mod ID: ${modId}\r\n` +
+          `Mod Name: ${name}\r\n` +
+          `Author: ${author || 'Developer'}\r\n` +
+          `Compiled At: ${new Date().toISOString()}\r\n` +
+          `==========================================\r\n` +
+          `SETTINGS OVERRIDES:\r\n` +
+          JSON.stringify(settings, null, 2) + `\r\n` +
+          `==========================================\r\n` +
+          `EXECUTION HOOKS: PE Subsystem 3D DirectInput / Gamepad Driver Engine.`;
+
+        fs.writeFileSync(outPath, mockExeContent);
+        buildOutputLogs.push(`[COMPILER] Assembling portable executable entry points...`);
+        buildOutputLogs.push(`[COMPILER] Compiling direct memory pointers hook map...`);
+        buildOutputLogs.push(`[COMPILER] Injecting customizable settings override registry...`);
+        buildOutputLogs.push(`[COMPILER] PE standalone executable binary compilation complete: ${outFilename}`);
+
+        return res.json({
+          success: true,
+          filename: outFilename,
+          logs: buildOutputLogs,
+          content: mockExeContent
+        });
+      }
+
+      res.status(400).json({ success: false, error: 'Unsupported compile format' });
+    } catch (error: any) {
+      console.error('Error compiling mod:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // A.U.R.A AI Teacher API Endpoint for Infinity Academy VR
   app.post('/api/academy/ai-teacher', async (req, res) => {
     try {

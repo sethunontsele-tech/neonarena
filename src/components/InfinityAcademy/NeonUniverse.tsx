@@ -5,7 +5,7 @@ import {
   Library, BookOpen, Languages, FlaskConical, Atom, Compass, Info, Dna, Rocket, 
   Globe, Flame, ChevronRight, Trophy, Bot, Sparkles, Palette, Home, Share2, 
   Smile, UserPlus, Check, Volume2, Eye, Calendar, Sparkle, AlertCircle, Dumbbell,
-  Award
+  Award, Gamepad2, Folder, Download, Wrench, Settings, Cpu, Code2
 } from 'lucide-react';
 import { useEduStore, ActiveDimensionType } from './eduStore';
 
@@ -56,7 +56,36 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
   const gainXP = useEduStore(state => state.gainXP);
 
   // Active Tab
-  const [activeUniverseTab, setActiveUniverseTab] = useState<'stream' | 'cinema' | 'gym' | 'academy' | 'board' | 'home' | 'aura'>('stream');
+  const [activeUniverseTab, setActiveUniverseTab] = useState<'stream' | 'cinema' | 'gym' | 'academy' | 'board' | 'home' | 'aura' | 'mods_controllers'>('stream');
+
+  // --- NEON MODS & CONTROLLERS STATES ---
+  const [modsList, setModsList] = useState<any[]>([]);
+  const [modsLoading, setModsLoading] = useState(false);
+  const [selectedModIndex, setSelectedModIndex] = useState<number | null>(null);
+  const [modLoaderLogs, setModLoaderLogs] = useState<string[]>(['[SYSTEM] Mod Loader initialized. Standby...']);
+  
+  // Custom Mod Builder form states
+  const [builderId, setBuilderId] = useState('com.neon.my_custom_mod');
+  const [builderName, setBuilderName] = useState('My Custom Mod Overdrive');
+  const [builderAuthor, setBuilderAuthor] = useState('Pioneer_Modder');
+  const [builderGravity, setBuilderGravity] = useState(5.0);
+  const [builderJumpHeight, setBuilderJumpHeight] = useState(2.5);
+  const [builderBotDifficulty, setBuilderBotDifficulty] = useState<'easy' | 'medium' | 'hard' | 'expert'>('medium');
+  const [builderBotCount, setBuilderBotCount] = useState(6);
+  const [builderFormat, setBuilderFormat] = useState<'al' | 'exe'>('al');
+  const [isCompilingMod, setIsCompilingMod] = useState(false);
+  const [compilerLogs, setCompilerLogs] = useState<string[]>([]);
+  const [compiledSuccessFile, setCompiledSuccessFile] = useState<string | null>(null);
+
+  // Gamepad visualizer & configuration states
+  const [gamepadConnected, setGamepadConnected] = useState(false);
+  const [gamepadName, setGamepadName] = useState('No controller detected. Press any button to initialize.');
+  const [gamepadButtons, setGamepadButtons] = useState<boolean[]>(new Array(16).fill(false));
+  const [gamepadAxes, setGamepadAxes] = useState<number[]>([0, 0, 0, 0]);
+  const [gamepadDeadzone, setGamepadDeadzone] = useState(0.15);
+  const [gamepadSensitivity, setGamepadSensitivity] = useState(1.5);
+  const [gamepadLayout, setGamepadLayout] = useState<'default' | 'tactical' | 'bumper_jumper' | 'southpaw'>('default');
+  const [isForceFeedbackActive, setIsForceFeedbackActive] = useState(false);
 
   // --- NEON STREAM STATES ---
   const [searchQuery, setSearchQuery] = useState('');
@@ -176,6 +205,206 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
       }
     }
   }, [activeUniverseTab]);
+
+  // --- NEON MODS & CONTROLLERS FUNCTIONS ---
+  const fetchModsList = async () => {
+    setModsLoading(true);
+    try {
+      const res = await fetch('/api/mods');
+      const data = await res.json();
+      if (data.success) {
+        setModsList(data.mods);
+        addModLoaderLog(`[SYSTEM] Scanned physical mods folder. Found ${data.mods.length} mod configurations.`);
+      } else {
+        addModLoaderLog(`[ERROR] Failed to fetch mods: ${data.error}`);
+      }
+    } catch (err: any) {
+      addModLoaderLog(`[ERROR] Network error fetching mods: ${err.message}`);
+    } finally {
+      setModsLoading(false);
+    }
+  };
+
+  const addModLoaderLog = (msg: string) => {
+    setModLoaderLogs(prev => [...prev.slice(-49), `[${new Date().toLocaleTimeString()}] ${msg}`]);
+  };
+
+  const handleLoadMod = async (filename: string) => {
+    addModLoaderLog(`[LOADER] Requesting server to load mod: ${filename}...`);
+    try {
+      const res = await fetch('/api/mods/load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, roomId: 'global' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        addModLoaderLog(`[LOADER] SUCCESS: Mod applied to room. Server settings overwritten.`);
+        addModLoaderLog(`[LOADER] New Gravity: ${data.settings?.gravity}m/s², Difficulty: ${data.settings?.botDifficulty}`);
+        gainXP(30);
+      } else {
+        addModLoaderLog(`[LOADER] ERROR: ${data.error}`);
+      }
+    } catch (err: any) {
+      addModLoaderLog(`[LOADER] Connection error loading mod: ${err.message}`);
+    }
+  };
+
+  const handleDeleteMod = async (filename: string) => {
+    if (!confirm(`Are you sure you want to delete ${filename} from the mods directory?`)) return;
+    try {
+      const res = await fetch('/api/mods/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename })
+      });
+      const data = await res.json();
+      if (data.success) {
+        addModLoaderLog(`[SYSTEM] Deleted ${filename} successfully.`);
+        fetchModsList();
+      } else {
+        addModLoaderLog(`[ERROR] Delete failed: ${data.error}`);
+      }
+    } catch (err: any) {
+      addModLoaderLog(`[ERROR] Network error deleting: ${err.message}`);
+    }
+  };
+
+  const handleCompileMod = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCompilingMod(true);
+    setCompilerLogs(['[BUILDER] Compiling mod payload...', '[BUILDER] Directing compilation stream to Express compiler...']);
+    setCompiledSuccessFile(null);
+
+    try {
+      const payload = {
+        modId: builderId,
+        name: builderName,
+        author: builderAuthor,
+        format: builderFormat,
+        settings: {
+          gravity: builderGravity,
+          jumpHeight: builderJumpHeight,
+          botDifficulty: builderBotDifficulty,
+          botCount: builderBotCount
+        }
+      };
+
+      const res = await fetch('/api/mods/compile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        // Roll compiler logs progressively to make it look super satisfying
+        for (let i = 0; i < data.logs.length; i++) {
+          await new Promise(resolve => setTimeout(resolve, 400));
+          setCompilerLogs(prev => [...prev, data.logs[i]]);
+        }
+        setCompiledSuccessFile(data.filename);
+        addModLoaderLog(`[COMPILER] Compilation output: ${data.filename} ready.`);
+        gainXP(40);
+        fetchModsList();
+
+        // Trigger dynamic download
+        const blobContent = typeof data.content === 'object' ? JSON.stringify(data.content, null, 2) : data.content;
+        const blob = new Blob([blobContent], { type: builderFormat === 'exe' ? 'application/octet-stream' : 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = data.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        addModLoaderLog(`[SYSTEM] Triggered direct browser download for ${data.filename}`);
+      } else {
+        setCompilerLogs(prev => [...prev, `[ERROR] Compile failed: ${data.error}`]);
+      }
+    } catch (err: any) {
+      setCompilerLogs(prev => [...prev, `[ERROR] Network compilation failure: ${err.message}`]);
+    } finally {
+      setIsCompilingMod(false);
+    }
+  };
+
+  // Run on mount or tab focus
+  useEffect(() => {
+    if (activeUniverseTab === 'mods_controllers') {
+      fetchModsList();
+    }
+  }, [activeUniverseTab]);
+
+  // Live Gamepad scanning loop
+  useEffect(() => {
+    let animationFrameId: number;
+    let localDeadzone = gamepadDeadzone;
+
+    const pollGamepads = () => {
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      let found = false;
+
+      for (let i = 0; i < gamepads.length; i++) {
+        const gp = gamepads[i];
+        if (gp) {
+          found = true;
+          setGamepadConnected(true);
+          setGamepadName(`${gp.id} [PORT ${gp.index}]`);
+
+          // Poll buttons
+          const btns = gp.buttons.map(b => b.pressed);
+          setGamepadButtons(btns);
+
+          // Poll axes
+          const axes = gp.axes.map(a => Math.abs(a) > localDeadzone ? a : 0);
+          setGamepadAxes(axes);
+          break; // bind first active controller
+        }
+      }
+
+      if (!found && gamepadConnected) {
+        setGamepadConnected(false);
+        setGamepadName('No controller detected. Press any button to initialize.');
+        setGamepadButtons(new Array(16).fill(false));
+        setGamepadAxes([0, 0, 0, 0]);
+      }
+
+      animationFrameId = requestAnimationFrame(pollGamepads);
+    };
+
+    animationFrameId = requestAnimationFrame(pollGamepads);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [gamepadConnected, gamepadDeadzone]);
+
+  const triggerVibrationTest = () => {
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    let act = false;
+    for (let i = 0; i < gamepads.length; i++) {
+      const gp = gamepads[i];
+      if (gp && gp.vibrationActuator) {
+        act = true;
+        setIsForceFeedbackActive(true);
+        gp.vibrationActuator.playEffect('dual-rumble', {
+          startDelay: 0,
+          duration: 800,
+          weakMagnitude: 1.0,
+          strongMagnitude: 1.0
+        }).then(() => {
+          setIsForceFeedbackActive(false);
+        });
+        break;
+      }
+    }
+    if (!act) {
+      setIsForceFeedbackActive(true);
+      addModLoaderLog(`[CONTROLLER] Simulated rumble trigger (no physical gamepad actuator supported)`);
+      setTimeout(() => setIsForceFeedbackActive(false), 800);
+    } else {
+      addModLoaderLog(`[CONTROLLER] Sent physical dual-rumble actuator trigger to Gamepad.`);
+    }
+  };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     isDrawingRef.current = true;
@@ -410,7 +639,8 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
               { id: 'academy', label: '📚 PORTAL VIDEO LEARNING', desc: 'Subject Recommendations' },
               { id: 'board', label: '📝 SMART BOARD', desc: 'Canvas Drawing Tablet' },
               { id: 'home', label: '🏠 NEON HOME', desc: 'Personal Room Designer' },
-              { id: 'aura', label: '🤖 AURA AI COMPANION', desc: 'Interactive Guidance' }
+              { id: 'aura', label: '🤖 AURA AI COMPANION', desc: 'Interactive Guidance' },
+              { id: 'mods_controllers', label: '🎮 CONTROLLERS & MODS', desc: 'Gamepads & ModLoader' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -1529,6 +1759,491 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* 8. NEON CONTROLLERS & MODS ENGINE */}
+          {/* ========================================================= */}
+          {activeUniverseTab === 'mods_controllers' && (
+            <div className="flex-1 flex flex-col overflow-y-auto space-y-4 pr-1 scrollbar-thin scrollbar-thumb-slate-800">
+              {/* Module Header */}
+              <div className="flex items-center justify-between bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-cyan-500/10 rounded-xl border border-cyan-500/30">
+                    <Gamepad2 className="w-5 h-5 text-cyan-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-white uppercase tracking-wider">🎮 CONTROLLER INTERFACES & HARDWARE MODS</h3>
+                    <p className="text-[8.5px] text-slate-400 uppercase tracking-wider mt-0.5">
+                      Cross-Platform Dual-Shock Gamepad Diagnostic Matrix & Standalone Compiler (.EXE / .AL)
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 relative">
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${gamepadConnected ? 'bg-cyan-400' : 'bg-rose-400'} opacity-75`}></span>
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${gamepadConnected ? 'bg-cyan-500' : 'bg-rose-500'}`}></span>
+                  </span>
+                  <span className="text-[8.5px] font-mono uppercase tracking-wider text-slate-400">
+                    {gamepadConnected ? 'XINPUT/DIRECTINPUT CALIBRATED' : 'STANDBY MODE'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Two Column Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                
+                {/* LEFT COLUMN: GAMEPAD INTERACTIVE CALIBRATOR (7 cols) */}
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="bg-slate-950/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col space-y-3 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none" />
+                    
+                    <div className="flex items-center justify-between border-b border-slate-800/50 pb-2">
+                      <span className="text-[9px] font-black tracking-wider text-slate-300 uppercase flex items-center gap-1.5">
+                        <Sliders className="w-3.5 h-3.5 text-cyan-400" /> GAMEPAD CALIBRATION MATRIX
+                      </span>
+                      <button
+                        onClick={triggerVibrationTest}
+                        disabled={isForceFeedbackActive}
+                        className={`px-2.5 py-1 text-[8px] font-mono rounded border transition-all ${
+                          isForceFeedbackActive 
+                            ? 'bg-fuchsia-500/20 border-fuchsia-400 text-fuchsia-300 animate-bounce' 
+                            : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-cyan-400/50 hover:text-cyan-300'
+                        }`}
+                      >
+                        {isForceFeedbackActive ? '⚡ RUMBLE ACTUATING...' : '🎮 TRIGGER HAPTIC RUMBLE'}
+                      </button>
+                    </div>
+
+                    <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-850">
+                      <div className="text-[8px] text-slate-500 font-mono uppercase">DETECTED GAMEPAD SIGNATURE:</div>
+                      <div className="text-[9.5px] font-mono text-cyan-300 font-bold mt-0.5 truncate leading-tight">
+                        {gamepadName}
+                      </div>
+                    </div>
+
+                    {/* Symmetrical Gamepad CSS Visualizer */}
+                    <div className="flex flex-col items-center justify-center py-4 bg-slate-950/80 rounded-xl border border-slate-850/60 relative">
+                      {/* Controller Case Shape */}
+                      <div className="w-64 h-32 bg-slate-900/90 rounded-[40px] border border-slate-800 relative shadow-2xl flex items-center justify-between px-8">
+                        
+                        {/* D-PAD (Left Side) */}
+                        <div className="flex flex-col items-center gap-0.5 relative">
+                          <div className={`w-4 h-4 bg-slate-800 border border-slate-750 flex items-center justify-center rounded-sm text-[7px] text-slate-500 font-mono ${gamepadButtons[12] ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' : ''}`}>▲</div>
+                          <div className="flex gap-4">
+                            <div className={`w-4 h-4 bg-slate-800 border border-slate-750 flex items-center justify-center rounded-sm text-[7px] text-slate-500 font-mono ${gamepadButtons[14] ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' : ''}`}>◀</div>
+                            <div className={`w-4 h-4 bg-slate-800 border border-slate-750 flex items-center justify-center rounded-sm text-[7px] text-slate-500 font-mono ${gamepadButtons[15] ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' : ''}`}>▶</div>
+                          </div>
+                          <div className={`w-4 h-4 bg-slate-800 border border-slate-750 flex items-center justify-center rounded-sm text-[7px] text-slate-500 font-mono ${gamepadButtons[13] ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' : ''}`}>▼</div>
+                          <span className="text-[6.5px] text-slate-500 font-black tracking-widest mt-1">D-PAD</span>
+                        </div>
+
+                        {/* Analog Stick Indicators (Left & Right) */}
+                        <div className="flex gap-6 absolute left-1/2 -translate-x-1/2 bottom-4">
+                          {/* Left Analog */}
+                          <div className="flex flex-col items-center">
+                            <div className="w-10 h-10 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center relative">
+                              <div 
+                                className={`w-4 h-4 rounded-full bg-slate-700 border border-slate-500 absolute transition-all duration-75 shadow-lg ${gamepadButtons[10] ? 'bg-cyan-400 border-white' : ''}`}
+                                style={{
+                                  transform: `translate(${gamepadAxes[0] * 12}px, ${gamepadAxes[1] * 12}px)`
+                                }}
+                              />
+                            </div>
+                            <span className="text-[5.5px] text-slate-500 font-mono uppercase mt-1">LX: {gamepadAxes[0].toFixed(2)}</span>
+                          </div>
+
+                          {/* Right Analog */}
+                          <div className="flex flex-col items-center">
+                            <div className="w-10 h-10 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center relative">
+                              <div 
+                                className={`w-4 h-4 rounded-full bg-slate-700 border border-slate-500 absolute transition-all duration-75 shadow-lg ${gamepadButtons[11] ? 'bg-fuchsia-400 border-white' : ''}`}
+                                style={{
+                                  transform: `translate(${gamepadAxes[2] * 12}px, ${gamepadAxes[3] * 12}px)`
+                                }}
+                              />
+                            </div>
+                            <span className="text-[5.5px] text-slate-500 font-mono uppercase mt-1">RX: {gamepadAxes[2].toFixed(2)}</span>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons (Right Side - XYAB) */}
+                        <div className="flex flex-col items-center gap-0.5 relative">
+                          <div className={`w-4 h-4 rounded-full bg-slate-800 border border-slate-750 flex items-center justify-center text-[7px] text-slate-300 font-bold ${gamepadButtons[3] ? 'bg-fuchsia-500/40 border-fuchsia-400 text-fuchsia-200 shadow-[0_0_10px_rgba(217,70,239,0.3)]' : ''}`}>Y</div>
+                          <div className="flex gap-4">
+                            <div className={`w-4 h-4 rounded-full bg-slate-800 border border-slate-750 flex items-center justify-center text-[7px] text-slate-300 font-bold ${gamepadButtons[2] ? 'bg-fuchsia-500/40 border-fuchsia-400 text-fuchsia-200 shadow-[0_0_10px_rgba(217,70,239,0.3)]' : ''}`}>X</div>
+                            <div className={`w-4 h-4 rounded-full bg-slate-800 border border-slate-750 flex items-center justify-center text-[7px] text-slate-300 font-bold ${gamepadButtons[1] ? 'bg-fuchsia-500/40 border-fuchsia-400 text-fuchsia-200 shadow-[0_0_10px_rgba(217,70,239,0.3)]' : ''}`}>B</div>
+                          </div>
+                          <div className={`w-4 h-4 rounded-full bg-slate-800 border border-slate-750 flex items-center justify-center text-[7px] text-slate-300 font-bold ${gamepadButtons[0] ? 'bg-fuchsia-500/40 border-fuchsia-400 text-fuchsia-200 shadow-[0_0_10px_rgba(217,70,239,0.3)]' : ''}`}>A</div>
+                          <span className="text-[6.5px] text-slate-500 font-black tracking-widest mt-1">ACTION</span>
+                        </div>
+
+                        {/* Triggers & Bumpers (Top Visualizers) */}
+                        <div className="absolute -top-3 left-6 flex gap-1.5">
+                          <div className={`px-2 py-0.5 text-[6px] font-mono border rounded ${gamepadButtons[4] ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' : 'bg-slate-900 border-slate-800 text-slate-500'}`}>LB</div>
+                          <div className={`px-2 py-0.5 text-[6px] font-mono border rounded ${gamepadButtons[6] ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' : 'bg-slate-900 border-slate-800 text-slate-500'}`}>LT</div>
+                        </div>
+                        <div className="absolute -top-3 right-6 flex gap-1.5">
+                          <div className={`px-2 py-0.5 text-[6px] font-mono border rounded ${gamepadButtons[7] ? 'bg-fuchsia-500/20 border-fuchsia-400 text-fuchsia-300' : 'bg-slate-900 border-slate-800 text-slate-500'}`}>RT</div>
+                          <div className={`px-2 py-0.5 text-[6px] font-mono border rounded ${gamepadButtons[5] ? 'bg-fuchsia-500/20 border-fuchsia-400 text-fuchsia-300' : 'bg-slate-900 border-slate-800 text-slate-500'}`}>RB</div>
+                        </div>
+
+                        {/* Center Start/Select Buttons */}
+                        <div className="absolute top-8 left-1/2 -translate-x-1/2 flex gap-4">
+                          <div className={`w-3 h-1.5 rounded-sm bg-slate-800 border border-slate-750 ${gamepadButtons[8] ? 'bg-cyan-400' : ''}`} title="Select" />
+                          <div className={`w-3 h-1.5 rounded-sm bg-slate-800 border border-slate-750 ${gamepadButtons[9] ? 'bg-fuchsia-400' : ''}`} title="Start" />
+                        </div>
+
+                      </div>
+                    </div>
+
+                    {/* Calibration Sliders */}
+                    <div className="grid grid-cols-2 gap-4 bg-slate-950/60 p-3 rounded-xl border border-slate-850">
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-[8px] font-mono uppercase tracking-wider">
+                          <span className="text-slate-400">STICK DEADZONE</span>
+                          <span className="text-cyan-400 font-bold">{(gamepadDeadzone * 100).toFixed(0)}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0.05"
+                          max="0.40"
+                          step="0.01"
+                          value={gamepadDeadzone}
+                          onChange={(e) => setGamepadDeadzone(parseFloat(e.target.value))}
+                          className="w-full accent-cyan-400 bg-slate-800 h-1 rounded-lg cursor-pointer"
+                        />
+                        <span className="text-[6.5px] text-slate-500 block uppercase tracking-wide">
+                          Recommended: 15% to eliminate stick drift.
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-[8px] font-mono uppercase tracking-wider">
+                          <span className="text-slate-400">LOOK SENSITIVITY</span>
+                          <span className="text-fuchsia-400 font-bold">{gamepadSensitivity.toFixed(1)}x</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0.5"
+                          max="4.0"
+                          step="0.1"
+                          value={gamepadSensitivity}
+                          onChange={(e) => setGamepadSensitivity(parseFloat(e.target.value))}
+                          className="w-full accent-fuchsia-400 bg-slate-800 h-1 rounded-lg cursor-pointer"
+                        />
+                        <span className="text-[6.5px] text-slate-500 block uppercase tracking-wide">
+                          Alters 3D pitch/yaw tracking multipliers.
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Layout Selector */}
+                    <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-xl border border-slate-850">
+                      <span className="text-[8px] font-black uppercase text-slate-400 block tracking-wider">BUTTON MAP LAYOUTS</span>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { id: 'default', label: 'FPS DEFAULT', desc: 'A: Jump | RT: Shoot' },
+                          { id: 'tactical', label: 'TACTICAL', desc: 'R3: Crouch | B: Melee' },
+                          { id: 'bumper_jumper', label: 'BUMPER JUMP', desc: 'LB: Jump | A: Ability' },
+                          { id: 'southpaw', label: 'SOUTHPAW', desc: 'Swap Left/Right Stick' }
+                        ].map(preset => (
+                          <button
+                            key={preset.id}
+                            onClick={() => {
+                              setGamepadLayout(preset.id as any);
+                              addModLoaderLog(`[CONTROLLER] Button map set to: ${preset.label}`);
+                            }}
+                            className={`p-2 rounded border text-left flex flex-col justify-between cursor-pointer transition-all ${
+                              gamepadLayout === preset.id 
+                                ? 'bg-cyan-500/10 border-cyan-400 text-cyan-300' 
+                                : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-400'
+                            }`}
+                          >
+                            <span className="text-[8px] font-black">{preset.label}</span>
+                            <span className="text-[5.5px] font-bold text-slate-500 mt-1 uppercase leading-tight">{preset.desc}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Mod Loader Console Output Logs */}
+                  <div className="bg-slate-950 border border-slate-800/80 rounded-2xl p-4 space-y-2">
+                    <div className="flex items-center justify-between border-b border-slate-850 pb-2">
+                      <span className="text-[9px] font-black tracking-wider text-slate-300 uppercase flex items-center gap-1.5">
+                        <Cpu className="w-3.5 h-3.5 text-fuchsia-400" /> SYSTEM MODLOADER DIAGNOSTIC LOG
+                      </span>
+                      <button
+                        onClick={() => setModLoaderLogs(['[SYSTEM] Log cache cleared.'])}
+                        className="text-[6.5px] font-bold tracking-widest text-slate-500 hover:text-slate-300 uppercase"
+                      >
+                        Clear Terminal
+                      </button>
+                    </div>
+
+                    <div className="bg-black/90 p-3 rounded-xl border border-slate-850 font-mono text-[7.5px] text-fuchsia-300/90 h-32 overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-slate-800 leading-normal">
+                      {modLoaderLogs.map((log, index) => (
+                        <div key={index} className="truncate">
+                          {log}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT COLUMN: MOD MANAGER & STANDALONE COMPILER (5 cols) */}
+                <div className="lg:col-span-5 space-y-4">
+                  {/* Mod List from Disk */}
+                  <div className="bg-slate-950/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800/50 pb-2">
+                      <span className="text-[9px] font-black tracking-wider text-slate-300 uppercase flex items-center gap-1.5">
+                        <Folder className="w-3.5 h-3.5 text-cyan-400" /> DISK MODS FOLDER DIRECTORY
+                      </span>
+                      <button
+                        onClick={fetchModsList}
+                        disabled={modsLoading}
+                        className="text-[7.5px] font-black text-cyan-400 hover:text-cyan-300 flex items-center gap-1 uppercase tracking-widest cursor-pointer"
+                      >
+                        {modsLoading ? 'Scanning...' : '↺ Force Rescan'}
+                      </button>
+                    </div>
+
+                    {/* Mods directory files list */}
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {modsList.length === 0 ? (
+                        <div className="text-center py-6 text-slate-500 text-[8px] uppercase tracking-wider font-bold">
+                          No mods found in disk mods directory.
+                        </div>
+                      ) : (
+                        modsList.map((mod, index) => {
+                          const isSelected = selectedModIndex === index;
+                          return (
+                            <div 
+                              key={index}
+                              onClick={() => setSelectedModIndex(index)}
+                              className={`p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col space-y-1.5 ${
+                                isSelected 
+                                  ? 'bg-gradient-to-r from-slate-900 to-cyan-950/40 border-cyan-500 shadow-md' 
+                                  : 'bg-slate-900/60 border-slate-850 hover:bg-slate-900'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className={`text-[8.5px] font-bold font-mono uppercase ${mod.ext === '.exe' ? 'text-rose-400' : mod.ext === '.cs' ? 'text-amber-400' : 'text-cyan-300'}`}>
+                                  {mod.ext === '.exe' ? '⚡ ' : mod.ext === '.cs' ? '⚙️ ' : '📦 '}
+                                  {mod.filename}
+                                </span>
+                                <span className="text-[6.5px] font-mono text-slate-500">
+                                  {(mod.size / 1024).toFixed(1)} KB
+                                </span>
+                              </div>
+
+                              {mod.parsed && (
+                                <div className="space-y-0.5">
+                                  <div className="text-[9px] font-black text-white uppercase">{mod.parsed.name}</div>
+                                  <div className="text-[7px] text-slate-400 uppercase">Author: {mod.parsed.author} | v{mod.parsed.version}</div>
+                                  <p className="text-[7px] text-slate-500 leading-normal">{mod.parsed.description}</p>
+                                </div>
+                              )}
+
+                              {!mod.parsed && mod.ext === '.exe' && (
+                                <p className="text-[7px] text-slate-400 leading-normal uppercase font-bold">
+                                  PE Windows Executable Launcher Mod
+                                </p>
+                              )}
+
+                              {!mod.parsed && mod.ext === '.cs' && (
+                                <p className="text-[7px] text-slate-400 leading-normal uppercase font-bold">
+                                  Unity C# Engine Physics Source Mod
+                                </p>
+                              )}
+
+                              {isSelected && (
+                                <div className="flex items-center gap-2 pt-1 border-t border-slate-850">
+                                  {mod.ext === '.al' && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleLoadMod(mod.filename);
+                                      }}
+                                      className="flex-1 py-1 bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-[7px] font-black uppercase rounded tracking-wider cursor-pointer transition-colors"
+                                    >
+                                      ⚡ INJECT LIVE TO ROOM
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteMod(mod.filename);
+                                    }}
+                                    className="px-2 py-1 bg-rose-950/50 hover:bg-rose-900 border border-rose-800 text-rose-300 font-mono text-[7px] font-black uppercase rounded tracking-wider cursor-pointer"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Mod Compiler and Creator Form */}
+                  <form onSubmit={handleCompileMod} className="bg-slate-950/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col space-y-3">
+                    <span className="text-[9px] font-black tracking-wider text-slate-300 uppercase flex items-center gap-1.5 border-b border-slate-800/50 pb-2">
+                      <Wrench className="w-3.5 h-3.5 text-fuchsia-400" /> COMPILER & BUILDER STUDIO
+                    </span>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[6.5px] font-black text-slate-400 uppercase tracking-wider block">Mod ID</label>
+                        <input
+                          type="text"
+                          value={builderId}
+                          onChange={(e) => setBuilderId(e.target.value)}
+                          placeholder="com.neon.my_mod"
+                          required
+                          className="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-[8.5px] font-mono text-white focus:border-cyan-400 outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[6.5px] font-black text-slate-400 uppercase tracking-wider block">Mod Name</label>
+                        <input
+                          type="text"
+                          value={builderName}
+                          onChange={(e) => setBuilderName(e.target.value)}
+                          placeholder="My Custom Mod"
+                          required
+                          className="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-[8.5px] font-mono text-white focus:border-cyan-400 outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[6.5px] font-black text-slate-400 uppercase tracking-wider block">Author Handle</label>
+                        <input
+                          type="text"
+                          value={builderAuthor}
+                          onChange={(e) => setBuilderAuthor(e.target.value)}
+                          placeholder="Handle"
+                          required
+                          className="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-[8.5px] font-mono text-white focus:border-cyan-400 outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[6.5px] font-black text-slate-400 uppercase tracking-wider block">Target Output Format</label>
+                        <select
+                          value={builderFormat}
+                          onChange={(e) => setBuilderFormat(e.target.value as any)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-[8.5px] font-mono text-white focus:border-cyan-400 outline-none"
+                        >
+                          <option value="al">.al (Arena Loader Setting Mod)</option>
+                          <option value="exe">.exe (Windows Executable Installer)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2.5 bg-slate-900/40 p-2.5 rounded-xl border border-slate-850">
+                      <span className="text-[7px] font-black uppercase tracking-wider text-slate-400 block">Physics Settings overrides</span>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[6.5px] font-mono text-slate-400">
+                            <span>GRAVITY OVERRIDE</span>
+                            <span className="text-cyan-400">{builderGravity.toFixed(2)} m/s²</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0.5"
+                            max="15.0"
+                            step="0.5"
+                            value={builderGravity}
+                            onChange={(e) => setBuilderGravity(parseFloat(e.target.value))}
+                            className="w-full accent-cyan-400 bg-slate-800 h-1 rounded-lg cursor-pointer"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[6.5px] font-mono text-slate-400">
+                            <span>JUMP HEIGHT</span>
+                            <span className="text-fuchsia-400">{builderJumpHeight.toFixed(2)}m</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="1.0"
+                            max="6.0"
+                            step="0.2"
+                            value={builderJumpHeight}
+                            onChange={(e) => setBuilderJumpHeight(parseFloat(e.target.value))}
+                            className="w-full accent-fuchsia-400 bg-slate-800 h-1 rounded-lg cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[6px] font-black text-slate-400 uppercase tracking-wider block">Bot Count</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="20"
+                            value={builderBotCount}
+                            onChange={(e) => setBuilderBotCount(parseInt(e.target.value) || 0)}
+                            className="w-full bg-slate-900 border border-slate-850 rounded px-1.5 py-0.5 text-[8.5px] font-mono text-white outline-none"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[6px] font-black text-slate-400 uppercase tracking-wider block">AI Difficulty</label>
+                          <select
+                            value={builderBotDifficulty}
+                            onChange={(e) => setBuilderBotDifficulty(e.target.value as any)}
+                            className="w-full bg-slate-900 border border-slate-850 rounded px-1.5 py-0.5 text-[8px] font-mono text-white outline-none"
+                          >
+                            <option value="easy">EASY</option>
+                            <option value="medium">MEDIUM</option>
+                            <option value="hard">HARD</option>
+                            <option value="expert">EXPERT</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isCompilingMod}
+                      className="w-full py-2 bg-gradient-to-r from-fuchsia-600 to-purple-700 hover:from-fuchsia-500 hover:to-purple-600 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      {isCompilingMod ? (
+                        <>⚡ COMPILED STREAMS RUNNING...</>
+                      ) : (
+                        <>
+                          <Code2 className="w-3.5 h-3.5" />
+                          BUILD & COMPILE MOD TO .{builderFormat.toUpperCase()}
+                        </>
+                      )}
+                    </button>
+
+                    {/* Compiler terminal logs */}
+                    {compilerLogs.length > 0 && (
+                      <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-850 space-y-1.5">
+                        <span className="text-[6.5px] font-black text-slate-500 uppercase tracking-widest block">ROLLING COMPILER STREAM</span>
+                        <div className="font-mono text-[7px] text-emerald-400 space-y-0.5 h-20 overflow-y-auto leading-normal">
+                          {compilerLogs.map((l, i) => (
+                            <div key={i}>{l}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </form>
+                </div>
+
+              </div>
+
             </div>
           )}
 

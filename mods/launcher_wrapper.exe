@@ -1,0 +1,6 @@
+MZ (This is a mock Neon Arena Mod Injector PE executable binary)
+PE signature: 0x4550
+Subsystem: Windows CLI/GUI
+Compat: .exe / .al
+Code Injection Hook: Player.cpp / Player.cs
+Description: Standalone Windows Injector executable to load Neon Arena mods offline.
