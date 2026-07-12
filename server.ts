@@ -936,9 +936,9 @@ async function startServer() {
     });
   });
 
-  // Enable JSON request body parsing with high limits for uploading ZIP archives
-  app.use(express.json({ limit: '150mb' }));
-  app.use(express.urlencoded({ limit: '150mb', extended: true }));
+  // Enable JSON request body parsing with high limits for uploading ZIP archives (456MB)
+  app.use(express.json({ limit: '456mb' }));
+  app.use(express.urlencoded({ limit: '456mb', extended: true }));
 
   // ====================================================================
   // NEON ARENA - MOD LOADER & MANAGER APIs (.AL & .EXE COMPILED MODS)
