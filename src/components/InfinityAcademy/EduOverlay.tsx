@@ -5,6 +5,7 @@ import {
   Tv, Eye, ChevronRight, Search, Trophy, Users, ShieldAlert, Zap, Layers 
 } from 'lucide-react';
 import { useEduStore, ControlPlatformType, ActiveDimensionType } from './eduStore';
+import { NeonUniverse } from './NeonUniverse';
 
 const vrAppsCatalog = [
   {
@@ -169,6 +170,7 @@ export function EduOverlay() {
   const setMRCamerasActive = useEduStore(state => state.setMRCamerasActive);
 
   const [activeTab, setActiveTab] = useState<'missions' | 'badges' | 'vrApps' | 'multiplayer' | 'settings'>('missions');
+  const [showNeonHub, setShowNeonHub] = useState(false);
 
   const getPlatformIcon = (platform: ControlPlatformType) => {
     switch (platform) {
@@ -606,6 +608,13 @@ export function EduOverlay() {
         {/* Dynamic Teleport Shortcuts */}
         <div className="flex gap-2.5">
           <button 
+            onClick={() => setShowNeonHub(true)}
+            className="px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:scale-105 active:scale-95 flex items-center gap-1.5"
+          >
+            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+            🪐 NEON UNIVERSE PORTAL
+          </button>
+          <button 
             onClick={() => setDimension('hub')}
             className={`px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer ${
               activeDimension === 'hub'
@@ -637,6 +646,10 @@ export function EduOverlay() {
           </button>
         </div>
       </div>
+
+      {showNeonHub && (
+        <NeonUniverse onClose={() => setShowNeonHub(false)} />
+      )}
     </div>
   );
 }
