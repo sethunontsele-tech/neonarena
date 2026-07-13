@@ -42,8 +42,9 @@ import { LORE_ENTRIES } from './lore';
 import { soundService } from './services/soundService';
 import { InfinityAcademyVR } from './components/InfinityAcademyVR';
 import { CustomCharacterFolder } from './components/CustomCharacterFolder';
+import { CharacterFolderModal } from './components/CharacterFolderModal';
 import { getAbilitiesForWeapon } from './data/abilities';
-import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, UserPlus, UserCheck, UserX, Terminal, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone } from 'lucide-react';
+import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, UserPlus, UserCheck, UserX, Terminal, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone, FolderOpen } from 'lucide-react';
 import { auth, signInWithGoogle, logout, searchUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriends, getFriendRequests, createClan, getClan, joinClan, leaveClan, getTopClans, getUserProfile, ClanData, saveLoadoutPreset, getLoadoutPreset, getLeaderboard } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -2623,6 +2624,7 @@ export default function App() {
   const [showDossier, setShowDossier] = useState(false);
   const [showModStudio, setShowModStudio] = useState(false);
   const [showMRCameras, setShowMRCameras] = useState(false);
+  const [showCharacterFolder, setShowCharacterFolder] = useState(false);
   const [showWebXRPanel, setShowWebXRPanel] = useState(false);
   const [instantCopyProgress, setInstantCopyProgress] = useState(0);
   const [isInstantCopying, setIsInstantCopying] = useState(false);
@@ -3092,16 +3094,27 @@ export default function App() {
               </span>
             </div>
           )}
-          {/* Chat Toggle Button */}
+          {/* Chat & Character Folder Buttons */}
           <div className="absolute top-4 left-4 z-50 flex items-center gap-2 pointer-events-auto">
             <button 
               onClick={() => setChatOpen(!isChatOpen)}
               className={`p-3 rounded-xl border transition-all ${isChatOpen ? 'bg-amber-400 border-amber-400 text-black' : 'bg-black/40 border-white/10 text-white hover:border-amber-400'}`}
+              title="Open Chat"
             >
               <MessageSquare size={20} />
             </button>
+            
+            <button 
+              onClick={() => setShowCharacterFolder(!showCharacterFolder)}
+              className={`p-3 rounded-xl border transition-all flex items-center gap-2 ${showCharacterFolder ? 'bg-amber-400 border-amber-400 text-black shadow-[0_0_20px_rgba(245,158,11,0.5)] font-black' : 'bg-black/40 border-white/10 text-white hover:border-amber-400 font-bold'}`}
+              title="Open Custom Character Storage"
+            >
+              <FolderOpen size={20} className={showCharacterFolder ? 'animate-pulse text-black' : 'text-amber-400'} />
+              <span className="text-[10px] uppercase tracking-widest hidden sm:inline">SKIN MATRIX</span>
+            </button>
+
             {!isChatOpen && (
-              <div className="bg-black/60 px-3 py-1 rounded-lg border border-white/10 text-[10px] font-black text-white/40 uppercase tracking-widest">
+              <div className="bg-black/60 px-3 py-1 rounded-lg border border-white/10 text-[10px] font-black text-white/40 uppercase tracking-widest hidden md:block">
                 Press Enter to Chat
               </div>
             )}
@@ -3157,6 +3170,7 @@ export default function App() {
         {showDossier && <DossierModal onClose={() => setShowDossier(false)} />}
         {showModStudio && <WorldAndModdingStudio onClose={() => setShowModStudio(false)} />}
         {showMRCameras && <MixedRealityCameras onClose={() => setShowMRCameras(false)} />}
+        {showCharacterFolder && <CharacterFolderModal onClose={() => setShowCharacterFolder(false)} />}
         {gameState === 'server_browser' && <ServerBrowser onClose={() => setGameState('lobby')} />}
 
         {/* 3D LiDAR World Copier Laser Scanning Screen Overlay */}
@@ -3438,6 +3452,13 @@ export default function App() {
                 >
                   <Terminal size={14} className="group-hover:-translate-y-0.5 transition-all" />
                   <span className="text-[10px] font-black uppercase tracking-widest">Aurum GDD</span>
+                </button>
+                <button
+                  onClick={() => setShowCharacterFolder(true)}
+                  className="flex items-center gap-2 bg-amber-400/15 border border-amber-400/35 px-4 py-2 rounded-xl text-amber-400 hover:bg-amber-400 hover:text-black transition-all group cursor-pointer"
+                >
+                  <FolderOpen size={14} className="group-hover:scale-110 transition-all text-amber-400 group-hover:text-black" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Skins Matrix</span>
                 </button>
                 <button
                   onClick={() => useGameStore.setState({ gameState: 'server_browser' })}
