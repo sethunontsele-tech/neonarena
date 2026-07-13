@@ -405,7 +405,7 @@ interface GameStore {
   chatMessages: ChatMessage[];
   gamertag: string;
   
-  selectedSkin: SkinType;
+  selectedSkin: SkinType | string;
   selectedColor: string;
   selectedPattern: PatternType;
   selectedAccessories: AccessoryType[];
@@ -433,6 +433,17 @@ interface GameStore {
   isReloading: boolean;
   isAttacking: boolean;
   attackType: string | null;
+
+  // Custom Character Skins / Models Folder
+  customSkins: {
+    id: string;
+    name: string;
+    fileType: 'obj' | 'gltf' | 'glb' | 'blend';
+    dataUrl: string;
+    mtlUrl?: string;
+  }[];
+  addCustomSkin: (skin: { id: string; name: string; fileType: 'obj' | 'gltf' | 'glb' | 'blend'; dataUrl: string; mtlUrl?: string }) => void;
+  removeCustomSkin: (id: string) => void;
   autoRotation: boolean;
   unlockedTrophies: Trophy[];
   gameVersion: string;
@@ -793,7 +804,7 @@ interface GameStore {
   updateProjectiles: (delta: number) => void;
   cleanupEffects: (time: number) => void;
   setPlayerState: (state: EntityState) => void;
-  setSkin: (skin: SkinType) => void;
+  setSkin: (skin: SkinType | string) => void;
   setColor: (color: string) => void;
   setPattern: (pattern: PatternType) => void;
   toggleAccessory: (accessory: AccessoryType) => void;
@@ -1083,6 +1094,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   friendRequests: [],
   
   selectedSkin: 'alien',
+  customSkins: [],
   selectedColor: '#f59e0b',
   selectedPattern: 'none',
   selectedAccessories: [],
@@ -2409,6 +2421,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setPlayerState: (playerState) => set({ playerState }),
 
   setSkin: (selectedSkin) => set({ selectedSkin }),
+  addCustomSkin: (skin) => set(state => {
+    const existsIndex = state.customSkins.findIndex(s => s.id === skin.id);
+    if (existsIndex >= 0) {
+      const updated = [...state.customSkins];
+      updated[existsIndex] = skin;
+      return { customSkins: updated };
+    }
+    return { customSkins: [...state.customSkins, skin] };
+  }),
+  removeCustomSkin: (id) => set(state => {
+    const nextSkin = state.selectedSkin === id ? 'alien' : state.selectedSkin;
+    return {
+      customSkins: state.customSkins.filter(s => s.id !== id),
+      selectedSkin: nextSkin
+    };
+  }),
   setColor: (selectedColor) => set({ selectedColor }),
   setPattern: (selectedPattern) => set({ selectedPattern }),
   toggleAccessory: (accessory) => set(state => {

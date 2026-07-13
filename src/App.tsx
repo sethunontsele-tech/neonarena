@@ -41,6 +41,7 @@ import type { WeaponCategory } from './store';
 import { LORE_ENTRIES } from './lore';
 import { soundService } from './services/soundService';
 import { InfinityAcademyVR } from './components/InfinityAcademyVR';
+import { CustomCharacterFolder } from './components/CustomCharacterFolder';
 import { getAbilitiesForWeapon } from './data/abilities';
 import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, UserPlus, UserCheck, UserX, Terminal, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone } from 'lucide-react';
 import { auth, signInWithGoogle, logout, searchUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriends, getFriendRequests, createClan, getClan, joinClan, leaveClan, getTopClans, getUserProfile, ClanData, saveLoadoutPreset, getLoadoutPreset, getLeaderboard } from './firebase';
@@ -4242,7 +4243,7 @@ export default function App() {
                     {/* Skin Type */}
                     <div>
                       <label className="text-[10px] text-amber-400/50 uppercase font-bold mb-2 block tracking-widest">Base Material</label>
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-4 gap-2 mb-4">
                         {(['neon', 'gold', 'stealth', 'glitch', 'ruby', 'emerald', 'diamond', 'void', 'steve', 'alex', 'vijo_pro'] as const).map(skin => (
                           <button
                             key={skin}
@@ -4257,6 +4258,9 @@ export default function App() {
                           </button>
                         ))}
                       </div>
+
+                      {/* Custom Character Models Folder */}
+                      <CustomCharacterFolder />
                     </div>
 
                     {/* Color Picker */}
