@@ -1227,6 +1227,8 @@ function HUD() {
   const currentKillStreak = useGameStore(state => state.currentKillStreak);
   const bestKillStreak = useGameStore(state => state.bestKillStreak);
   const activeStreakPower = useGameStore(state => state.activeStreakPower);
+  const isInspecting = useGameStore(state => state.isInspecting);
+  const inspectStartTime = useGameStore(state => state.inspectStartTime);
 
   const [hasApiKey, setHasApiKey] = useState(true);
 
@@ -1983,6 +1985,155 @@ function HUD() {
           </div>
         </div>
       )}
+
+      {/* Weapon Inspect HUD Overlay */}
+      <AnimatePresence>
+        {isInspecting && currentWeapon && (
+          <motion.div
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 100 }}
+            transition={{ type: "spring", damping: 25, stiffness: 120 }}
+            className="absolute right-8 top-1/4 w-80 bg-black/85 border border-amber-400/30 rounded-3xl p-6 backdrop-blur-md pointer-events-none z-[45] font-sans flex flex-col gap-4 text-white shadow-[0_0_50px_rgba(245,158,11,0.15)]"
+          >
+            {/* Holographic Header */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400/80 font-mono">SYSTEMS ONLINE</span>
+              </div>
+              <span className="font-mono text-[9px] text-white/40">CAL: UTC-{(new Date()).getUTCHours()}</span>
+            </div>
+
+            {/* Weapon Profile */}
+            <div>
+              <div className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1 font-mono">ACTIVE WEAPON</div>
+              <h3 className="text-2xl font-black italic tracking-tighter uppercase leading-none text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-400">
+                {currentWeapon.name}
+              </h3>
+              
+              {/* Rarity Tag */}
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className={`text-[8px] font-black uppercase tracking-[0.2em] px-2.5 py-0.5 rounded-full border ${
+                  currentWeapon.rarity === 'legendary' ? 'bg-amber-500/20 text-amber-400 border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.2)]' :
+                  currentWeapon.rarity === 'epic' ? 'bg-purple-500/20 text-purple-400 border-purple-500/40 shadow-[0_0_10px_rgba(168,85,247,0.2)]' :
+                  currentWeapon.rarity === 'rare' ? 'bg-blue-500/20 text-blue-400 border-blue-400/40 shadow-[0_0_10px_rgba(59,130,246,0.2)]' :
+                  'bg-zinc-500/20 text-zinc-400 border-zinc-500/40'
+                }`}>
+                  {currentWeapon.rarity}
+                </span>
+                <span className="text-[10px] text-white/40 font-mono">CAT: {currentWeapon.category}</span>
+              </div>
+            </div>
+
+            {/* Live Holographic Telemetry (Rotating grid overlay) */}
+            <div className="relative h-24 bg-zinc-950/50 border border-white/5 rounded-2xl overflow-hidden flex items-center justify-center">
+              {/* Rotating wireframe animation */}
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.06)_0%,transparent_70%)]" />
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px] [mask-image:radial-gradient(ellipse_at_center,white,transparent)]" />
+              
+              {/* Animated rings */}
+              <div className="relative w-16 h-16 border border-amber-400/20 rounded-full flex items-center justify-center animate-[spin_8s_linear_infinite]">
+                <div className="w-12 h-12 border border-dashed border-amber-400/30 rounded-full flex items-center justify-center animate-[spin_4s_linear_infinite_reverse]">
+                  <div className="w-6 h-6 border border-double border-amber-400/40 rounded-full" />
+                </div>
+              </div>
+
+              {/* Grid Corner details */}
+              <div className="absolute top-2 left-2 w-2 h-2 border-t border-l border-white/30" />
+              <div className="absolute top-2 right-2 w-2 h-2 border-t border-r border-white/30" />
+              <div className="absolute bottom-2 left-2 w-2 h-2 border-b border-l border-white/30" />
+              <div className="absolute bottom-2 right-2 w-2 h-2 border-b border-r border-white/30" />
+
+              {/* Live coordinates */}
+              <div className="absolute bottom-1.5 left-2 font-mono text-[6px] text-white/30 tracking-widest">W_INDX: {currentWeaponIndex}</div>
+              <div className="absolute bottom-1.5 right-2 font-mono text-[6px] text-white/30 tracking-widest">W_MASS: {currentWeapon.weight}T</div>
+            </div>
+
+            {/* Scanning Phases Indicator */}
+            <div className="bg-zinc-950/60 border border-white/5 rounded-2xl p-3 flex flex-col gap-1.5">
+              <div className="flex justify-between font-mono text-[8px] text-white/60">
+                <span>DIAGNOSTIC QUEUE</span>
+                <span className="text-amber-400 tracking-widest animate-pulse font-bold">
+                  {((Date.now() - inspectStartTime) / 1000) < 1.5 ? 'SCANNING' :
+                   ((Date.now() - inspectStartTime) / 1000) < 3.0 ? 'CALIBRATING' :
+                   ((Date.now() - inspectStartTime) / 1000) < 4.5 ? 'SYNCHRONIZING' :
+                   'COMPLETED'}
+                </span>
+              </div>
+              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 4.5, ease: "linear" }}
+                  className="h-full bg-gradient-to-r from-amber-500 to-amber-300"
+                />
+              </div>
+              <div className="font-mono text-[7px] text-white/40 mt-1 uppercase tracking-wider leading-tight text-center">
+                {((Date.now() - inspectStartTime) / 1000) < 1.5 ? 'Integrity profile: check internal receiver...' :
+                 ((Date.now() - inspectStartTime) / 1000) < 3.0 ? 'Laser refraction: chamber stabilization verified...' :
+                 ((Date.now() - inspectStartTime) / 1000) < 4.5 ? 'Optics sync: alignment & safety protocols complete...' :
+                 'System ready: fire to engage'}
+              </div>
+            </div>
+
+            {/* Core Stats Progress Bars */}
+            <div className="flex flex-col gap-2.5">
+              <div className="font-mono text-[9px] font-bold text-amber-400/80 tracking-widest uppercase">Performance Index</div>
+              
+              {/* Damage */}
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between font-mono text-[8px]">
+                  <span className="text-white/60">DAMAGE</span>
+                  <span className="font-bold text-white/80">{Math.abs(currentWeapon.damage)}</span>
+                </div>
+                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-red-400" style={{ width: `${Math.min(100, (Math.abs(currentWeapon.damage) / 200) * 100)}%` }} />
+                </div>
+              </div>
+
+              {/* Range */}
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between font-mono text-[8px]">
+                  <span className="text-white/60">EFFECTIVE RANGE</span>
+                  <span className="font-bold text-white/80">{currentWeapon.range}m</span>
+                </div>
+                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-400" style={{ width: `${Math.min(100, (currentWeapon.range / 500) * 100)}%` }} />
+                </div>
+              </div>
+
+              {/* Fire Rate */}
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between font-mono text-[8px]">
+                  <span className="text-white/60">DISCHARGE INTERVAL</span>
+                  <span className="font-bold text-white/80">{currentWeapon.fireRate}ms</span>
+                </div>
+                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-400" style={{ width: `${Math.max(10, 100 - (currentWeapon.fireRate / 4000) * 100)}%` }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Tactical Lore */}
+            {currentWeapon.lore ? (
+              <div className="border-t border-white/5 pt-3">
+                <div className="font-mono text-[8px] text-white/30 uppercase tracking-widest mb-1">ARCHIVAL INTELLIGENCE</div>
+                <p className="font-mono text-[8px] text-white/60 leading-relaxed italic">
+                  "{currentWeapon.lore}"
+                </p>
+              </div>
+            ) : (
+              <div className="border-t border-white/5 pt-3">
+                <div className="font-mono text-[8px] text-white/30 uppercase tracking-widest mb-1">SYSTEM CLASSIFICATION</div>
+                <p className="font-mono text-[8px] text-white/60 leading-relaxed italic">
+                  "Standard-issue combat implement. Calibrated for optimal kinetic feedback and weapon balance."
+                </p>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Reload Indicator */}
       {isReloading && (

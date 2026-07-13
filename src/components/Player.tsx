@@ -63,6 +63,48 @@ export function Player() {
   const gunVisualRef = useRef<THREE.Group>(null);
   const gunBarrelRef = useRef<THREE.Group>(null);
 
+  const inspectAudioPhases = useRef({ start: false, mid: false, end: false });
+  const playInspectSound = (phase: 'start' | 'mid' | 'end') => {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      const now = ctx.currentTime;
+      if (phase === 'start') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(320, now + 0.15);
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (phase === 'mid') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.setValueAtTime(600, now + 0.05);
+        gain.gain.setValueAtTime(0.02, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      } else if (phase === 'end') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, now); // D5
+        osc.frequency.setValueAtTime(880, now + 0.08); // A5
+        gain.gain.setValueAtTime(0.03, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const selectedSkin = useGameStore(state => state.selectedSkin);
   const selectedColor = useGameStore(state => state.selectedColor);
   const selectedPattern = useGameStore(state => state.selectedPattern);
@@ -134,6 +176,10 @@ export function Player() {
 
   const triggerFire = () => {
     if (gameState !== 'playing' || playerState !== 'active' || isInventoryOpen) return;
+
+    if (useGameStore.getState().isInspecting) {
+      useGameStore.setState({ isInspecting: false });
+    }
 
     if (isBuildMode) {
       // Build mode: Left click to break
@@ -381,13 +427,20 @@ export function Player() {
           soundService.playSFX('ui_click');
         } catch (err) {}
       }
-      if (key === 'r') reload();
+      if (key === 'r') {
+        useGameStore.setState({ isInspecting: false });
+        reload();
+      }
       
       if (key === 'b') useGameStore.getState().setBuildMode(!useGameStore.getState().isBuildMode);
       
       // Weapon Inspect
-      if (key === 'i') {
-        useGameStore.setState({ isInspecting: true, inspectStartTime: Date.now() });
+      if (key === 'x' || key === 'i') {
+        const currentlyInspecting = useGameStore.getState().isInspecting;
+        useGameStore.setState({ 
+          isInspecting: !currentlyInspecting, 
+          inspectStartTime: currentlyInspecting ? 0 : Date.now() 
+        });
         try {
           soundService.playSFX('ui_click');
         } catch (err) {}
@@ -401,6 +454,7 @@ export function Player() {
       // Hotbar keys
       if (e.key >= '1' && e.key <= '9') {
         const idx = parseInt(e.key) - 1;
+        useGameStore.setState({ isInspecting: false });
         if (isBuildMode) {
           const blocks = ['stone', 'cobblestone', 'dirt', 'grass', 'sand', 'gravel', 'clay', 'bedrock', 'oak_log'] as const;
           if (idx < blocks.length) useGameStore.getState().setSelectedBlock(blocks[idx]);
@@ -423,11 +477,6 @@ export function Player() {
       if (key === 'shift') keys.current.shift = false;
       if (key === 'c' || key === 'control') keys.current.c = false;
       if (key in keys.current) keys.current[key as keyof typeof keys.current] = false;
-
-      // Stop Weapon Inspect
-      if (key === 'i') {
-        useGameStore.setState({ isInspecting: false });
-      }
     };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
@@ -902,20 +951,93 @@ export function Player() {
 
       if (isInspecting) {
         const elapsed = (Date.now() - inspectStartTime) / 1000;
-        // Position weapon centrally and closer to view
-        gunVisualRef.current.position.x = THREE.MathUtils.lerp(gunVisualRef.current.position.x, 0.0, delta * 5);
-        gunVisualRef.current.position.y = THREE.MathUtils.lerp(gunVisualRef.current.position.y, -0.15, delta * 5);
-        gunVisualRef.current.position.z = THREE.MathUtils.lerp(gunVisualRef.current.position.z, -0.5, delta * 5);
+        
+        // Auto stop after 4.5 seconds
+        if (elapsed > 4.5) {
+          useGameStore.setState({ isInspecting: false });
+        } else {
+          // Play synchronized tactical synthesizer sounds based on the phase
+          if (elapsed >= 0 && elapsed < 0.15 && !inspectAudioPhases.current.start) {
+            playInspectSound('start');
+            inspectAudioPhases.current.start = true;
+          }
+          if (elapsed >= 1.5 && elapsed < 1.65 && !inspectAudioPhases.current.mid) {
+            playInspectSound('mid');
+            inspectAudioPhases.current.mid = true;
+          }
+          if (elapsed >= 3.0 && elapsed < 3.15 && !inspectAudioPhases.current.end) {
+            playInspectSound('end');
+            inspectAudioPhases.current.end = true;
+          }
 
-        // Continuous rotation showing off all angles
-        const targetRotY = (elapsed * 1.5) % (Math.PI * 2);
-        const targetRotX = Math.sin(elapsed) * 0.25;
-        const targetRotZ = Math.cos(elapsed) * 0.15;
+          // Positional Phase animations:
+          let targetX = 0.6;
+          let targetY = -0.4;
+          let targetZ = -0.8;
+          let targetRotX = 0;
+          let targetRotY = 0;
+          let targetRotZ = 0;
 
-        gunVisualRef.current.rotation.y = targetRotY;
-        gunVisualRef.current.rotation.x = targetRotX;
-        gunVisualRef.current.rotation.z = targetRotZ;
-      } else if (currentWeapon.isMelee && isAttacking) {
+          if (elapsed < 1.2) {
+            // Phase 1: Pull in & raise to eye level (rolling to show receiver profile)
+            const t = elapsed / 1.2;
+            const ease = Math.sin(t * Math.PI / 2);
+            targetX = THREE.MathUtils.lerp(0.6, 0.05, ease);
+            targetY = THREE.MathUtils.lerp(-0.4, -0.15, ease);
+            targetZ = THREE.MathUtils.lerp(-0.8, -0.45, ease);
+
+            targetRotX = THREE.MathUtils.lerp(0, 0.35, ease);
+            targetRotY = THREE.MathUtils.lerp(0, -0.75, ease);
+            targetRotZ = THREE.MathUtils.lerp(0, 0.6, ease);
+          } else if (elapsed < 2.7) {
+            // Phase 2: Tilt down/under-barrel & roll to inspect magazine/ejection port
+            const t = (elapsed - 1.2) / 1.5;
+            const ease = Math.sin(t * Math.PI / 2);
+            targetX = THREE.MathUtils.lerp(0.05, -0.1, ease);
+            targetY = THREE.MathUtils.lerp(-0.15, -0.1, ease);
+            targetZ = THREE.MathUtils.lerp(-0.45, -0.38, ease);
+
+            targetRotX = THREE.MathUtils.lerp(0.35, -0.4, ease);
+            targetRotY = THREE.MathUtils.lerp(-0.75, 0.8, ease);
+            targetRotZ = THREE.MathUtils.lerp(0.6, -0.4, ease);
+          } else if (elapsed < 3.7) {
+            // Phase 3: Detailed scanning micro-bob and subtle roll
+            const t = (elapsed - 2.7) / 1.0;
+            const ease = Math.sin(t * Math.PI / 2);
+            const bobY = Math.sin(elapsed * 4) * 0.015;
+            const bobX = Math.cos(elapsed * 4) * 0.01;
+            targetX = THREE.MathUtils.lerp(-0.1, 0.0, ease) + bobX;
+            targetY = THREE.MathUtils.lerp(-0.1, -0.05, ease) + bobY;
+            targetZ = THREE.MathUtils.lerp(-0.38, -0.32, ease);
+
+            targetRotX = THREE.MathUtils.lerp(-0.4, 0.1, ease) + Math.sin(elapsed * 3) * 0.05;
+            targetRotY = THREE.MathUtils.lerp(0.8, -0.2, ease) + Math.cos(elapsed * 3) * 0.05;
+            targetRotZ = THREE.MathUtils.lerp(-0.4, 0.15, ease);
+          } else {
+            // Phase 4: Recover & snap back to regular hip position
+            const t = (elapsed - 3.7) / 0.8;
+            const ease = Math.sin(t * Math.PI / 2);
+            targetX = THREE.MathUtils.lerp(0.0, 0.6, ease);
+            targetY = THREE.MathUtils.lerp(-0.05, -0.4, ease);
+            targetZ = THREE.MathUtils.lerp(-0.32, -0.8, ease);
+
+            targetRotX = THREE.MathUtils.lerp(0.1, 0, ease);
+            targetRotY = THREE.MathUtils.lerp(-0.2, 0, ease);
+            targetRotZ = THREE.MathUtils.lerp(0.15, 0, ease);
+          }
+
+          // Apply lerped values to the weapon
+          gunVisualRef.current.position.x = THREE.MathUtils.lerp(gunVisualRef.current.position.x, targetX, delta * 12);
+          gunVisualRef.current.position.y = THREE.MathUtils.lerp(gunVisualRef.current.position.y, targetY, delta * 12);
+          gunVisualRef.current.position.z = THREE.MathUtils.lerp(gunVisualRef.current.position.z, targetZ, delta * 12);
+
+          gunVisualRef.current.rotation.x = THREE.MathUtils.lerp(gunVisualRef.current.rotation.x, targetRotX, delta * 12);
+          gunVisualRef.current.rotation.y = THREE.MathUtils.lerp(gunVisualRef.current.rotation.y, targetRotY, delta * 12);
+          gunVisualRef.current.rotation.z = THREE.MathUtils.lerp(gunVisualRef.current.rotation.z, targetRotZ, delta * 12);
+        }
+      } else {
+        inspectAudioPhases.current = { start: false, mid: false, end: false };
+        if (currentWeapon.isMelee && isAttacking) {
         // Swing animation
         gunVisualRef.current.position.x = THREE.MathUtils.lerp(gunVisualRef.current.position.x, 0.6, delta * 20);
         gunVisualRef.current.position.y = THREE.MathUtils.lerp(gunVisualRef.current.position.y, -0.4, delta * 20);
@@ -933,6 +1055,7 @@ export function Player() {
         gunVisualRef.current.rotation.z = THREE.MathUtils.lerp(gunVisualRef.current.rotation.z, 0, delta * 15);
       }
     }
+  }
 
     // Targeting logic
     const targetingRaycaster = new THREE.Raycaster();
