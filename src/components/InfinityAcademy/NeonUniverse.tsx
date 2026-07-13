@@ -135,6 +135,30 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
   const [newStickyText, setNewStickyText] = useState('');
   const [laserPointerMode, setLaserPointerMode] = useState(false);
 
+  // --- VR OS & LOADER STATES ---
+  const [boardRightTab, setBoardRightTab] = useState<'sticky' | 'vros'>('sticky');
+  const [vrosFiles, setVrosFiles] = useState<{ name: string; size: string; content: string }[]>([
+    { name: 'kernel.bin', size: '128 KB', content: 'VROS_KERNEL_ENTRY_POINT_0x00FF839\n// Initializing real-time 6DOF tracking handlers\n// Initializing virtual Vulkan driver interfaces\n// Binding OpenXR spatial coordinates' },
+    { name: 'system.cfg', size: '4 KB', content: 'SYSTEM_NAME=NeonOS Spatial\nSYSTEM_RESOLUTION=2048x2048\nTARGET_FPS=120\nSTEREO_MODE=QUAD_BUFFERED\nDYNAMIC_LOD=ENABLED\nACCELEROMETER_SYNC_RATE=1000Hz\nTHERMAL_DAMPENING_FACTOR=0.75' },
+    { name: 'driver_xr.sys', size: '256 KB', content: '// OpenXR Direct Spatial Driver Module\n// Binds physical accelerometer sensors to virtual viewport transforms\n// Resolves tracking latency to <3.5ms' },
+    { name: 'app_pong.apk', size: '45.2 MB', content: '// Compiled Android SDK Executable Binary\n// Package: com.retrovr.pong3d\n// Assets decompressed: model_ball.obj, model_paddle.obj' }
+  ]);
+  const [newVrosFileName, setNewVrosFileName] = useState('');
+  const [newVrosFileContent, setNewVrosFileContent] = useState('');
+  const [vrosActiveKernel, setVrosActiveKernel] = useState('NeonOS Spatial Core');
+  const [isVrosBooting, setIsVrosBooting] = useState(false);
+  const [isVrosLoaded, setIsVrosLoaded] = useState(false);
+  const [vrosBootLogs, setVrosBootLogs] = useState<string[]>([]);
+  const [vrosSelectedFileForView, setVrosSelectedFileForView] = useState<{ name: string; size: string; content: string } | null>(null);
+  const [vrosTerminalCommand, setVrosTerminalCommand] = useState('');
+  const [vrosTerminalHistory, setVrosTerminalHistory] = useState<string[]>([
+    'Welcome to NeonOS Spatial Shell Console v4.1',
+    'Type "help" to list available system commands.'
+  ]);
+  const [vrosActiveScreen, setVrosActiveScreen] = useState<'launcher' | 'sysinfo' | 'explorer' | 'sensors' | 'matrix'>('launcher');
+  const [vrosMatrixColor, setVrosMatrixColor] = useState('#10b981'); // emerald
+  const [vrosMatrixOffset, setVrosMatrixOffset] = useState(0);
+
   // --- NEON HOME STATES ---
   const [homeWallpaper, setHomeWallpaper] = useState('grid'); // grid, vapor, space, charcoal
   const [homeSoundscape, setHomeSoundscape] = useState('chill'); // lofi, synth, ambient, quiet
@@ -537,6 +561,142 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
 
   const removeStickyNote = (id: string) => {
     setStickyNotes(prev => prev.filter(n => n.id !== id));
+  };
+
+  // --- VR OS HELPER ACTIONS ---
+  const bootVros = () => {
+    setIsVrosLoaded(true);
+    setIsVrosBooting(true);
+    setVrosBootLogs([]);
+    try { soundService.playSFX('ui_hover'); } catch (e) {}
+
+    const logs = [
+      "[VROS LOADER v2.10] Core UEFI initialization... [OK]",
+      "[VROS LOADER v2.10] Mapping storage partitions... Mount: /dev/vros0",
+      `[VROS LOADER v2.10] Reading boot parameters... Kernel: vr_os/kernel.bin`,
+      `[VROS LOADER v2.10] Boot options parsing... Found system config: vr_os/system.cfg`,
+      "----------------------------------------------------------------",
+      "[VROS KERNEL] Initializing memory manager (12 GB LPDDR5 Allocated)...",
+      "[VROS KERNEL] Spawning GPU worker threads (Adreno 740 pipeline)...",
+      "[VROS KERNEL] Loading OpenXR Spatial runtime libraries... [SUCCESS]",
+      "[VROS KERNEL] Establishing ADB wireless bridging tunnel on port 5555...",
+      "[VROS KERNEL] Initializing 6-DOF tracking systems & LiDAR mapping indices...",
+      "[VROS KERNEL] Spawning interactive system terminal bash interpreter...",
+      "[VROS KERNEL] Boot sequence completed! Loading active desktop workspace..."
+    ];
+
+    let currentLog = 0;
+    const interval = setInterval(() => {
+      if (currentLog < logs.length) {
+        setVrosBootLogs(prev => [...prev, logs[currentLog]]);
+        currentLog++;
+        try { soundService.playSFX('ui_hover'); } catch (e) {}
+      } else {
+        clearInterval(interval);
+        setIsVrosBooting(false);
+        setVrosActiveScreen('launcher');
+        gainXP(25);
+        try { soundService.playSFX('achievement'); } catch (e) {}
+      }
+    }, 240);
+  };
+
+  const handleVrosFileCreate = () => {
+    if (!newVrosFileName.trim()) {
+      alert("Please specify a valid file name.");
+      return;
+    }
+    const name = newVrosFileName.trim().toLowerCase().endsWith('.vros') || 
+                 newVrosFileName.trim().toLowerCase().includes('.') 
+                   ? newVrosFileName.trim() 
+                   : `${newVrosFileName.trim()}.cfg`;
+
+    const size = `${(newVrosFileContent.length / 1024 + 0.1).toFixed(1)} KB`;
+    const newFile = {
+      name,
+      size,
+      content: newVrosFileContent || "// User Created Empty File Configuration"
+    };
+
+    setVrosFiles(prev => {
+      const filtered = prev.filter(f => f.name.toLowerCase() !== name.toLowerCase());
+      return [...filtered, newFile];
+    });
+
+    setNewVrosFileName('');
+    setNewVrosFileContent('');
+    gainXP(15);
+    try { soundService.playSFX('achievement'); } catch (e) {}
+  };
+
+  const handleVrosFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const droppedFile = files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string || '// Raw Binary Descriptor';
+        const name = droppedFile.name;
+        const size = `${(droppedFile.size / 1024).toFixed(1)} KB`;
+        setVrosFiles(prev => {
+          const filtered = prev.filter(f => f.name.toLowerCase() !== name.toLowerCase());
+          return [...filtered, { name, size, content: text }];
+        });
+        gainXP(20);
+        try { soundService.playSFX('achievement'); } catch (e) {}
+      };
+      reader.readAsText(droppedFile);
+    }
+  };
+
+  const executeVrosCommand = (cmdStr: string) => {
+    const trimmed = cmdStr.trim();
+    if (!trimmed) return;
+    const parts = trimmed.split(' ');
+    const baseCmd = parts[0].toLowerCase();
+    const arg = parts.slice(1).join(' ');
+
+    let reply = '';
+    if (baseCmd === 'help') {
+      reply = 'AVAILABLE SYSTEM COMMANDS:\n  help        - Display this microkernel console help menu\n  ls          - List folders & files inside the vr_os/ directory\n  cat <file>  - Output contents of a file inside vr_os/ (e.g. cat system.cfg)\n  neofetch    - Renders hardware system and kernel specifications\n  ping        - Status connection handshake with physical sensors\n  clear       - Wipe terminal logs\n  matrix      - Start falling digital green matrix screensaver\n  reboot      - Terminate operating system kernel & return to board';
+    } else if (baseCmd === 'ls') {
+      reply = `DIRECTORY OF vr_os/:\n${vrosFiles.map(f => `  - ${f.name}   (${f.size})`).join('\n')}`;
+    } else if (baseCmd === 'cat') {
+      if (!arg) {
+        reply = 'USAGE: cat <filename>   (e.g., cat system.cfg)';
+      } else {
+        const found = vrosFiles.find(f => f.name.toLowerCase() === arg.toLowerCase());
+        if (found) {
+          reply = `DUMPING FILE: vr_os/${found.name} (${found.size})\n----------------------------------------\n${found.content}`;
+        } else {
+          reply = `ERROR: File 'vr_os/${arg}' not found. Use 'ls' to see list.`;
+        }
+      }
+    } else if (baseCmd === 'neofetch') {
+      reply = `      _  _   ___   _  _     NeonOS Core v4.1.18-standalone\n     | \\| | | __| | \\| |    Kernel: Linux-XR v5.15-OpenXR\n     | .\` | | _|  | .\` |    Shell: vros-sh v1.0.4\n     |_|\\_| |___| |_|\\_|    Uptime: 2.5 minutes\n                            Resolution: Dual-Stereo 2048x2048@120Hz\n  ██████████████████████    CPU: Qualcomm Snapdragon XR2 Gen 2\n  ██████████████████████    GPU: Adreno 740 Spatial Engine\n                            Memory: 3.48 GB / 12.00 GB (29% used)\n                            Storage: Sideload Block Device '/dev/sda1'`;
+    } else if (baseCmd === 'ping') {
+      reply = `PINGING HEADSET SENSOR ARRAYS (192.168.1.189):\n  64 bytes from IMU_ACCEL_0: icmp_seq=1 ttl=64 time=0.85ms\n  64 bytes from IMU_GYRO_0:  icmp_seq=2 ttl=64 time=0.92ms\n  64 bytes from LIDAR_RAY_A: icmp_seq=3 ttl=64 time=1.45ms\n  --- 192.168.1.189 ping statistics ---\n  3 packets transmitted, 3 received, 0% packet loss, rtt min/avg/max = 0.85/1.07/1.45 ms`;
+    } else if (baseCmd === 'clear') {
+      setVrosTerminalHistory([]);
+      setVrosTerminalCommand('');
+      return;
+    } else if (baseCmd === 'matrix') {
+      setVrosActiveScreen('matrix');
+      reply = 'Starting Matrix Screensaver...';
+    } else if (baseCmd === 'reboot') {
+      setIsVrosLoaded(false);
+      setIsVrosBooting(false);
+      setVrosBootLogs([]);
+      try { soundService.playSFX('hit'); } catch (e) {}
+      return;
+    } else {
+      reply = `vros-sh: command not found: '${trimmed}'. Type 'help' for a list of available tasks.`;
+    }
+
+    setVrosTerminalHistory(prev => [...prev, `vros@neon-kernel ~ $ ${trimmed}`, reply]);
+    setVrosTerminalCommand('');
+    try { soundService.playSFX('ui_hover'); } catch (e) {}
   };
 
   // Cinema Reactions Emoji Spammer
@@ -1426,65 +1586,593 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
 
               {/* Main Drawing Stage Area */}
               <div className="flex-1 flex gap-4 overflow-hidden min-h-0">
-                {/* HTML Canvas drawing surface */}
-                <div className="flex-1 bg-[#09090b] rounded-3xl border border-slate-800 relative overflow-hidden flex flex-col justify-end">
-                  <canvas
-                    ref={canvasRef}
-                    width={560}
-                    height={280}
-                    onMouseDown={handleCanvasMouseDown}
-                    onMouseUp={handleCanvasMouseUp}
-                    onMouseLeave={handleCanvasMouseUp}
-                    onMouseMove={draw}
-                    className="w-full h-full cursor-crosshair bg-slate-950/40"
-                  />
-                  {/* Floating guide overlay instructions */}
-                  <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-lg text-[7px] font-black text-slate-400 uppercase tracking-widest border border-slate-800 pointer-events-none">
-                    🖍️ Hold left mouse click & drag inside canvas area to sketch strategy
-                  </div>
+                {/* HTML Canvas drawing surface OR VR OS Live Desktop Environment */}
+                <div className="flex-1 bg-[#09090b] rounded-3xl border border-slate-800 relative overflow-hidden flex flex-col justify-between">
+                  {isVrosLoaded ? (
+                    // --- VR OS ACTIVE INTERFACE SCREEN ---
+                    <div className="w-full h-full flex flex-col justify-between bg-zinc-950 font-mono text-[9px] relative overflow-hidden select-none">
+                      {/* CRT SCANLINE SHIELD EFFECT */}
+                      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-white/[0.01] to-transparent bg-[length:100%_4px] opacity-40 z-20" />
+                      
+                      {/* VROS Status Bar */}
+                      <div className="bg-zinc-900 border-b border-zinc-800 p-2 flex items-center justify-between text-[8px] z-10 shrink-0">
+                        <div className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping shrink-0" />
+                          <span className="font-black text-white uppercase tracking-wider">NEON_OS CORE v4.1.18</span>
+                          <span className="text-zinc-500 px-1 border border-zinc-800 rounded bg-zinc-950">ACTIVE_KERNEL: {vrosActiveKernel.toUpperCase()}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-zinc-400 font-bold">
+                          <span className="text-emerald-400 font-bold">RAM: 3.48GB / 12GB</span>
+                          <span className="text-cyan-400 font-bold">FPS: 120.4</span>
+                          <span className="text-amber-400 font-bold">TEMP: 34°C</span>
+                          <button
+                            onClick={() => {
+                              setIsVrosLoaded(false);
+                              setIsVrosBooting(false);
+                              setVrosBootLogs([]);
+                              try { soundService.playSFX('hit'); } catch (e) {}
+                            }}
+                            className="text-rose-400 hover:text-rose-300 font-black uppercase text-[7px] border border-rose-500/20 px-1.5 py-0.5 bg-rose-950/20 rounded cursor-pointer"
+                          >
+                            [SHUTDOWN]
+                          </button>
+                        </div>
+                      </div>
 
-                  {/* Overlay spawned sticky notes */}
-                  {stickyNotes.map(note => (
-                    <div
-                      key={note.id}
-                      style={{ backgroundColor: note.color, left: note.x, top: note.y }}
-                      className="absolute p-2.5 rounded-xl text-slate-950 font-sans shadow-lg max-w-[120px] text-[8px] font-bold border border-slate-900/10 cursor-move group select-text"
-                    >
-                      <button
-                        onClick={() => removeStickyNote(note.id)}
-                        className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-black text-white rounded-full flex items-center justify-center text-[8px] hover:scale-110 cursor-pointer border border-white/20"
-                      >
-                        ✕
-                      </button>
-                      <p className="uppercase break-words leading-snug">{note.text}</p>
+                      {/* VROS Main Screen Frame */}
+                      {isVrosBooting ? (
+                        // --- 1. BOOTING SHELL SEQUENCE ---
+                        <div className="flex-1 p-4 bg-black flex flex-col justify-between overflow-hidden">
+                          <div className="flex-1 overflow-y-auto space-y-1 text-emerald-400 text-[8px] leading-relaxed custom-scrollbar max-h-52">
+                            {vrosBootLogs.map((log, index) => (
+                              <div key={index} className="truncate font-mono">
+                                {log}
+                              </div>
+                            ))}
+                            <div className="text-emerald-400 animate-pulse font-mono font-black mt-2">
+                              _ LOADING SPATIAL_SUBSYSTEMS...
+                            </div>
+                          </div>
+
+                          {/* Loading progress bar */}
+                          <div className="space-y-1.5 mt-2 shrink-0">
+                            <div className="flex justify-between items-center text-[7.5px] text-zinc-500 font-bold uppercase">
+                              <span>Handshaking boot vectors</span>
+                              <span>{Math.floor((vrosBootLogs.length / 12) * 100)}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
+                              <div 
+                                className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-full rounded-full transition-all duration-150"
+                                style={{ width: `${(vrosBootLogs.length / 12) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        // --- 2. ACTIVE WORKSPACE LAYOUT ---
+                        <div className="flex-1 flex min-h-0 relative z-10">
+                          {/* Desktop Launcher / Sidebar */}
+                          <div className="w-24 bg-zinc-950 border-r border-zinc-900 p-2 flex flex-col gap-2 shrink-0">
+                            <div className="text-[7px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-900 pb-1 mb-1">
+                              SYSTEM APPS
+                            </div>
+
+                            {[
+                              { id: 'launcher', name: 'Launcher', icon: Rocket },
+                              { id: 'sysinfo', name: 'SysInfo', icon: Cpu },
+                              { id: 'explorer', name: 'Explorer', icon: Folder },
+                              { id: 'sensors', name: 'Sensors', icon: Activity },
+                              { id: 'matrix', name: 'Matrix Rain', icon: Code2 }
+                            ].map((app) => {
+                              const AppIcon = app.icon;
+                              const isActive = vrosActiveScreen === app.id;
+                              return (
+                                <button
+                                  key={app.id}
+                                  onClick={() => {
+                                    setVrosActiveScreen(app.id as any);
+                                    try { soundService.playSFX('ui_hover'); } catch (e) {}
+                                  }}
+                                  className={`w-full py-2 px-1.5 rounded-lg border text-left flex items-center gap-1.5 transition-all cursor-pointer ${
+                                    isActive
+                                      ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-400 shadow-md'
+                                      : 'bg-zinc-900/40 border-zinc-900 hover:bg-zinc-900 text-zinc-400 hover:text-white'
+                                  }`}
+                                >
+                                  <AppIcon size={10} className={isActive ? 'text-emerald-400 animate-pulse' : 'text-zinc-500'} />
+                                  <span className="text-[7.5px] font-black uppercase truncate">{app.name}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Desktop Window Screen Viewport */}
+                          <div className="flex-1 flex flex-col min-w-0 bg-black/60 relative">
+                            {/* App Viewports */}
+                            {vrosActiveScreen === 'launcher' && (
+                              <div className="flex-1 p-3 flex flex-col justify-between overflow-y-auto custom-scrollbar">
+                                <div>
+                                  <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    <Rocket size={10} />
+                                    Desktop Launcher Workspace
+                                  </h4>
+                                  <p className="text-[7.5px] text-zinc-500 uppercase tracking-wide leading-relaxed">
+                                    Welcome to the virtual sandbox. Launch spatial analyzers or access the shell interpreter console on the right panel to execute real-time instructions.
+                                  </p>
+
+                                  <div className="grid grid-cols-2 gap-2 mt-3">
+                                    <div 
+                                      onClick={() => setVrosActiveScreen('sysinfo')}
+                                      className="p-2 border border-zinc-900 bg-zinc-900/30 rounded-lg hover:border-emerald-500/30 cursor-pointer transition-all flex items-start gap-2 group"
+                                    >
+                                      <Cpu size={12} className="text-emerald-400 shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                                      <div>
+                                        <div className="text-[8px] font-black text-white uppercase">System Telemetry</div>
+                                        <p className="text-[6.5px] text-zinc-500 uppercase mt-0.5 leading-normal">Monitor hardware clocks, thread pipelines and Vulkan memory blocks.</p>
+                                      </div>
+                                    </div>
+
+                                    <div 
+                                      onClick={() => setVrosActiveScreen('explorer')}
+                                      className="p-2 border border-zinc-900 bg-zinc-900/30 rounded-lg hover:border-cyan-500/30 cursor-pointer transition-all flex items-start gap-2 group"
+                                    >
+                                      <Folder size={12} className="text-cyan-400 shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                                      <div>
+                                        <div className="text-[8px] font-black text-white uppercase">File Explorer</div>
+                                        <p className="text-[6.5px] text-zinc-500 uppercase mt-0.5 leading-normal">Read, write and inspect the virtual filesystem mounts under /vr_os/.</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="mt-3 bg-zinc-950/60 p-2 rounded-lg border border-zinc-900/50 flex gap-2 items-center text-[7.5px] text-zinc-400 leading-normal">
+                                  <Info className="w-3 h-3 text-emerald-400 shrink-0" />
+                                  <p className="uppercase">
+                                    You can drop custom configuration or APK files into the <strong>📂 VR OS Cabinet</strong> panel on the right side of the whiteboard to mount them into this operating system dynamically!
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {vrosActiveScreen === 'sysinfo' && (
+                              <div className="flex-1 p-3 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
+                                <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-wider mb-0.5 flex items-center gap-1 shrink-0 font-bold">
+                                  <Cpu size={10} />
+                                  Hardware Telemetry Monitor
+                                </h4>
+
+                                <div className="grid grid-cols-2 gap-2 shrink-0">
+                                  <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-900 space-y-1">
+                                    <span className="text-[7px] text-zinc-500 uppercase font-bold block">Qualcomm Snapdragon XR2 G2</span>
+                                    <div className="flex justify-between text-[7.5px] font-mono">
+                                      <span className="text-zinc-400">CORE-0 CLOCK</span>
+                                      <span className="text-emerald-400 font-bold">2.84 GHz</span>
+                                    </div>
+                                    <div className="w-full bg-zinc-900 h-1 rounded-full overflow-hidden">
+                                      <div className="bg-emerald-500 h-full w-[65%]" />
+                                    </div>
+                                    <div className="flex justify-between text-[7.5px] font-mono">
+                                      <span className="text-zinc-400">CORE-1 CLOCK</span>
+                                      <span className="text-emerald-400 font-bold">2.42 GHz</span>
+                                    </div>
+                                    <div className="w-full bg-zinc-900 h-1 rounded-full overflow-hidden">
+                                      <div className="bg-emerald-500 h-full w-[45%]" />
+                                    </div>
+                                  </div>
+
+                                  <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-900 space-y-1">
+                                    <span className="text-[7px] text-zinc-500 uppercase font-bold block">Memory Footprint Diagnostics</span>
+                                    <div className="flex justify-between text-[7.5px] font-mono">
+                                      <span className="text-zinc-400">VIRTUAL HEAP</span>
+                                      <span className="text-cyan-400 font-bold">3.48 / 12.0 GB</span>
+                                    </div>
+                                    <div className="w-full bg-zinc-900 h-1 rounded-full overflow-hidden">
+                                      <div className="bg-cyan-500 h-full w-[29%]" />
+                                    </div>
+                                    <p className="text-[6.5px] text-zinc-600 uppercase mt-1 leading-none">Vulkan dynamic cache bounds optimized for OpenXR tracking latency.</p>
+                                  </div>
+                                </div>
+
+                                {/* Active Threads Listing */}
+                                <div className="flex-1 bg-zinc-950 rounded-lg border border-zinc-900 p-2 overflow-y-auto custom-scrollbar flex flex-col justify-between">
+                                  <div>
+                                    <span className="text-[7px] text-zinc-500 uppercase font-bold block border-b border-zinc-900 pb-1 mb-1">Active Core Daemons</span>
+                                    <div className="space-y-1 text-[7.5px] font-mono text-zinc-400">
+                                      <div className="flex justify-between hover:bg-white/5 p-0.5 rounded">
+                                        <span className="text-emerald-400">● xr_trackingd [PID 120]</span>
+                                        <span>6-DOF IMU Loop (1000Hz) - RUNNING</span>
+                                      </div>
+                                      <div className="flex justify-between hover:bg-white/5 p-0.5 rounded">
+                                        <span className="text-emerald-400">● vulkan_renderd [PID 124]</span>
+                                        <span>Double-Buffer Frame Synced (120FPS) - RUNNING</span>
+                                      </div>
+                                      <div className="flex justify-between hover:bg-white/5 p-0.5 rounded">
+                                        <span className="text-cyan-400">● adb_wi_bridge [PID 145]</span>
+                                        <span>Listening: 192.168.1.189:5555 - ACTIVE</span>
+                                      </div>
+                                      <div className="flex justify-between hover:bg-white/5 p-0.5 rounded">
+                                        <span className="text-zinc-500">○ thermal_throttled [PID 102]</span>
+                                        <span>Ambient Core Temp 34.5°C - SLEEP</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {vrosActiveScreen === 'explorer' && (
+                              <div className="flex-1 p-3 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
+                                <h4 className="text-[10px] font-black text-cyan-400 uppercase tracking-wider mb-0.5 flex items-center gap-1 shrink-0">
+                                  <Folder size={10} />
+                                  Virtual Filesystem Viewer
+                                </h4>
+                                <p className="text-[7.5px] text-zinc-500 uppercase leading-snug shrink-0">
+                                  Click any file in the list below to launch the **Virtual Code Editor** to review or modify parameters inside the booted OS space.
+                                </p>
+
+                                <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
+                                  <div className="bg-zinc-950 rounded-lg border border-zinc-900 p-2 overflow-y-auto custom-scrollbar space-y-1">
+                                    <span className="text-[7px] text-zinc-500 uppercase font-black tracking-widest block border-b border-zinc-900 pb-1 mb-1">
+                                      📂 mounts/vr_os/ ({vrosFiles.length} files)
+                                    </span>
+                                    {vrosFiles.map((file, idx) => (
+                                      <div
+                                        key={idx}
+                                        onClick={() => {
+                                          setVrosSelectedFileForView(file);
+                                          try { soundService.playSFX('ui_hover'); } catch (e) {}
+                                        }}
+                                        className={`p-1.5 rounded border text-[7.5px] font-mono cursor-pointer transition-all flex items-center justify-between ${
+                                          vrosSelectedFileForView?.name === file.name
+                                            ? 'bg-cyan-950/40 border-cyan-500/50 text-cyan-300'
+                                            : 'bg-zinc-900/30 border-zinc-900 hover:bg-zinc-900/60 text-zinc-400 hover:text-white'
+                                        }`}
+                                      >
+                                        <span className="truncate flex items-center gap-1">
+                                          <Code2 size={8} />
+                                          {file.name}
+                                        </span>
+                                        <span className="text-[6.5px] text-zinc-500 font-bold uppercase">{file.size}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  <div className="bg-zinc-950 rounded-lg border border-zinc-900 p-2 flex flex-col justify-between min-h-0">
+                                    {vrosSelectedFileForView ? (
+                                      <div className="flex flex-col h-full justify-between">
+                                        <div className="min-h-0 flex flex-col flex-1">
+                                          <div className="flex justify-between items-center border-b border-zinc-900 pb-1 mb-1 shrink-0">
+                                            <span className="text-[7.5px] text-cyan-400 font-mono font-bold truncate">
+                                              EDITING: {vrosSelectedFileForView.name}
+                                            </span>
+                                            <span className="text-[6.5px] text-zinc-500">{vrosSelectedFileForView.size}</span>
+                                          </div>
+                                          <textarea
+                                            value={vrosSelectedFileForView.content}
+                                            onChange={(e) => {
+                                              const newContent = e.target.value;
+                                              setVrosSelectedFileForView(prev => prev ? { ...prev, content: newContent } : null);
+                                            }}
+                                            className="w-full bg-black/50 border border-zinc-900 p-1 text-[7.5px] font-mono text-cyan-200 placeholder-zinc-700 h-28 resize-none focus:outline-none focus:border-cyan-500/40 custom-scrollbar flex-1"
+                                          />
+                                        </div>
+                                        <button
+                                          onClick={() => {
+                                            setVrosFiles(prev => {
+                                              const filtered = prev.filter(f => f.name.toLowerCase() !== vrosSelectedFileForView.name.toLowerCase());
+                                              return [...filtered, vrosSelectedFileForView];
+                                            });
+                                            try { soundService.playSFX('achievement'); } catch (e) {}
+                                            alert(`Saved file vr_os/${vrosSelectedFileForView.name} successfully inside core mounts.`);
+                                          }}
+                                          className="w-full py-1.5 bg-cyan-500 hover:bg-cyan-400 text-black text-[7.5px] font-black uppercase tracking-widest rounded mt-1.5 shrink-0 cursor-pointer"
+                                        >
+                                          Save File Changes
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div className="flex-1 flex flex-col items-center justify-center text-center p-3 text-zinc-600">
+                                        <Code2 size={24} className="opacity-30 mb-1.5" />
+                                        <span className="text-[8px] font-black uppercase tracking-wider">No File Selected</span>
+                                        <p className="text-[6.5px] uppercase tracking-wide mt-1">Select any file on the left mount directory list to edit it.</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {vrosActiveScreen === 'sensors' && (
+                              <div className="flex-1 p-3 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
+                                <h4 className="text-[10px] font-black text-amber-400 uppercase tracking-wider mb-0.5 flex items-center gap-1 shrink-0">
+                                  <Activity size={10} />
+                                  6-DOF Sensor Alignment Grid
+                                </h4>
+                                <p className="text-[7.5px] text-zinc-500 uppercase leading-snug shrink-0">
+                                  Hover or move your cursor inside the radar grid below to trigger real-time sensor interrupts, calibrating gyroscopes and LiDAR mapping registers.
+                                </p>
+
+                                {/* Radar Grid */}
+                                <div className="flex-1 bg-zinc-950 border border-zinc-900 rounded-xl relative overflow-hidden flex items-center justify-center group cursor-pointer p-4 min-h-0">
+                                  {/* Center concentric target lines */}
+                                  <div className="absolute w-24 h-24 rounded-full border border-zinc-900 flex items-center justify-center animate-pulse">
+                                    <div className="w-12 h-12 rounded-full border border-dashed border-zinc-900 flex items-center justify-center">
+                                      <div className="w-4 h-4 rounded-full border border-zinc-800" />
+                                    </div>
+                                  </div>
+
+                                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(245,158,11,0.05)_0%,transparent_70%)]" />
+
+                                  {/* Holographic dials */}
+                                  <div className="absolute text-[7.5px] font-mono text-amber-500/50 flex flex-col gap-1 items-center select-none pointer-events-none">
+                                    <span className="font-black animate-pulse">GYRO RE-ALIGNING...</span>
+                                    <span>PITCH: ({(Math.random() * 2 - 1).toFixed(4)})</span>
+                                    <span>ROLL: ({(Math.random() * 2 - 1).toFixed(4)})</span>
+                                    <span>YAW: ({(Math.random() * 2 - 1).toFixed(4)})</span>
+                                  </div>
+
+                                  {/* Laser Crosshairs */}
+                                  <div className="absolute left-0 right-0 h-px bg-zinc-900/80 pointer-events-none" />
+                                  <div className="absolute top-0 bottom-0 w-px bg-zinc-900/80 pointer-events-none" />
+
+                                  {/* Interactive tracking node */}
+                                  <div className="absolute w-3 h-3 bg-amber-500 rounded-full border border-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none scale-110 shadow-[0_0_10px_#f59e0b]" />
+                                </div>
+                              </div>
+                            )}
+
+                            {vrosActiveScreen === 'matrix' && (
+                              <div className="flex-1 p-3 bg-black flex flex-col justify-between overflow-hidden relative font-mono text-emerald-500">
+                                <div className="absolute top-2 right-2 flex gap-1 z-10 shrink-0">
+                                  {['#10b981', '#22d3ee', '#f59e0b', '#f43f5e'].map(color => (
+                                    <button
+                                      key={color}
+                                      onClick={() => setVrosMatrixColor(color)}
+                                      style={{ backgroundColor: color }}
+                                      className="w-3.5 h-3.5 rounded-full border border-black hover:scale-105 cursor-pointer"
+                                    />
+                                  ))}
+                                </div>
+
+                                <div className="text-[7.5px] leading-relaxed select-none space-y-1.5 flex-1 mt-2 overflow-hidden pointer-events-none">
+                                  <div className="text-[10px] font-black uppercase tracking-widest animate-pulse flex items-center gap-1" style={{ color: vrosMatrixColor }}>
+                                    <Code2 size={11} /> DIGITAL MATRIX RE-FLOW
+                                  </div>
+                                  <p className="text-zinc-600 text-[7px] uppercase tracking-wider">Rerouting OpenXR kernel frame buffers directly into standard whiteboard matrix matrices:</p>
+                                  
+                                  <div className="space-y-0.5 font-mono text-[7px] opacity-80" style={{ color: vrosMatrixColor }}>
+                                    <div>01001001 01001110 01001001 01010100 01011001 (INITIATING)</div>
+                                    <div>10010101 00101010 11010101 01010101 00101011 (LIDAR_LOCK)</div>
+                                    <div>00101101 11010101 01101010 01011111 00010101 (XR_FRAME_OK)</div>
+                                    <div>11010111 00101101 01010101 10101011 01010101 (6DOF_ACTIVE)</div>
+                                    <div>01101010 01011111 01101101 11010101 01101010 (VULKAN_PIPE)</div>
+                                    <div>10010111 00101101 01010101 10101011 01010101 (RENDER_DONE)</div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                  ) : (
+                    // --- CANVAS DRAWING BOARD (STANDARD) ---
+                    <>
+                      <canvas
+                        ref={canvasRef}
+                        width={560}
+                        height={280}
+                        onMouseDown={handleCanvasMouseDown}
+                        onMouseUp={handleCanvasMouseUp}
+                        onMouseLeave={handleCanvasMouseUp}
+                        onMouseMove={draw}
+                        className="w-full h-full cursor-crosshair bg-slate-950/40"
+                      />
+                      {/* Floating guide overlay instructions */}
+                      <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-lg text-[7px] font-black text-slate-400 uppercase tracking-widest border border-slate-800 pointer-events-none">
+                        🖍️ Hold left mouse click & drag inside canvas area to sketch strategy
+                      </div>
+
+                      {/* Overlay spawned sticky notes */}
+                      {stickyNotes.map(note => (
+                        <div
+                          key={note.id}
+                          style={{ backgroundColor: note.color, left: note.x, top: note.y }}
+                          className="absolute p-2.5 rounded-xl text-slate-950 font-sans shadow-lg max-w-[120px] text-[8px] font-bold border border-slate-900/10 cursor-move group select-text"
+                        >
+                          <button
+                            onClick={() => removeStickyNote(note.id)}
+                            className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-black text-white rounded-full flex items-center justify-center text-[8px] hover:scale-110 cursor-pointer border border-white/20"
+                          >
+                            ✕
+                          </button>
+                          <p className="uppercase break-words leading-snug">{note.text}</p>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
 
-                {/* Sticky notes control widget */}
-                <div className="w-56 bg-slate-900/40 border border-slate-800 p-3 rounded-3xl flex flex-col justify-between shrink-0">
-                  <div>
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block border-b border-slate-800 pb-2 mb-2">
-                      STICKY NOTES PANEL
-                    </span>
-                    <p className="text-[7.5px] text-slate-500 uppercase tracking-widest mb-2 font-bold">
-                      Add glowing sticky reminders and pin them over your battlefield maps strategy whiteboard:
-                    </p>
-                    
-                    <textarea
-                      placeholder="Type note content here..."
-                      value={newStickyText}
-                      onChange={(e) => setNewStickyText(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-[9px] uppercase font-mono text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 h-24 resize-none"
-                    />
+                {/* Right side widget drawer (Sticky notes & VR OS Workspace Folder with Loader) */}
+                <div className="w-56 bg-slate-900/40 border border-slate-800 p-3 rounded-3xl flex flex-col justify-between shrink-0 overflow-hidden font-mono text-[9px]">
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* Header sub-tabs selector */}
+                    <div className="flex border-b border-slate-800 pb-2 mb-2 select-none shrink-0">
+                      <button
+                        onClick={() => {
+                          setBoardRightTab('sticky');
+                          try { soundService.playSFX('ui_hover'); } catch (e) {}
+                        }}
+                        className={`flex-1 text-center py-1 font-black uppercase text-[8px] tracking-wider transition-all rounded-md cursor-pointer ${
+                          boardRightTab === 'sticky'
+                            ? 'bg-slate-800 text-cyan-400 border border-slate-700'
+                            : 'text-slate-500 hover:text-slate-300'
+                        }`}
+                      >
+                        📌 STICKYS
+                      </button>
+                      <button
+                        onClick={() => {
+                          setBoardRightTab('vros');
+                          try { soundService.playSFX('ui_hover'); } catch (e) {}
+                        }}
+                        className={`flex-1 text-center py-1 font-black uppercase text-[8px] tracking-wider transition-all rounded-md cursor-pointer ${
+                          boardRightTab === 'vros'
+                            ? 'bg-slate-800 text-amber-400 border border-slate-700'
+                            : 'text-slate-500 hover:text-slate-300'
+                        }`}
+                      >
+                        📂 VR OS
+                      </button>
+                    </div>
+
+                    {boardRightTab === 'sticky' ? (
+                      // --- STICKY NOTES TAB ---
+                      <div className="flex-1 flex flex-col justify-between overflow-y-auto custom-scrollbar">
+                        <div>
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">
+                            STICKY NOTES PANEL
+                          </span>
+                          <p className="text-[7px] text-slate-500 uppercase mb-2 font-bold leading-normal">
+                            Add glowing sticky reminders and pin them over your battlefield maps strategy whiteboard:
+                          </p>
+                          
+                          <textarea
+                            placeholder="Type note content here..."
+                            value={newStickyText}
+                            onChange={(e) => setNewStickyText(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-[9px] uppercase font-mono text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 h-24 resize-none"
+                          />
+                        </div>
+
+                        <button
+                          onClick={addStickyNote}
+                          className="w-full py-2 bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-slate-950 font-black text-[8px] uppercase tracking-widest rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer mt-2"
+                        >
+                          Add Sticky Note
+                        </button>
+                      </div>
+                    ) : (
+                      // --- VR OS WORKSPACE & LOADER TAB ---
+                      <div 
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={handleVrosFileDrop}
+                        className="flex-1 flex flex-col justify-between overflow-y-auto custom-scrollbar pr-0.5 space-y-2.5"
+                      >
+                        {/* Directory folder tree */}
+                        <div className="space-y-1">
+                          <span className="text-[7.5px] font-black text-amber-400 uppercase tracking-widest flex items-center gap-1">
+                            <Folder size={10} className="text-amber-400 shrink-0" />
+                            FOLDER: mounts/vr_os/
+                          </span>
+
+                          <div className="bg-slate-950 border border-slate-800 p-1.5 rounded-xl text-[7.5px] max-h-24 overflow-y-auto custom-scrollbar space-y-0.5 text-slate-300">
+                            {vrosFiles.map((f, i) => (
+                              <div key={i} className="flex justify-between items-center py-0.5 border-b border-white/5 last:border-0">
+                                <span className="truncate max-w-[120px] text-slate-400 flex items-center gap-1">
+                                  <span className="text-[7px]">📄</span>
+                                  {f.name}
+                                </span>
+                                <span className="text-[6.5px] text-slate-600 font-bold uppercase">{f.size}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* File Sideload/Creation Form */}
+                        <div className="space-y-1 bg-slate-950/40 p-1.5 rounded-xl border border-slate-850">
+                          <span className="text-[7px] font-black text-slate-400 uppercase tracking-wider block">
+                            Create System File
+                          </span>
+                          <input
+                            type="text"
+                            placeholder="filename.vros"
+                            value={newVrosFileName}
+                            onChange={(e) => setNewVrosFileName(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1 text-[7.5px] font-mono text-white placeholder-slate-600 focus:outline-none focus:border-amber-400/50"
+                          />
+                          <textarea
+                            placeholder="file parameters/text..."
+                            value={newVrosFileContent}
+                            onChange={(e) => setNewVrosFileContent(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1 text-[7.5px] font-mono text-white placeholder-slate-600 focus:outline-none focus:border-amber-400/50 h-10 resize-none"
+                          />
+                          <button
+                            onClick={handleVrosFileCreate}
+                            className="w-full py-1 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-400 text-[6.5px] font-black uppercase tracking-widest rounded transition-all cursor-pointer"
+                          >
+                            Save to vr_os folder
+                          </button>
+                        </div>
+
+                        {/* OS KERNEL SELECT & LOADER BUTTON */}
+                        <div className="space-y-1 pt-1.5 border-t border-slate-850">
+                          <span className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest block">
+                            SYSTEM OS LOADER
+                          </span>
+
+                          <select
+                            value={vrosActiveKernel}
+                            onChange={(e) => setVrosActiveKernel(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 text-slate-300 rounded-lg p-1 text-[7.5px] font-mono focus:outline-none focus:border-amber-500"
+                          >
+                            <option value="NeonOS Spatial Core">NeonOS Spatial Core</option>
+                            <option value="QuestOS Core (Vulkan-XR)">QuestOS Core (Vulkan-XR)</option>
+                            <option value="RetroVR emulator Core">RetroVR emulator Core</option>
+                          </select>
+
+                          <button
+                            onClick={bootVros}
+                            disabled={isVrosLoaded}
+                            className={`w-full py-1.5 ${
+                              isVrosLoaded 
+                                ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 animate-pulse' 
+                                : 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black'
+                            } text-[8px] uppercase tracking-widest rounded-lg transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-md`}
+                          >
+                            {isVrosLoaded ? '⚡ OS Core Loaded' : '⚡ Load VR OS'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  <button
-                    onClick={addStickyNote}
-                    className="w-full py-2 bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-slate-950 font-black text-[8px] uppercase tracking-widest rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer mt-2"
-                  >
-                    Add Sticky Note
-                  </button>
+                  {/* Shell command terminal input (Shows at bottom if OS is booted) */}
+                  {isVrosLoaded && !isVrosBooting && (
+                    <div className="mt-2 pt-2 border-t border-slate-850 flex flex-col shrink-0">
+                      <span className="text-[7.5px] font-black text-emerald-400 uppercase tracking-wider block mb-1">
+                        BASH INTERPRETER SHELL
+                      </span>
+                      <div className="bg-black border border-slate-850 rounded-lg p-1 flex flex-col gap-1">
+                        {/* Terminal mini History list */}
+                        <div className="h-20 overflow-y-auto text-[7px] font-mono text-emerald-500 space-y-1 p-0.5 border border-zinc-900 bg-zinc-950/40 rounded custom-scrollbar">
+                          {vrosTerminalHistory.slice(-15).map((log, idx) => (
+                            <div key={idx} className="whitespace-pre-wrap leading-normal break-all">
+                              {log}
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Interactive command input row */}
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            executeVrosCommand(vrosTerminalCommand);
+                          }}
+                          className="flex items-center gap-1 mt-0.5 border-t border-zinc-900 pt-1"
+                        >
+                          <span className="text-[7px] text-zinc-500 select-none">vros$</span>
+                          <input
+                            type="text"
+                            value={vrosTerminalCommand}
+                            onChange={(e) => setVrosTerminalCommand(e.target.value)}
+                            placeholder='Type "help" here...'
+                            className="flex-1 bg-transparent border-none text-[7px] font-mono text-emerald-400 placeholder-zinc-700 focus:outline-none uppercase"
+                          />
+                        </form>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
