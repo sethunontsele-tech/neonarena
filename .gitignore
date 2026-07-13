@@ -6,3 +6,17 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# IDEs and editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Firebase
+.firebase/
+*-debug.log
+.firebaserc

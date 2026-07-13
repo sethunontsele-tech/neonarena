@@ -584,7 +584,7 @@ async function startServer() {
       }
     });
 
-    socket.on('chatMessage', (data: { message: string, type: 'global' | 'proximity' }) => {
+    socket.on('chatMessage', (data: { message: string, type: 'global' | 'proximity' | 'team' }) => {
       const room = rooms[currentRoomId || 'global'];
       if (room && room.players[socket.id]) {
         const p = room.players[socket.id];
@@ -598,6 +598,17 @@ async function startServer() {
 
         if (data.type === 'global') {
           io.to(room.id).emit('chatMessage', msg);
+        } else if (data.type === 'team') {
+          const senderTeam = p.team || 'none';
+          if (senderTeam === 'none') {
+            io.to(room.id).emit('chatMessage', { ...msg, type: 'global' });
+          } else {
+            Object.values(room.players).forEach(otherP => {
+              if (otherP.team === senderTeam) {
+                io.to(otherP.id).emit('chatMessage', msg);
+              }
+            });
+          }
         } else {
           // Proximity chat
           Object.values(room.players).forEach(otherP => {

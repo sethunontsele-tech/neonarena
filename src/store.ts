@@ -359,7 +359,7 @@ export interface ChatMessage {
   sender: string;
   message: string;
   timestamp: number;
-  type: 'global' | 'proximity' | 'system';
+  type: 'global' | 'proximity' | 'system' | 'team';
 }
 
 export interface ProjectileData {
@@ -852,7 +852,7 @@ interface GameStore {
   setPrivateServerName: (name: string) => void;
   
   // Chat & Social
-  sendChatMessage: (message: string, type: 'global' | 'proximity') => void;
+  sendChatMessage: (message: string, type: 'global' | 'proximity' | 'team') => void;
   addChatMessage: (msg: ChatMessage) => void;
   setGamertag: (tag: string) => void;
   addFriend: (profile: UserProfile) => void;

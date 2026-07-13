@@ -1269,7 +1269,7 @@ function HUD() {
   }, [clanId]);
 
   const [chatInput, setChatInput] = useState('');
-  const [chatType, setChatType] = useState<'global' | 'proximity'>('global');
+  const [chatType, setChatType] = useState<'global' | 'proximity' | 'team'>('global');
 
   const [showScoreboard, setShowScoreboard] = useState(false);
   const [commandInput, setCommandInput] = useState('');
@@ -1916,22 +1916,41 @@ function HUD() {
         {isChatOpen && (
           <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-xl p-3 h-48 flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-2 custom-scrollbar">
-              {chatMessages.map(msg => (
-                <div key={msg.id} className="text-[10px] leading-tight">
-                  <span className={`font-black uppercase ${msg.type === 'proximity' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    [{msg.type === 'proximity' ? 'PROX' : 'GLOB'}] {msg.sender}:
-                  </span>
-                  <span className="text-white/80 ml-1">{msg.message}</span>
-                </div>
-              ))}
+              {chatMessages.map(msg => {
+                let badgeText = 'GLOB';
+                let badgeClass = 'text-amber-400';
+                if (msg.type === 'proximity') {
+                  badgeText = 'PROX';
+                  badgeClass = 'text-emerald-400';
+                } else if (msg.type === 'team') {
+                  badgeText = 'TEAM';
+                  badgeClass = 'text-sky-400';
+                } else if (msg.type === 'system') {
+                  badgeText = 'SYS';
+                  badgeClass = 'text-rose-400';
+                }
+                return (
+                  <div key={msg.id} className="text-[10px] leading-tight">
+                    <span className={`font-black uppercase ${badgeClass}`}>
+                      [{badgeText}] {msg.sender}:
+                    </span>
+                    <span className="text-white/80 ml-1">{msg.message}</span>
+                  </div>
+                );
+              })}
             </div>
             
             <form onSubmit={handleSendChat} className="mt-2 flex gap-2">
               <button 
                 type="button"
-                onClick={() => setChatType(t => t === 'global' ? 'proximity' : 'global')}
+                onClick={() => setChatType(t => {
+                  if (t === 'global') return 'team';
+                  if (t === 'team') return 'proximity';
+                  return 'global';
+                })}
                 className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest transition-all ${
-                  chatType === 'global' ? 'bg-amber-500 text-black' : 'bg-emerald-500 text-black'
+                  chatType === 'global' ? 'bg-amber-500 text-black' :
+                  chatType === 'team' ? 'bg-sky-500 text-black' : 'bg-emerald-500 text-black'
                 }`}
               >
                 {chatType}
@@ -1943,7 +1962,11 @@ function HUD() {
                 onChange={(e) => setChatInput(e.target.value)}
                 onBlur={() => !chatInput && setChatOpen(false)}
                 className="flex-1 bg-white/5 border border-white/20 rounded px-2 py-1 text-[10px] text-white focus:outline-none focus:border-amber-400"
-                placeholder="Type message..."
+                placeholder={
+                  chatType === 'team'
+                    ? (team === 'none' ? "No team (will send to all)..." : `Message team [${team.toUpperCase()}]...`)
+                    : "Type message..."
+                }
               />
             </form>
           </div>
