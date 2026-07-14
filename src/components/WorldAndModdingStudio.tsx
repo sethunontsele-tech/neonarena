@@ -50,6 +50,10 @@ export interface VirtualWorld {
       name: string;
       files: VirtualFile[];
     };
+    os: {
+      name: string;
+      files: VirtualFile[];
+    };
   };
   information: string; // information.json content
 }
@@ -181,6 +185,40 @@ Roughness = 0.1`,
   "bot_behavior": "aggressive_hunting",
   "shield_regeneration": true,
   "tactical_pings_frequency": 0.85
+}`,
+  vros_config: `{
+  "vros_name": "ZenithVR OS",
+  "build_version": "v2.1.0-alpha",
+  "target_refresh_rate": "120Hz",
+  "gesture_engine_enabled": true,
+  "spatial_passthrough": {
+    "enabled": true,
+    "transparency": 0.85,
+    "chroma_key_color": "#00ff00"
+  },
+  "modules": [
+    { "name": "VROSKernel", "status": "active" },
+    { "name": "EyeTrackingModule", "status": "active" },
+    { "name": "TactileHapticsCompositor", "status": "standby" }
+  ]
+}`,
+  vros_driver: `// ZenithVR OS Spatial Gesture & Tracking Driver
+// Target: WebXR / OpenXR Spatial Compositor API
+
+#include <vr_os_kernel.h>
+#include <xr_compositor_api.h>
+
+void InitializeVROSDriver() {
+    // Calibrate spatial tracking vectors
+    VROSKernel::SetTrackingSensitivity(0.98f);
+    VROSKernel::EnableGesture("pinch_to_select", true);
+    VROSKernel::EnableGesture("wrist_flick_menu", true);
+    
+    // Bind high refresh rate overlays
+    XRCompositor::RegisterVirtualOverlay("com.vros.hud", 120.0f);
+    XRCompositor::EnableDirectPassthrough(true);
+    
+    VROSKernel::Log("[ZenithVR OS] Spatial kernel and gesture systems loaded.");
 }`
 };
 
@@ -292,6 +330,13 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
             files: [
               { name: 'procedural_seed.py', type: 'code', extension: 'py', content: `# Procedural terrain generation config\nSEED = 771029\nWIDTH = 500\nHEIGHT = 500` }
             ]
+          },
+          os: {
+            name: 'os',
+            files: [
+              { name: 'vros_config.json', type: 'json', extension: 'json', content: TEMPLATES.vros_config },
+              { name: 'vros_driver.cpp', type: 'code', extension: 'cpp', content: TEMPLATES.vros_driver }
+            ]
           }
         },
         information: JSON.stringify({
@@ -337,6 +382,13 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
             name: 'code',
             files: [
               { name: 'generator.py', type: 'code', extension: 'py', content: `SEED = 1205\nAMB_LIGHT = "#ffaa00"` }
+            ]
+          },
+          os: {
+            name: 'os',
+            files: [
+              { name: 'vros_config.json', type: 'json', extension: 'json', content: TEMPLATES.vros_config },
+              { name: 'vros_driver.cpp', type: 'code', extension: 'cpp', content: TEMPLATES.vros_driver }
             ]
           }
         },
@@ -409,6 +461,10 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
         newWorld.folders.code.files = newWorld.folders.code.files.map(f => 
           f.name === parts[2] ? { ...f, content: editorContent } : f
         );
+      } else if (parts[1] === 'os') {
+        newWorld.folders.os.files = newWorld.folders.os.files.map(f => 
+          f.name === parts[2] ? { ...f, content: editorContent } : f
+        );
       }
       
       return newWorld;
@@ -465,6 +521,13 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
           name: 'code',
           files: [
             { name: 'main_kernel.py', type: 'code', extension: 'py', content: `# Main World Logic script\ndef init():\n    set_sky_color("#05051a")` }
+          ]
+        },
+        os: {
+          name: 'os',
+          files: [
+            { name: 'vros_config.json', type: 'json', extension: 'json', content: TEMPLATES.vros_config },
+            { name: 'vros_driver.cpp', type: 'code', extension: 'cpp', content: TEMPLATES.vros_driver }
           ]
         }
       },
@@ -539,7 +602,7 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
 
     setTimeout(() => addLog(`[SUCCESS] 🔓 Blender asset package detected at /blender.zip (${(zipSize / 1024).toFixed(1)} KB)! Unpacking assets...`), 100);
     setTimeout(() => addLog(`[MOD COMPILER v4.2] Loading world files from /worlds/${activeWorld.id}/`), 300);
-    setTimeout(() => addLog(`[MOD COMPILER] Found root folders: 'mods/', 'builds/', 'bots/', 'code/'`), 500);
+    setTimeout(() => addLog(`[MOD COMPILER] Found root folders: 'mods/', 'builds/', 'bots/', 'code/', 'os/'`), 500);
     setTimeout(() => addLog(`[MOD COMPILER] scanning C# files in 'mods/'...`), 700);
     
     // Look for variables inside user C# files
@@ -623,6 +686,19 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
         addLog(`[C++ COMPILER] No native graphics overrides files found. Skipping...`);
       }
     }, 1500);
+
+    setTimeout(() => {
+      const osFiles = activeWorld.folders.os?.files || [];
+      if (osFiles.length > 0) {
+        addLog(`[VR OS COMPILER] Parsing files inside virtual 'os/' directory:`);
+        osFiles.forEach(f => {
+          addLog(`   -> Loaded custom VR OS file: ${f.name} (${f.content.length} characters)`);
+        });
+        addLog(`[VR OS COMPILER] Compiled VR operating system modules! Boot sequence loaded into WebXR shell.`);
+      } else {
+        addLog(`[VR OS COMPILER] No virtual OS files found. Skipping...`);
+      }
+    }, 1650);
 
     setTimeout(() => {
       addLog(`[BUILD LINKER] Assembling placed structural node maps from builds/block_map.json...`);
@@ -790,6 +866,7 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
               const isBuildsExp = expandedFolders[`${pathPrefix}/builds`];
               const isBotsExp = expandedFolders[`${pathPrefix}/bots`];
               const isCodeExp = expandedFolders[`${pathPrefix}/code`];
+              const isOsExp = expandedFolders[`${pathPrefix}/os`];
 
               return (
                 <div key={w.id} className={`rounded-2xl border transition-all ${
@@ -973,6 +1050,39 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
                                 <span className="text-[10px] font-mono">{f.name}</span>
                               </div>
                             ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* --- VR OS FOLDER --- */}
+                      <div>
+                        <div 
+                          onClick={() => toggleFolder(`${pathPrefix}/os`)}
+                          className="flex items-center gap-1.5 py-1 text-zinc-400 hover:text-white cursor-pointer"
+                        >
+                          {isOsExp ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                          <Folder size={13} className="text-blue-500/80" />
+                          <span className="font-bold text-[10px] uppercase text-blue-400">os/</span>
+                        </div>
+                        {isOsExp && (
+                          <div className="pl-4 space-y-1 border-l border-white/5 ml-2.5">
+                            {w.folders.os?.files?.map(f => (
+                              <div 
+                                key={f.name}
+                                onClick={() => handleFileClick(w.id, 'os', null, f.name, f.content)}
+                                className={`flex items-center gap-1.5 py-1 px-2 rounded-lg cursor-pointer ${
+                                  selectedFilePath === `${w.id}/os/${f.name}` 
+                                    ? 'bg-blue-500/10 text-blue-400 font-bold' 
+                                    : 'text-zinc-500 hover:text-zinc-300'
+                                }`}
+                              >
+                                <FileCode size={12} className="text-blue-400" />
+                                <span className="text-[10px] font-mono">{f.name}</span>
+                              </div>
+                            ))}
+                            {(!w.folders.os?.files || w.folders.os.files.length === 0) && (
+                              <div className="text-[9px] text-zinc-600 italic pl-2">Empty OS Folder</div>
+                            )}
                           </div>
                         )}
                       </div>

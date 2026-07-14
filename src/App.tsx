@@ -1330,6 +1330,28 @@ function HUD() {
           setInventoryOpen(false);
         } else if (isChatOpen) {
           setChatOpen(false);
+        } else {
+          // Close other active in-game overlays & sub-menus
+          setShowCharacterFolder(false);
+          setShowDossier(false);
+          setShowQuests(false);
+          setShowModStudio(false);
+          setShowExperimental(false);
+          setShowTactical(false);
+          setShowScanner(false);
+          setShowMRCameras(false);
+          setCommandOpen(false);
+          
+          // Dismiss standard modals
+          const currentModals = useGameStore.getState().modals;
+          const toggleModal = useGameStore.getState().toggleModal;
+          if (currentModals.account) toggleModal('account');
+          if (currentModals.casino) toggleModal('casino');
+          if (currentModals.tasks) toggleModal('tasks');
+          if (currentModals.friends) toggleModal('friends');
+          if (currentModals.clans) toggleModal('clans');
+          if (currentModals.vehicles) toggleModal('vehicles');
+          if (currentModals.update) toggleModal('update');
         }
       }
       if (e.key === 'Enter' && !isChatOpen) {
@@ -2597,13 +2619,26 @@ const WorldEventHUD = () => {
 };
 
 const BillionFeaturesBanner = () => {
+  const [isVisible, setIsVisible] = React.useState(true);
+
+  if (!isVisible) return null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
-      className="absolute bottom-10 right-10 z-50 pointer-events-none"
+      exit={{ opacity: 0, y: 50 }}
+      className="absolute bottom-10 right-10 z-50 pointer-events-auto group"
     >
-      <div className="bg-white/5 border border-white/10 backdrop-blur-md p-6 rounded-3xl flex items-center gap-4">
+      <div className="bg-white/5 border border-white/10 backdrop-blur-md p-6 rounded-3xl flex items-center gap-4 relative">
+        {/* Close/Remove Button */}
+        <button
+          onClick={() => setIsVisible(false)}
+          className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center cursor-pointer transition-all shadow-[0_0_10px_rgba(239,68,68,0.5)] border border-red-400 z-10"
+          title="Dismiss Banner"
+        >
+          <X size={12} />
+        </button>
         <div className="p-3 bg-blue-600 text-white rounded-2xl rotate-12">
           <Sparkles size={24} />
         </div>
