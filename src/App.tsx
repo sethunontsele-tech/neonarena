@@ -1332,14 +1332,9 @@ function HUD() {
           setChatOpen(false);
         } else {
           // Close other active in-game overlays & sub-menus
-          setShowCharacterFolder(false);
-          setShowDossier(false);
-          setShowQuests(false);
-          setShowModStudio(false);
-          setShowExperimental(false);
-          setShowTactical(false);
-          setShowScanner(false);
-          setShowMRCameras(false);
+          if (typeof (window as any).closeAllActivePopups === 'function') {
+            (window as any).closeAllActivePopups();
+          }
           setCommandOpen(false);
           
           // Dismiss standard modals
@@ -2619,7 +2614,7 @@ const WorldEventHUD = () => {
 };
 
 const BillionFeaturesBanner = () => {
-  const [isVisible, setIsVisible] = React.useState(true);
+  const [isVisible, setIsVisible] = useState(true);
 
   if (!isVisible) return null;
 

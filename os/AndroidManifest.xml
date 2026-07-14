@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ZenithVR OS Custom Manifest for High-Performance Standalone VR/MR -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="com.zenith.vros">
+
+    <!-- VR Hardware and Tracking Requirements -->
+    <uses-feature android:name="android.hardware.vr.headtracking" android:version="1" android:required="true" />
+    <uses-feature android:name="oculus.software.handtracking" android:required="false" />
+    <uses-feature android:name="com.oculus.feature.PASSTHROUGH" android:required="false" />
+
+    <!-- Spatial and Performance Modes -->
+    <uses-permission android:name="com.oculus.permission.HAND_TRACKING" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="com.oculus.permission.PLAY_SPACE_BACKGROUND" />
+
+    <application
+        android:allowBackup="true"
+        android:label="ZenithVR OS Spatial Shell"
+        android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+
+        <!-- Supported XR Devices Configurations -->
+        <meta-data android:name="com.oculus.supportedDevices" android:value="quest2|quest3|quest3s|pro" />
+        <meta-data android:name="com.samsung.android.vr.application.mode" android:value="vr_only" />
+
+        <activity
+            android:name=".MainActivity"
+            android:label="ZenithVR OS Main Compositor"
+            android:screenOrientation="landscape"
+            android:launchMode="singleTask"
+            android:resizeableActivity="false"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <!-- OpenVR/OpenXR Android Intent Category -->
+                <category android:name="com.oculus.intent.category.VR" />
+            </intent-filter>
+
+        </activity>
+    </application>
+</manifest>
