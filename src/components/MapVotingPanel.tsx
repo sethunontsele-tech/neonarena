@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useGameStore, MapType } from '../store';
 import { Vote, Check, Users, Sparkles } from 'lucide-react';
+import { ARENA_MAPS } from '../data/arenaMaps';
 
 interface MapDetails {
   name: string;
@@ -9,7 +10,7 @@ interface MapDetails {
   badge: string;
 }
 
-const MAP_INFO_DIRECTORY: Record<MapType, MapDetails> = {
+const MAP_INFO_DIRECTORY: Record<string, MapDetails> = {
   maze: {
     name: 'Tactical Labyrinth',
     desc: 'Winding corridors and blind corners. Perfect for shotgun ambushes.',
@@ -177,7 +178,13 @@ export function MapVotingPanel() {
       {/* Map Choice List */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {mapVotingOptions.map((map) => {
-          const info = MAP_INFO_DIRECTORY[map] || {
+          const customMap = ARENA_MAPS.find(m => m.id === map);
+          const info = customMap ? {
+            name: `${customMap.name} (${customMap.year})`,
+            desc: customMap.desc,
+            gradient: customMap.gradient,
+            badge: customMap.badge.toUpperCase()
+          } : MAP_INFO_DIRECTORY[map] || {
             name: map.toUpperCase().replace('_', ' '),
             desc: 'Classified combat tactical environment.',
             gradient: 'from-zinc-900 to-black border-white/10',
@@ -223,6 +230,26 @@ export function MapVotingPanel() {
                 <p className="text-[9px] text-white/50 leading-relaxed font-semibold">
                   {info.desc}
                 </p>
+
+                {customMap && (
+                  <div className="mt-2 pt-2 border-t border-white/5 flex flex-col gap-1 text-[8px] text-white/40 uppercase font-mono tracking-wider">
+                    <div className="flex justify-between">
+                      <span>Creator: <strong className="text-white/60">{customMap.creator}</strong></span>
+                      <span>Platform: <strong className="text-white/60">{customMap.platform}</strong></span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Rating: <strong className="text-white/60">{customMap.rating}</strong></span>
+                      <span>Award: <strong className="text-white/60">{customMap.award}</strong></span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Players: <strong className="text-white/60">{customMap.players}</strong></span>
+                      <span>Diff: <strong className="text-white/60">{customMap.difficulty}</strong></span>
+                    </div>
+                    <div className="mt-1 truncate">
+                      Servers: <span className="text-amber-400/80">{customMap.servers.join(', ')}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Vote Count & Progress Bar Section */}

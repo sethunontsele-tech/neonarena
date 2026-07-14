@@ -514,6 +514,95 @@ function generateObstacles(mapType: MapType) {
         isCrystal: true
       });
     }
+  } else {
+    // FALLBACK GENERATOR FOR COMMUNITY MAPS
+    // We generate a mix of thematic objects based on a deterministic seed from the map name
+    let seed = 0;
+    for (let i = 0; i < mapType.length; i++) {
+      seed = (seed << 5) - seed + mapType.charCodeAt(i);
+      seed |= 0;
+    }
+    const communityRng = mulberry32(Math.abs(seed) || 54321);
+    
+    // Choose theme colors based on mapType name characteristics
+    let primaryColor = '#3b82f6'; // blue
+    let secondaryColor = '#10b981'; // emerald
+    let count = 60;
+    let obstacleStyle = 'mixed';
+    
+    if (mapType.includes('minecraft') || mapType.includes('terraria') || mapType.includes('stardew') || mapType.includes('palworld')) {
+      primaryColor = '#15803d'; // grassy green
+      secondaryColor = '#854d0e'; // earthy wood
+      obstacleStyle = 'cubes'; // sandbox pixelated blocks
+      count = 120;
+    } else if (mapType.includes('cs2') || mapType.includes('rust') || mapType.includes('tarkov') || mapType.includes('r6s') || mapType.includes('pubg')) {
+      primaryColor = '#475569'; // slate grey
+      secondaryColor = '#94a3b8'; // metal blue
+      obstacleStyle = 'walls'; // tactical military cover
+      count = 70;
+    } else if (mapType.includes('starfield') || mapType.includes('sky') || mapType.includes('destiny') || mapType.includes('warframe') || mapType.includes('helldivers')) {
+      primaryColor = '#6366f1'; // indigo
+      secondaryColor = '#ec4899'; // cosmic pink
+      obstacleStyle = 'cylinders'; // alien pillars and crystal spires
+      count = 80;
+    } else if (mapType.includes('gta') || mapType.includes('cyberpunk')) {
+      primaryColor = '#f43f5e'; // neon rose
+      secondaryColor = '#06b6d4'; // cyan city light
+      obstacleStyle = 'skyscrapers'; // high-tech blocky towers
+      count = 55;
+    }
+    
+    for (let i = 0; i < count; i++) {
+      const x = (communityRng() - 0.5) * (mapSize - 40);
+      const z = (communityRng() - 0.5) * (mapSize - 40);
+      if (Math.abs(x) < 20 && Math.abs(z) < 20) continue;
+      
+      const height = communityRng() * 12 + 4;
+      const width = communityRng() * 16 + 4;
+      const depth = communityRng() * 16 + 4;
+      const color = communityRng() > 0.4 ? primaryColor : secondaryColor;
+      
+      if (obstacleStyle === 'cubes') {
+        // Generate neat box stacks
+        obstacles.push({
+          type: 'box',
+          position: [x, height / 2, z],
+          size: [8, height, 8],
+          rotation: [0, 0, 0],
+          color
+        });
+      } else if (obstacleStyle === 'walls') {
+        // Horizontal/vertical tactical barricades
+        const isH = communityRng() > 0.5;
+        obstacles.push({
+          type: 'box',
+          position: [x, height / 2, z],
+          size: isH ? [width, height, 2] : [2, height, depth],
+          rotation: [0, isH ? 0 : Math.PI / 2, 0],
+          color
+        });
+      } else if (obstacleStyle === 'cylinders') {
+        // Glowing futuristic crystal pillars
+        obstacles.push({
+          type: 'cylinder',
+          position: [x, height, z],
+          size: [3, height * 2, 3],
+          rotation: [0, 0, 0],
+          color,
+          isScannedPillar: true
+        });
+      } else {
+        // Default sci-fi tactical crates and platforms
+        const randType = communityRng() > 0.5 ? 'box' : 'cylinder';
+        obstacles.push({
+          type: randType,
+          position: [x, height / 2, z],
+          size: randType === 'box' ? [width, height, depth] : [6, height, 6],
+          rotation: [0, communityRng() * Math.PI, 0],
+          color
+        });
+      }
+    }
   }
   return obstacles;
 }

@@ -36,7 +36,8 @@ import { MixedRealityCameras } from './components/MixedRealityCameras';
 import { MVPAnnouncementOverlay } from './components/MVPAnnouncementOverlay';
 import { MapVotingPanel } from './components/MapVotingPanel';
 import { WebXRHUD } from './components/WebXRHUD';
-import { useGameStore, WEAPONS, SPELLS, SpellType, DIMENSIONS, DimensionType, WeaponType } from './store';
+import { ARENA_MAPS } from './data/arenaMaps';
+import { useGameStore, WEAPONS, SPELLS, SpellType, DIMENSIONS, DimensionType, WeaponType, MapType } from './store';
 import type { WeaponCategory } from './store';
 import { LORE_ENTRIES } from './lore';
 import { soundService } from './services/soundService';
@@ -2628,6 +2629,8 @@ export default function App() {
   const [showWebXRPanel, setShowWebXRPanel] = useState(false);
   const [instantCopyProgress, setInstantCopyProgress] = useState(0);
   const [isInstantCopying, setIsInstantCopying] = useState(false);
+  const [arenaTab, setArenaTab] = useState<'standard' | 'community'>('standard');
+  const [arenaSearch, setArenaSearch] = useState('');
 
   // States for Global Rankings in Lobby
   const [activeLobbySection, setActiveLobbySection] = useState<'operators' | 'rankings'>('operators');
@@ -4381,39 +4384,119 @@ export default function App() {
                   </h2>
                   <div className="flex flex-col gap-6">
                     <div>
+                      {/* Arena category selector tabs */}
+                      <div className="flex gap-1 bg-black/40 p-1 rounded-xl border border-blue-900/20 mb-3">
+                        <button
+                          onClick={() => setArenaTab('standard')}
+                          className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
+                            arenaTab === 'standard'
+                              ? 'bg-blue-500 text-black shadow-lg shadow-blue-500/10'
+                              : 'text-blue-400/60 hover:text-blue-300'
+                          }`}
+                        >
+                          Core Arenas
+                        </button>
+                        <button
+                          onClick={() => setArenaTab('community')}
+                          className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            arenaTab === 'community'
+                              ? 'bg-blue-500 text-black shadow-lg shadow-blue-500/10'
+                              : 'text-blue-400/60 hover:text-blue-300'
+                          }`}
+                        >
+                          Community (50)
+                        </button>
+                      </div>
+
                       <div className="text-[10px] text-blue-400/50 uppercase font-bold mb-2 tracking-widest flex justify-between">
                         <span>Selected Arena</span>
                         <span className="text-[9px] text-emerald-400 font-mono font-bold">Optimized 60fps</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {(['maze', 'arena', 'pillars', 'flat', 'void', 'cybercity', 'volcano', 'neon_grid', 'quantum_rift', 'infinite', 'custom_scan', 'aurum_dominion', 'infinity_academy'] as const).map(map => (
-                          <button
-                            key={map}
-                            onClick={() => setMap(map)}
-                            className={`px-3 py-2 text-[10px] font-bold border rounded-xl transition-all duration-300 text-left flex flex-col justify-between items-start gap-1 cursor-pointer ${
-                              selectedMap === map 
-                                ? (map === 'aurum_dominion' 
-                                  ? 'bg-amber-400 text-black border-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.45)]' 
-                                  : map === 'infinity_academy'
-                                  ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.45)]'
-                                  : 'bg-blue-500 text-black border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.35)]')
-                                : 'bg-white/5 text-blue-300/80 border-white/5 hover:border-blue-400/45 hover:bg-blue-950/20'
-                            }`}
-                          >
-                            <span className="truncate w-full uppercase tracking-wider">{map.replace('_', ' ')}</span>
-                            <span className={`text-[8px] px-1 font-mono rounded ${
-                              selectedMap === map ? 'bg-black/20 text-white font-semibold' : 'text-blue-400/60 bg-blue-500/5'
-                            }`}>
-                              {map === 'neon_grid' || map === 'quantum_rift' ? 'NEW • CORE' : 
-                               map === 'custom_scan' ? '3D COPIED' : 
-                               map === 'infinite' ? 'MASSIVE' : 
-                               map === 'void' ? 'SPACE' : 
-                               map === 'infinity_academy' ? 'VR ACADEMY' :
-                               map === 'aurum_dominion' ? 'GOLD GDD' : 'STABLE'}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
+
+                      {arenaTab === 'standard' ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {(['maze', 'arena', 'pillars', 'flat', 'void', 'cybercity', 'volcano', 'neon_grid', 'quantum_rift', 'infinite', 'custom_scan', 'aurum_dominion', 'infinity_academy'] as const).map(map => (
+                            <button
+                              key={map}
+                              onClick={() => setMap(map)}
+                              className={`px-3 py-2 text-[10px] font-bold border rounded-xl transition-all duration-300 text-left flex flex-col justify-between items-start gap-1 cursor-pointer ${
+                                selectedMap === map 
+                                  ? (map === 'aurum_dominion' 
+                                    ? 'bg-amber-400 text-black border-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.45)]' 
+                                    : map === 'infinity_academy'
+                                    ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.45)]'
+                                    : 'bg-blue-500 text-black border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.35)]')
+                                  : 'bg-white/5 text-blue-300/80 border-white/5 hover:border-blue-400/45 hover:bg-blue-950/20'
+                              }`}
+                            >
+                              <span className="truncate w-full uppercase tracking-wider">{map.replace('_', ' ')}</span>
+                              <span className={`text-[8px] px-1 font-mono rounded ${
+                                selectedMap === map ? 'bg-black/20 text-white font-semibold' : 'text-blue-400/60 bg-blue-500/5'
+                              }`}>
+                                {map === 'neon_grid' || map === 'quantum_rift' ? 'NEW • CORE' : 
+                                 map === 'custom_scan' ? '3D COPIED' : 
+                                 map === 'infinite' ? 'MASSIVE' : 
+                                 map === 'void' ? 'SPACE' : 
+                                 map === 'infinity_academy' ? 'VR ACADEMY' :
+                                 map === 'aurum_dominion' ? 'GOLD GDD' : 'STABLE'}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-3 w-3 text-blue-400/50" />
+                            <input
+                              type="text"
+                              placeholder="Search 50 custom games..."
+                              value={arenaSearch}
+                              onChange={e => setArenaSearch(e.target.value)}
+                              className="w-full bg-black/40 border border-blue-900/30 rounded-xl py-1.5 pl-8 pr-3 text-[10px] text-blue-100 placeholder-blue-400/30 focus:outline-none focus:border-blue-400/60"
+                            />
+                            {arenaSearch && (
+                              <button 
+                                onClick={() => setArenaSearch('')}
+                                className="absolute right-2.5 top-2 text-[10px] text-blue-400 hover:text-white"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+                            {ARENA_MAPS.filter(m => {
+                              const q = arenaSearch.toLowerCase();
+                              return m.name.toLowerCase().includes(q) ||
+                                     m.creator.toLowerCase().includes(q) ||
+                                     m.genre.toLowerCase().includes(q) ||
+                                     m.platform.toLowerCase().includes(q) ||
+                                     m.desc.toLowerCase().includes(q);
+                            }).map(m => {
+                              const mapId = m.id as MapType;
+                              const isSel = selectedMap === mapId;
+                              return (
+                                <button
+                                  key={m.id}
+                                  onClick={() => setMap(mapId)}
+                                  className={`px-3 py-2 text-[10px] font-bold border rounded-xl transition-all duration-300 text-left flex flex-col justify-between items-start gap-1 cursor-pointer ${
+                                    isSel
+                                      ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black border-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.45)]'
+                                      : 'bg-white/5 text-blue-300/80 border-white/5 hover:border-blue-400/45 hover:bg-blue-950/20'
+                                  }`}
+                                >
+                                  <span className="truncate w-full uppercase tracking-wider text-left">{m.name}</span>
+                                  <span className={`text-[7px] px-1 font-mono rounded ${
+                                    isSel ? 'bg-black/20 text-black font-bold' : 'text-amber-400/60 bg-amber-500/5'
+                                  }`}>
+                                    {m.genre.toUpperCase()}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                       
                       {selectedMap === 'aurum_dominion' && (
                         <motion.div 
@@ -4438,6 +4521,61 @@ export default function App() {
                           </button>
                         </motion.div>
                       )}
+
+                      {/* Display custom map info card */}
+                      {(() => {
+                        const currentCommunityMap = ARENA_MAPS.find(m => m.id === selectedMap);
+                        if (!currentCommunityMap) return null;
+                        return (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mt-3 p-4 bg-gradient-to-b from-blue-950/30 via-zinc-950 to-black border border-blue-400/30 rounded-xl flex flex-col gap-3"
+                          >
+                            <div className="flex justify-between items-start border-b border-blue-900/30 pb-2">
+                              <div>
+                                <span className="text-[8px] bg-blue-500/10 text-blue-400 border border-blue-400/20 px-1.5 py-0.5 rounded font-black uppercase font-mono tracking-wider">
+                                  {currentCommunityMap.badge}
+                                </span>
+                                <h4 className="text-sm font-black text-white uppercase italic tracking-tight mt-1">
+                                  {currentCommunityMap.name} ({currentCommunityMap.year})
+                                </h4>
+                                <p className="text-[9px] text-blue-300/60 font-mono mt-0.5">
+                                  Creator: <span className="text-blue-400">{currentCommunityMap.creator}</span> • Genre: <span className="text-blue-400">{currentCommunityMap.genre}</span>
+                                </p>
+                              </div>
+                              <div className="text-right font-mono text-[8px] text-zinc-400">
+                                <div>{currentCommunityMap.platform}</div>
+                                <div className="text-amber-400 font-bold">{currentCommunityMap.award}</div>
+                              </div>
+                            </div>
+
+                            <p className="text-[10px] text-zinc-300 leading-relaxed font-sans">
+                              {currentCommunityMap.desc}
+                            </p>
+
+                            <div className="grid grid-cols-2 gap-2 text-[8px] font-mono uppercase tracking-wider bg-black/40 p-2 rounded-lg border border-blue-950/40">
+                              <div>
+                                <span className="text-white/40">Difficulty:</span> <strong className="text-white/80">{currentCommunityMap.difficulty}</strong>
+                              </div>
+                              <div>
+                                <span className="text-white/40">Rating:</span> <strong className="text-white/80">{currentCommunityMap.rating}</strong>
+                              </div>
+                              <div>
+                                <span className="text-white/40">Players:</span> <strong className="text-white/80">{currentCommunityMap.players}</strong>
+                              </div>
+                              <div className="truncate">
+                                <span className="text-white/40">Servers:</span> <strong className="text-amber-400">{currentCommunityMap.servers.join(', ')}</strong>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 px-2 py-1.5 rounded-lg text-[9px] text-blue-300">
+                              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-ping" />
+                              <span>Procedural Arena Style: <strong className="text-white font-mono uppercase">{currentCommunityMap.genre} layout</strong></span>
+                            </div>
+                          </motion.div>
+                        );
+                      })()}
                     </div>
 
                     <div>

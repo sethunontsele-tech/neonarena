@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { io, Socket } from 'socket.io-client';
 import { User } from 'firebase/auth';
 import { PlayerStats, updateGameStats, getPlayerStats, Trophy, saveUserProfile, RankType, recordMatch, getMatchHistory, MatchRecord, UserProfile } from './firebase';
+import { ARENA_MAPS } from './data/arenaMaps';
 
 export type { UserProfile };
 
@@ -30,7 +31,7 @@ export interface ServerInstance {
   region: string;
   type: 'competitive' | 'casual' | 'open-world';
 }
-export type MapType = 'maze' | 'arena' | 'pillars' | 'flat' | 'void' | 'cybercity' | 'volcano' | 'infinite' | 'neon_grid' | 'quantum_rift' | 'custom_scan' | 'aurum_dominion' | 'infinity_academy';
+export type MapType = 'maze' | 'arena' | 'pillars' | 'flat' | 'void' | 'cybercity' | 'volcano' | 'infinite' | 'neon_grid' | 'quantum_rift' | 'custom_scan' | 'aurum_dominion' | 'infinity_academy' | 'minecraft' | 'roblox' | 'gta_v' | 'terraria' | 'rust' | 'cs2' | 'ark' | 'valheim' | 'wow' | 'ffxiv' | 'lol' | 'fortnite' | 'apex' | 'dayz' | 'project_zomboid' | 'unturned' | 'gmod' | 'tf2' | 'destiny2' | 'warframe' | 'sea_of_thieves' | 'no_mans_sky' | 'osrs' | 'dbd' | 'among_us' | 'phasmophobia' | 'elden_ring' | 'bg3' | 'cyberpunk' | 'overwatch2' | 'r6s' | 'rocket_league' | 'stardew_valley' | 'drg' | 'dota2' | 'fallout76' | 'eso' | 'poe' | 'genshin' | 'pubg' | 'tarkov' | 'starfield' | 'rdr2' | 'palworld' | 'helldivers2' | 'lethal_company' | 'vrising' | 'days_to_die' | 'conan_exiles' | 'enshrouded';
 export type SkinType = 'alien' | 'neon' | 'gold' | 'stealth' | 'glitch' | 'ruby' | 'emerald' | 'diamond' | 'void' | 'steve' | 'alex' | 'vijo_pro';
 export type PatternType = 'none' | 'camo' | 'stripes' | 'dots' | 'grid' | 'circuit' | 'alien';
 export type AccessoryType = 'none' | 'hat' | 'glasses' | 'backpack' | 'horns' | 'halo';
@@ -1241,8 +1242,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ isLoadingServers: true });
     // Simulate fetching servers
     setTimeout(() => {
+      const customServers: ServerInstance[] = [];
+      const shuffledMaps = [...ARENA_MAPS].sort(() => 0.5 - Math.random()).slice(0, 4);
+      shuffledMaps.forEach((m, idx) => {
+        const serverName = m.servers[0] || 'Official Server';
+        customServers.push({
+          id: `srv-custom-${idx}`,
+          name: `${serverName} // ${m.name}`,
+          map: m.id as MapType,
+          players: Math.floor(Math.random() * 40) + 10,
+          maxPlayers: 100,
+          ping: Math.floor(Math.random() * 60) + 10,
+          region: ['US-East', 'EU-West', 'US-West', 'ASIA-East'][idx % 4],
+          type: Math.random() > 0.5 ? 'casual' : 'competitive'
+        });
+      });
+
       const mockServers: ServerInstance[] = [
         { id: 'srv-1', name: 'Neon Surge // US-East', map: 'cybercity', players: 12, maxPlayers: 24, ping: 24, region: 'US-East', type: 'casual' },
+        ...customServers,
         { id: 'srv-2', name: 'Open World Alpha', map: 'infinite', players: 45, maxPlayers: 100, ping: 48, region: 'EU-West', type: 'open-world' },
         { id: 'srv-3', name: 'Comp Rush // Rank Only', map: 'arena', players: 8, maxPlayers: 10, ping: 12, region: 'US-West', type: 'competitive' },
         { id: 'srv-4', name: 'Vortex Void // Experimental', map: 'void', players: 2, maxPlayers: 16, ping: 156, region: 'ASIA-East', type: 'casual' },
@@ -3130,11 +3148,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   // Map Voting action implementations
   generateMapVotingOptions: () => {
-    const maps: MapType[] = [
+    const baseMaps: MapType[] = [
       'maze', 'arena', 'pillars', 'flat', 'void', 'cybercity', 
       'volcano', 'neon_grid', 'quantum_rift', 'infinite', 
       'custom_scan', 'aurum_dominion', 'infinity_academy'
     ];
+    const maps: MapType[] = [...baseMaps, ...ARENA_MAPS.map(m => m.id as MapType)];
     // Pick 3 random unique maps
     const shuffled = [...maps].sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, 3);
