@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import { useGameStore, MapType, DIMENSIONS, DimensionType, BlockType } from '../store';
 import { CaptureZone } from './CaptureZone';
 import { soundService } from '../services/soundService';
+import { CustomOpenWorld } from './CustomOpenWorld';
 
 // Seeded PRNG for consistent multiplayer obstacle generation
 function mulberry32(a: number) {
@@ -856,8 +857,11 @@ export function Arena() {
       <color attach="background" args={[bgColor]} />
       <fog attach="fog" args={[bgColor, 10, 800]} />
       
+      {/* Custom Open World Mesh Loader */}
+      {selectedMap === 'open_world' && <CustomOpenWorld />}
+
       {/* Floor */}
-      {selectedMap !== 'void' && (
+      {selectedMap !== 'void' && selectedMap !== 'open_world' && (
         <RigidBody type="fixed" name="floor" friction={0}>
           <mesh position={[0, -0.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             {arenaState === 'cube' ? (
@@ -914,7 +918,7 @@ export function Arena() {
         <Vehicle key={id} id={id} data={data} />
       ))}
       {/* Grid */}
-      {selectedMap !== 'void' && (
+      {selectedMap !== 'void' && selectedMap !== 'open_world' && (
         <Grid 
           position={[0, -0.49, 0]} 
           args={[selectedMap === 'infinite' ? 2000 : 500, selectedMap === 'infinite' ? 2000 : 500]} 
@@ -1008,7 +1012,7 @@ export function Arena() {
       {currentDimension === 'dimension_71' && <Dimension71Atmosphere />}
 
       {/* Walls */}
-      {selectedMap !== 'infinite' && (
+      {selectedMap !== 'infinite' && selectedMap !== 'open_world' && (
         <>
           <Wall name="wall-n" position={[0, 5, -250]} rotation={[0, 0, 0]} />
           <Wall name="wall-s" position={[0, 5, 250]} rotation={[0, Math.PI, 0]} />
@@ -1026,7 +1030,7 @@ export function Arena() {
       )}
 
       {/* Obstacles */}
-      {obstacles.map((obs, i) => (
+      {selectedMap !== 'open_world' && obstacles.map((obs, i) => (
         <Obstacle key={`${selectedMap}-${i}`} obs={obs} i={i} selectedMap={selectedMap} />
       ))}
     </group>

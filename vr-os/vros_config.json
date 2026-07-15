@@ -1,0 +1,16 @@
+{
+  "vros_name": "ZenithVR OS",
+  "build_version": "v2.1.0-alpha",
+  "target_refresh_rate": "120Hz",
+  "gesture_engine_enabled": true,
+  "spatial_passthrough": {
+    "enabled": true,
+    "transparency": 0.85,
+    "chroma_key_color": "#00ff00"
+  },
+  "modules": [
+    { "name": "VROSKernel", "status": "active" },
+    { "name": "EyeTrackingModule", "status": "active" },
+    { "name": "TactileHapticsCompositor", "status": "standby" }
+  ]
+}

@@ -31,7 +31,7 @@ export interface ServerInstance {
   region: string;
   type: 'competitive' | 'casual' | 'open-world';
 }
-export type MapType = 'maze' | 'arena' | 'pillars' | 'flat' | 'void' | 'cybercity' | 'volcano' | 'infinite' | 'neon_grid' | 'quantum_rift' | 'custom_scan' | 'aurum_dominion' | 'infinity_academy' | 'minecraft' | 'roblox' | 'gta_v' | 'terraria' | 'rust' | 'cs2' | 'ark' | 'valheim' | 'wow' | 'ffxiv' | 'lol' | 'fortnite' | 'apex' | 'dayz' | 'project_zomboid' | 'unturned' | 'gmod' | 'tf2' | 'destiny2' | 'warframe' | 'sea_of_thieves' | 'no_mans_sky' | 'osrs' | 'dbd' | 'among_us' | 'phasmophobia' | 'elden_ring' | 'bg3' | 'cyberpunk' | 'overwatch2' | 'r6s' | 'rocket_league' | 'stardew_valley' | 'drg' | 'dota2' | 'fallout76' | 'eso' | 'poe' | 'genshin' | 'pubg' | 'tarkov' | 'starfield' | 'rdr2' | 'palworld' | 'helldivers2' | 'lethal_company' | 'vrising' | 'days_to_die' | 'conan_exiles' | 'enshrouded';
+export type MapType = 'open_world' | 'maze' | 'arena' | 'pillars' | 'flat' | 'void' | 'cybercity' | 'volcano' | 'infinite' | 'neon_grid' | 'quantum_rift' | 'custom_scan' | 'aurum_dominion' | 'infinity_academy' | 'minecraft' | 'roblox' | 'gta_v' | 'terraria' | 'rust' | 'cs2' | 'ark' | 'valheim' | 'wow' | 'ffxiv' | 'lol' | 'fortnite' | 'apex' | 'dayz' | 'project_zomboid' | 'unturned' | 'gmod' | 'tf2' | 'destiny2' | 'warframe' | 'sea_of_thieves' | 'no_mans_sky' | 'osrs' | 'dbd' | 'among_us' | 'phasmophobia' | 'elden_ring' | 'bg3' | 'cyberpunk' | 'overwatch2' | 'r6s' | 'rocket_league' | 'stardew_valley' | 'drg' | 'dota2' | 'fallout76' | 'eso' | 'poe' | 'genshin' | 'pubg' | 'tarkov' | 'starfield' | 'rdr2' | 'palworld' | 'helldivers2' | 'lethal_company' | 'vrising' | 'days_to_die' | 'conan_exiles' | 'enshrouded';
 export type SkinType = 'alien' | 'neon' | 'gold' | 'stealth' | 'glitch' | 'ruby' | 'emerald' | 'diamond' | 'void' | 'steve' | 'alex' | 'vijo_pro';
 export type PatternType = 'none' | 'camo' | 'stripes' | 'dots' | 'grid' | 'circuit' | 'alien';
 export type AccessoryType = 'none' | 'hat' | 'glasses' | 'backpack' | 'horns' | 'halo';
@@ -677,6 +677,9 @@ interface GameStore {
   currentAmmo: Record<string, number>;
   isInventoryOpen: boolean;
   isDonateModalOpen: boolean;
+  isMapOpen: boolean;
+  setMapOpen: (open: boolean) => void;
+  setWorldBlocks: (blocks: WorldBlock[]) => void;
   musicVolume: number;
   sfxVolume: number;
   musicEnabled: boolean;
@@ -1449,6 +1452,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   currentAmmo: Object.fromEntries(Object.values(WEAPONS).map(w => [w.id, w.maxAmmo])),
   isInventoryOpen: false,
   isDonateModalOpen: false,
+  isMapOpen: false,
   
   team: 'none',
   teamScores: { amber: 0, blue: 0 },
@@ -2500,6 +2504,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
   setInventoryOpen: (isInventoryOpen) => set({ isInventoryOpen }),
   setDonateModalOpen: (isDonateModalOpen) => set({ isDonateModalOpen }),
+  setMapOpen: (isMapOpen) => set({ isMapOpen }),
+  setWorldBlocks: (worldBlocks) => set({ worldBlocks }),
 
   // AI Role & Admin Actions
   recommendUpdate: (text) => {

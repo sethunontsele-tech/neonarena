@@ -38,6 +38,8 @@ import { MapVotingPanel } from './components/MapVotingPanel';
 import { WebXRHUD } from './components/WebXRHUD';
 import { ARENA_MAPS } from './data/arenaMaps';
 import { useGameStore, WEAPONS, SPELLS, SpellType, DIMENSIONS, DimensionType, WeaponType, MapType } from './store';
+import { useShallow } from 'zustand/react/shallow';
+import { Terminal } from './components/Terminal';
 import type { WeaponCategory } from './store';
 import { LORE_ENTRIES } from './lore';
 import { soundService } from './services/soundService';
@@ -45,7 +47,7 @@ import { InfinityAcademyVR } from './components/InfinityAcademyVR';
 import { CustomCharacterFolder } from './components/CustomCharacterFolder';
 import { CharacterFolderModal } from './components/CharacterFolderModal';
 import { getAbilitiesForWeapon } from './data/abilities';
-import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, UserPlus, UserCheck, UserX, Terminal, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone, FolderOpen } from 'lucide-react';
+import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, UserPlus, UserCheck, UserX, Terminal as TerminalIcon, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone, FolderOpen } from 'lucide-react';
 import { auth, signInWithGoogle, logout, searchUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriends, getFriendRequests, createClan, getClan, joinClan, leaveClan, getTopClans, getUserProfile, ClanData, saveLoadoutPreset, getLoadoutPreset, getLeaderboard } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -1139,99 +1141,118 @@ function WeaponAbilitiesHUD({ weaponId }: WeaponAbilitiesHUDProps) {
 }
 
 function HUD() {
-  const gameState = useGameStore(state => state.gameState);
-  const score = useGameStore(state => state.score);
-  const kills = useGameStore(state => state.kills);
-  const deaths = useGameStore(state => state.deaths);
-  const timeLeft = useGameStore(state => state.timeLeft);
-  const energy = useGameStore(state => state.energy);
-  const stamina = useGameStore(state => state.stamina);
-  const focus = useGameStore(state => state.focus);
-  const overload = useGameStore(state => state.overload);
-  const arenaState = useGameStore(state => state.arenaState);
-  const combatPhase = useGameStore(state => state.combatPhase);
-  const health = useGameStore(state => state.health);
-  const mana = useGameStore(state => state.mana);
-  const infectionLevel = useGameStore(state => state.infectionLevel);
-  const isGlitch = useGameStore(state => state.isGlitch);
-  const isSpectating = useGameStore(state => state.isSpectating);
-  const playerState = useGameStore(state => state.playerState);
-  const playerClass = useGameStore(state => state.playerClass);
-  const otherPlayers = useGameStore(state => state.otherPlayers);
+  const {
+    gameState, score, kills, deaths, timeLeft, energy, stamina, focus, overload,
+    arenaState, combatPhase, health, mana, infectionLevel, isGlitch, isSpectating,
+    playerState, playerClass, otherPlayers, leaveGame, triggerEmote, isMuted,
+    toggleMute, events, isVehicleMenuOpen, setVehicleMenuOpen, spawnVehicle,
+    playerPosition, isThirdPerson, toggleThirdPerson, isDonateModalOpen,
+    setDonateModalOpen, spectatorTargetId, setSpectating, cycleSpectator,
+    currentAmmo, reload, roomId, saveMap, clearMap, lastDashTime, dashCooldown,
+    gameMode, humanSurvivors, infectionMatchTimer, glitchPlayerIds, selectedMode,
+    team, teamScores, flags, availableWeapons, currentWeaponIndex, switchWeapon,
+    isInventoryOpen, setInventoryOpen, isBuildMode, selectedBlock, setSelectedBlock,
+    hotbar, updateRecommendations, recommendUpdate, approveUpdate, rejectUpdate,
+    updateGameBranding, checkAdminPassword, isAdmin, gameName, gameLogo,
+    setGamertag, gamertag, privateServerName, setPrivateServerName, selectedRegion,
+    setRegion, isChatOpen, setChatOpen, chatMessages, sendChatMessage, isReloading,
+    currentKillStreak, bestKillStreak, activeStreakPower, isInspecting, inspectStartTime,
+    hitIndicator, environment, bloodSplatter, processCommand, user, isMapOpen, setMapOpen
+  } = useGameStore(useShallow(state => ({
+    gameState: state.gameState,
+    score: state.score,
+    kills: state.kills,
+    deaths: state.deaths,
+    timeLeft: state.timeLeft,
+    energy: state.energy,
+    stamina: state.stamina,
+    focus: state.focus,
+    overload: state.overload,
+    arenaState: state.arenaState,
+    combatPhase: state.combatPhase,
+    health: state.health,
+    mana: state.mana,
+    infectionLevel: state.infectionLevel,
+    isGlitch: state.isGlitch,
+    isSpectating: state.isSpectating,
+    playerState: state.playerState,
+    playerClass: state.playerClass,
+    otherPlayers: state.otherPlayers,
+    leaveGame: state.leaveGame,
+    triggerEmote: state.triggerEmote,
+    isMuted: state.isMuted,
+    toggleMute: state.toggleMute,
+    events: state.events,
+    isVehicleMenuOpen: state.isVehicleMenuOpen,
+    setVehicleMenuOpen: state.setVehicleMenuOpen,
+    spawnVehicle: state.spawnVehicle,
+    playerPosition: state.playerPosition,
+    isThirdPerson: state.isThirdPerson,
+    toggleThirdPerson: state.toggleThirdPerson,
+    isDonateModalOpen: state.isDonateModalOpen,
+    setDonateModalOpen: state.setDonateModalOpen,
+    spectatorTargetId: state.spectatorTargetId,
+    setSpectating: state.setSpectating,
+    cycleSpectator: state.cycleSpectator,
+    currentAmmo: state.currentAmmo,
+    reload: state.reload,
+    roomId: state.roomId,
+    saveMap: state.saveMap,
+    clearMap: state.clearMap,
+    lastDashTime: state.lastDashTime,
+    dashCooldown: state.dashCooldown,
+    gameMode: state.gameMode,
+    humanSurvivors: state.humanSurvivors,
+    infectionMatchTimer: state.infectionMatchTimer,
+    glitchPlayerIds: state.glitchPlayerIds,
+    selectedMode: state.selectedMode,
+    team: state.team,
+    teamScores: state.teamScores,
+    flags: state.flags,
+    availableWeapons: state.availableWeapons,
+    currentWeaponIndex: state.currentWeaponIndex,
+    switchWeapon: state.switchWeapon,
+    isInventoryOpen: state.isInventoryOpen,
+    setInventoryOpen: state.setInventoryOpen,
+    isBuildMode: state.isBuildMode,
+    selectedBlock: state.selectedBlock,
+    setSelectedBlock: state.setSelectedBlock,
+    hotbar: state.hotbar,
+    updateRecommendations: state.updateRecommendations,
+    recommendUpdate: state.recommendUpdate,
+    approveUpdate: state.approveUpdate,
+    rejectUpdate: state.rejectUpdate,
+    updateGameBranding: state.updateGameBranding,
+    checkAdminPassword: state.checkAdminPassword,
+    isAdmin: state.isAdmin,
+    gameName: state.gameName,
+    gameLogo: state.gameLogo,
+    setGamertag: state.setGamertag,
+    gamertag: state.gamertag,
+    privateServerName: state.privateServerName,
+    setPrivateServerName: state.setPrivateServerName,
+    selectedRegion: state.selectedRegion,
+    setRegion: state.setRegion,
+    isChatOpen: state.isChatOpen,
+    setChatOpen: state.setChatOpen,
+    chatMessages: state.chatMessages,
+    sendChatMessage: state.sendChatMessage,
+    isReloading: state.isReloading,
+    currentKillStreak: state.currentKillStreak,
+    bestKillStreak: state.bestKillStreak,
+    activeStreakPower: state.activeStreakPower,
+    isInspecting: state.isInspecting,
+    inspectStartTime: state.inspectStartTime,
+    hitIndicator: state.hitIndicator,
+    environment: state.environment,
+    bloodSplatter: state.bloodSplatter,
+    processCommand: state.processCommand,
+    user: state.user,
+    isMapOpen: state.isMapOpen,
+    setMapOpen: state.setMapOpen
+  })));
+
   const playerCount = Object.keys(otherPlayers).length + 1;
-  const leaveGame = useGameStore(state => state.leaveGame);
-  const triggerEmote = useGameStore(state => state.triggerEmote);
-  const isMuted = useGameStore(state => state.isMuted);
-  const toggleMute = useGameStore(state => state.toggleMute);
-  const events = useGameStore(state => state.events);
-  
-  const isVehicleMenuOpen = useGameStore(state => state.isVehicleMenuOpen);
-  const setVehicleMenuOpen = useGameStore(state => state.setVehicleMenuOpen);
-  const spawnVehicle = useGameStore(state => state.spawnVehicle);
-  const playerPosition = useGameStore(state => state.playerPosition);
-  const isThirdPerson = useGameStore(state => state.isThirdPerson);
-  const toggleThirdPerson = useGameStore(state => state.toggleThirdPerson);
-  const isDonateModalOpen = useGameStore(state => state.isDonateModalOpen);
-  const setDonateModalOpen = useGameStore(state => state.setDonateModalOpen);
-  const spectatorTargetId = useGameStore(state => state.spectatorTargetId);
-  const setSpectating = useGameStore(state => state.setSpectating);
-  const cycleSpectator = useGameStore(state => state.cycleSpectator);
-  const currentAmmo = useGameStore(state => state.currentAmmo);
-  const reload = useGameStore(state => state.reload);
-  const roomId = useGameStore(state => state.roomId);
-  const saveMap = useGameStore(state => state.saveMap);
-  const clearMap = useGameStore(state => state.clearMap);
-  const lastDashTime = useGameStore(state => state.lastDashTime);
-  const dashCooldown = useGameStore(state => state.dashCooldown);
-  const gameMode = useGameStore(state => state.gameMode);
-  const humanSurvivors = useGameStore(state => state.humanSurvivors);
-  const infectionMatchTimer = useGameStore(state => state.infectionMatchTimer);
-  const glitchPlayerIds = useGameStore(state => state.glitchPlayerIds);
-  
-  const selectedMode = useGameStore(state => state.selectedMode);
-  const team = useGameStore(state => state.team);
-  const teamScores = useGameStore(state => state.teamScores);
-  const flags = useGameStore(state => state.flags);
-  
-  const availableWeapons = useGameStore(state => state.availableWeapons);
-  const currentWeaponIndex = useGameStore(state => state.currentWeaponIndex);
-  const switchWeapon = useGameStore(state => state.switchWeapon);
-  const isInventoryOpen = useGameStore(state => state.isInventoryOpen);
-  const setInventoryOpen = useGameStore(state => state.setInventoryOpen);
-
-  const isBuildMode = useGameStore(state => state.isBuildMode);
-  const selectedBlock = useGameStore(state => state.selectedBlock);
-  const setSelectedBlock = useGameStore(state => state.setSelectedBlock);
-
-  const hotbar = useGameStore(state => state.hotbar);
-
-  const updateRecommendations = useGameStore(state => state.updateRecommendations);
-  const recommendUpdate = useGameStore(state => state.recommendUpdate);
-  const approveUpdate = useGameStore(state => state.approveUpdate);
-  const rejectUpdate = useGameStore(state => state.rejectUpdate);
-  const updateGameBranding = useGameStore(state => state.updateGameBranding);
-  const checkAdminPassword = useGameStore(state => state.checkAdminPassword);
-  const isAdmin = useGameStore(state => state.isAdmin);
-  const gameName = useGameStore(state => state.gameName);
-  const gameLogo = useGameStore(state => state.gameLogo);
-  const setGamertag = useGameStore(state => state.setGamertag);
-  const gamertag = useGameStore(state => state.gamertag);
-  const privateServerName = useGameStore(state => state.privateServerName);
-  const setPrivateServerName = useGameStore(state => state.setPrivateServerName);
-  const selectedRegion = useGameStore(state => state.selectedRegion);
-  const setRegion = useGameStore(state => state.setRegion);
-
-  const isChatOpen = useGameStore(state => state.isChatOpen);
-  const setChatOpen = useGameStore(state => state.setChatOpen);
-  const chatMessages = useGameStore(state => state.chatMessages);
-  const sendChatMessage = useGameStore(state => state.sendChatMessage);
-  const isReloading = useGameStore(state => state.isReloading);
-
-  const currentKillStreak = useGameStore(state => state.currentKillStreak);
-  const bestKillStreak = useGameStore(state => state.bestKillStreak);
-  const activeStreakPower = useGameStore(state => state.activeStreakPower);
-  const isInspecting = useGameStore(state => state.isInspecting);
-  const inspectStartTime = useGameStore(state => state.inspectStartTime);
 
   const [hasApiKey, setHasApiKey] = useState(true);
 
@@ -1245,9 +1266,6 @@ function HUD() {
     checkKey();
   }, []);
 
-  const hitIndicator = useGameStore(state => state.hitIndicator);
-  const environment = useGameStore(state => state.environment);
-
   useEffect(() => {
     if (hitIndicator.active) {
       setBloodSplatterEffect(true);
@@ -1256,7 +1274,7 @@ function HUD() {
     }
   }, [hitIndicator.active]);
 
-  const clanId = useGameStore(state => state.user?.clanId);
+  const clanId = user?.clanId;
   const [clanTag, setClanTag] = useState<string | null>(null);
 
   useEffect(() => {
@@ -1279,14 +1297,14 @@ function HUD() {
   const [isCommandOpen, setCommandOpen] = useState(false);
   const [bloodSplatterEffect, setBloodSplatterEffect] = useState(false);
 
-  const bloodSplatter = useGameStore(state => state.bloodSplatter);
-  const processCommand = useGameStore(state => state.processCommand);
-  const user = useGameStore(state => state.user);
+
   const isOwner = user?.email === 'sethu.nontsele@gmail.com';
   const isAdminUser = isOwner || useGameStore.getState().persistentStats?.isAdmin;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
       if (e.key === '`') {
         e.preventDefault();
         if (isAdminUser) setCommandOpen(!isCommandOpen);
@@ -1299,6 +1317,21 @@ function HUD() {
       }
       if (e.key === 'g' || e.key === 'G') {
         if (!isChatOpen && !isCommandOpen) {
+          useGameStore.getState().toggleModal('casino');
+          soundService.playSFX('ui_click');
+        }
+      }
+      if (e.key === 'm' || e.key === 'M') {
+        if (!isChatOpen && !isCommandOpen) {
+          e.preventDefault();
+          setMapOpen(!isMapOpen);
+          soundService.playSFX('ui_click');
+        }
+      }
+      if (e.key === 's' || e.key === 'S') {
+        // Toggles store only if not in pointer lock (to not block S movement key backward)
+        if (!isChatOpen && !isCommandOpen && !document.pointerLockElement) {
+          e.preventDefault();
           useGameStore.getState().toggleModal('casino');
           soundService.playSFX('ui_click');
         }
@@ -1523,7 +1556,7 @@ function HUD() {
               className="w-full max-w-3xl bg-black/90 border border-emerald-500/30 p-2 rounded-2xl backdrop-blur-xl flex gap-2"
             >
               <div className="flex items-center pl-4 text-emerald-500">
-                <Terminal size={18} />
+                <TerminalIcon size={18} />
               </div>
               <input 
                 autoFocus
@@ -2650,7 +2683,8 @@ export default function App() {
   const [lobbyTab, setLobbyTab] = useState<'play' | 'settings' | 'replays' | 'lore' | 'spells'>('play');
   const [showExperimental, setShowExperimental] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
-  const [showTactical, setShowTactical] = useState(false);
+  const isMapOpen = useGameStore(state => state.isMapOpen);
+  const setMapOpen = useGameStore(state => state.setMapOpen);
   const [showScanner, setShowScanner] = useState(false);
   const [showDossier, setShowDossier] = useState(false);
   const [showModStudio, setShowModStudio] = useState(false);
@@ -2659,6 +2693,30 @@ export default function App() {
   const [showWebXRPanel, setShowWebXRPanel] = useState(false);
   const [instantCopyProgress, setInstantCopyProgress] = useState(0);
   const [isInstantCopying, setIsInstantCopying] = useState(false);
+
+  useEffect(() => {
+    (window as any).closeAllActivePopups = () => {
+      setShowExperimental(false);
+      setShowQuests(false);
+      setMapOpen(false);
+      setShowScanner(false);
+      setShowDossier(false);
+      setShowModStudio(false);
+      setShowCharacterFolder(false);
+      setShowMRCameras(false);
+      setShowWebXRPanel(false);
+      
+      // Also close any store modals
+      const modals = useGameStore.getState().modals;
+      const setModal = useGameStore.getState().setModal;
+      Object.keys(modals).forEach((key) => {
+        setModal(key as any, false);
+      });
+    };
+    return () => {
+      delete (window as any).closeAllActivePopups;
+    };
+  }, []);
   const [arenaTab, setArenaTab] = useState<'standard' | 'community'>('standard');
   const [arenaSearch, setArenaSearch] = useState('');
 
@@ -2721,6 +2779,84 @@ export default function App() {
   const deaths = useGameStore(state => state.deaths);
   const enterLobby = useGameStore(state => state.enterLobby);
   const otherPlayers = useGameStore(state => state.otherPlayers);
+
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
+  const [currentLoadingTip, setCurrentLoadingTip] = useState('');
+  const selectedMap = useGameStore(state => state.selectedMap);
+
+  useEffect(() => {
+    if (gameState === 'playing' || gameState === 'open_world') {
+      setShowLoadingScreen(true);
+      setLoadingProgress(0);
+      
+      const tips: Record<string, string[]> = {
+        minecraft: [
+          "TIP: Spawn custom towers to gain high-ground advantage over enemies.",
+          "TIP: Swapping to your Diamond Sword deals devastating melee damage.",
+          "TIP: Mine blocks in build mode to fortify your team's flags!"
+        ],
+        roblox: [
+          "TIP: Speed-boost platforms are yellow. Run across them to cross the arena in a flash!",
+          "TIP: Use Gravity Lifts to ascend towers or dodge high-powered rockets.",
+          "TIP: Look for shiny coins to buy legendary-tier guns in the upgrade store."
+        ],
+        gta_v: [
+          "TIP: Press 'V' to spawn high-speed vehicles. Run down opponents for styling points!",
+          "TIP: Use containers as natural bullet cover during high-intensity sniper fire.",
+          "TIP: Tactical map ('M' shortcut) reveals the real-time location of the hostile APC."
+        ],
+        terraria: [
+          "TIP: Mine deep below the surface block to uncover high-tier gold armor powerups.",
+          "TIP: Keep an eye out for boss spawns like Cthulhu during the final combat round!",
+          "TIP: Use floatation boosts by double tapping jump to reach high portals."
+        ],
+        rust: [
+          "TIP: Defenses are fragile. Repair structures regularly to prevent total raiding.",
+          "TIP: Heavy ammunition is rare. Switch to your combat pistol to conserve heavy rounds.",
+          "TIP: Collect radioactive shield shards to unlock active streak powers!"
+        ]
+      };
+
+      const mapTips = tips[selectedMap] || [
+        "TIP: Press 'M' to check your tactical map and see control points.",
+        "TIP: Press 'S' to open the item upgrades store and buy high-tier equipment.",
+        "TIP: Double-tap shift to activate your thruster dash and evade incoming projectiles."
+      ];
+
+      // Set initial random tip
+      setCurrentLoadingTip(mapTips[Math.floor(Math.random() * mapTips.length)]);
+
+      // Cycle tips every 2.5 seconds
+      const tipInterval = setInterval(() => {
+        setCurrentLoadingTip(mapTips[Math.floor(Math.random() * mapTips.length)]);
+      }, 2500);
+
+      // Simulate smooth loader progress
+      let currentPercent = 0;
+      const progressInterval = setInterval(() => {
+        currentPercent += Math.floor(Math.random() * 10) + 5;
+        if (currentPercent >= 100) {
+          currentPercent = 100;
+          clearInterval(progressInterval);
+          clearInterval(tipInterval);
+          // Fade out nicely
+          setTimeout(() => {
+            setShowLoadingScreen(false);
+          }, 800);
+        }
+        setLoadingProgress(currentPercent);
+      }, 120);
+
+      return () => {
+        clearInterval(progressInterval);
+        clearInterval(tipInterval);
+      };
+    } else {
+      setShowLoadingScreen(false);
+      setLoadingProgress(0);
+    }
+  }, [gameState, selectedMap]);
 
   useEffect(() => {
     if (gameState === 'lobby' && activeLobbySection === 'rankings') {
@@ -2791,7 +2927,6 @@ export default function App() {
   const toggleAccessory = useGameStore(state => state.toggleAccessory);
   const selectedGunSkin = useGameStore(state => state.selectedGunSkin);
   const setGunSkin = useGameStore(state => state.setGunSkin);
-  const selectedMap = useGameStore(state => state.selectedMap);
   const setMap = useGameStore(state => state.setMap);
   const selectedMode = useGameStore(state => state.selectedMode);
   const setMode = useGameStore(state => state.setMode);
@@ -3198,7 +3333,7 @@ export default function App() {
         {modals.update && <BiggestUpdateModal onClose={() => setModal('update', false)} />}
         {showExperimental && <ExperimentalFeatures onClose={() => setShowExperimental(false)} />}
         {showQuests && <QuestModal onClose={() => setShowQuests(false)} />}
-        {showTactical && <TacticalMap onClose={() => setShowTactical(false)} />}
+        {isMapOpen && <TacticalMap onClose={() => setMapOpen(false)} />}
          {showScanner && <ThreeDScanner onClose={() => setShowScanner(false)} />}
         {showDossier && <DossierModal onClose={() => setShowDossier(false)} />}
         {showModStudio && <WorldAndModdingStudio onClose={() => setShowModStudio(false)} />}
@@ -3473,7 +3608,7 @@ export default function App() {
                   <span className="text-[10px] font-black uppercase tracking-widest">Evolution</span>
                 </button>
                 <button
-                  onClick={() => setShowTactical(true)}
+                  onClick={() => setMapOpen(true)}
                   className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 px-4 py-2 rounded-xl text-blue-400 hover:bg-blue-500 hover:text-white transition-all group"
                 >
                   <MapIcon size={14} className="group-hover:scale-110 transition-all" />
@@ -3483,7 +3618,7 @@ export default function App() {
                   onClick={() => setShowDossier(true)}
                   className="flex items-center gap-2 bg-amber-400/10 border border-amber-400/30 px-4 py-2 rounded-xl text-amber-400 hover:bg-amber-400 hover:text-black transition-all group cursor-pointer"
                 >
-                  <Terminal size={14} className="group-hover:-translate-y-0.5 transition-all" />
+                  <TerminalIcon size={14} className="group-hover:-translate-y-0.5 transition-all" />
                   <span className="text-[10px] font-black uppercase tracking-widest">Aurum GDD</span>
                 </button>
                 <button
@@ -4445,7 +4580,7 @@ export default function App() {
 
                       {arenaTab === 'standard' ? (
                         <div className="grid grid-cols-2 gap-2">
-                          {(['maze', 'arena', 'pillars', 'flat', 'void', 'cybercity', 'volcano', 'neon_grid', 'quantum_rift', 'infinite', 'custom_scan', 'aurum_dominion', 'infinity_academy'] as const).map(map => (
+                          {(['open_world', 'maze', 'arena', 'pillars', 'flat', 'void', 'cybercity', 'volcano', 'neon_grid', 'quantum_rift', 'infinite', 'custom_scan', 'aurum_dominion', 'infinity_academy'] as const).map(map => (
                             <button
                               key={map}
                               onClick={() => setMap(map)}
@@ -4455,6 +4590,8 @@ export default function App() {
                                     ? 'bg-amber-400 text-black border-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.45)]' 
                                     : map === 'infinity_academy'
                                     ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.45)]'
+                                    : map === 'open_world'
+                                    ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.35)]'
                                     : 'bg-blue-500 text-black border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.35)]')
                                   : 'bg-white/5 text-blue-300/80 border-white/5 hover:border-blue-400/45 hover:bg-blue-950/20'
                               }`}
@@ -4463,7 +4600,8 @@ export default function App() {
                               <span className={`text-[8px] px-1 font-mono rounded ${
                                 selectedMap === map ? 'bg-black/20 text-white font-semibold' : 'text-blue-400/60 bg-blue-500/5'
                               }`}>
-                                {map === 'neon_grid' || map === 'quantum_rift' ? 'NEW • CORE' : 
+                                {map === 'open_world' ? 'CUSTOM OBJ/MTL' :
+                                 map === 'neon_grid' || map === 'quantum_rift' ? 'NEW • CORE' : 
                                  map === 'custom_scan' ? '3D COPIED' : 
                                  map === 'infinite' ? 'MASSIVE' : 
                                  map === 'void' ? 'SPACE' : 
@@ -5320,6 +5458,101 @@ export default function App() {
           </motion.div>
         </div>
       )}
+
+      {/* Immersive Arena Loading Screen */}
+      <AnimatePresence>
+        {showLoadingScreen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 z-[300] bg-zinc-950 flex flex-col items-center justify-center font-mono text-white p-8 select-none pointer-events-auto overflow-hidden"
+          >
+            {/* Dark background matrix styling */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.8),rgba(0,0,0,0.95))] z-0" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.08),transparent_70%)] z-0" />
+            
+            {/* Decorative Grid and Tech lines */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] opacity-40 z-0" />
+            
+            {/* Cyber Scanline Overlay */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[size:100%_4px] pointer-events-none z-10 opacity-30" />
+
+            {/* Corner Tech Accents */}
+            <div className="absolute top-8 left-8 border-t-2 border-l-2 border-cyan-500/40 w-16 h-16 pointer-events-none" />
+            <div className="absolute top-8 right-8 border-t-2 border-r-2 border-cyan-500/40 w-16 h-16 pointer-events-none" />
+            <div className="absolute bottom-8 left-8 border-b-2 border-l-2 border-cyan-500/40 w-16 h-16 pointer-events-none" />
+            <div className="absolute bottom-8 right-8 border-b-2 border-r-2 border-cyan-500/40 w-16 h-16 pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col items-center max-w-2xl w-full text-center gap-12">
+              {/* Spinning Logo Area */}
+              <div className="relative">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 12, ease: "linear" }}
+                  className="w-32 h-32 rounded-full border-4 border-dashed border-cyan-500/20 flex items-center justify-center"
+                >
+                  <motion.div
+                    animate={{ rotate: -360 }}
+                    transition={{ repeat: Infinity, duration: 6, ease: "linear" }}
+                    className="w-24 h-24 rounded-full border-2 border-dashed border-cyan-400/40 flex items-center justify-center"
+                  />
+                </motion.div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Cpu size={40} className="text-cyan-400 animate-pulse" />
+                </div>
+              </div>
+
+              {/* Title & Loaded Map Name */}
+              <div className="space-y-3">
+                <span className="text-[11px] font-black tracking-[0.4em] text-cyan-400 uppercase bg-cyan-950/40 border border-cyan-500/30 px-4 py-1.5 rounded-full">
+                  INITIALIZING GRID TRANSIT
+                </span>
+                <h2 className="text-5xl font-black italic tracking-tighter text-white uppercase mt-4">
+                  LOADING {selectedMap?.replace('_', ' ')}
+                </h2>
+                <p className="text-white/40 text-xs uppercase tracking-widest font-bold">
+                  Synchronizing tactical nodes & vector grids
+                </p>
+              </div>
+
+              {/* Progress and status bars */}
+              <div className="w-full max-w-md space-y-3">
+                <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-1 overflow-hidden h-7 relative flex items-center justify-center">
+                  <motion.div 
+                    className="absolute left-0 inset-y-0 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-600 shadow-[0_0_15px_rgba(6,182,212,0.5)]" 
+                    style={{ width: `${loadingProgress}%` }}
+                    transition={{ ease: "easeInOut" }}
+                  />
+                  <span className="text-[11px] font-black z-10 text-white tracking-widest drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                    ESTABLISHING VECTOR LINK: {loadingProgress}%
+                  </span>
+                </div>
+                
+                {/* Tech stats tracker footer for loading screen */}
+                <div className="flex justify-between items-center text-[9px] text-cyan-400/50 uppercase tracking-wider px-2">
+                  <span>PACKETS_OK // LOBBY_SYNC</span>
+                  <span className="animate-pulse">PING: {Math.floor(15 + Math.random() * 10)}MS</span>
+                </div>
+              </div>
+
+              {/* Map Load Tips Area */}
+              <div className="w-full max-w-lg bg-zinc-900/60 border border-white/5 backdrop-blur-sm p-6 rounded-3xl min-h-[96px] flex flex-col justify-center relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500" />
+                <p className="text-white/90 text-sm font-semibold leading-relaxed">
+                  {currentLoadingTip}
+                </p>
+              </div>
+            </div>
+            
+            <div className="absolute bottom-8 left-8 text-[8px] text-white/20 uppercase tracking-widest flex items-center gap-2">
+              <Zap size={10} className="text-cyan-500/40" />
+              <span>CORE_NODE_SYNC ACTIVE // OMNI_GRID v1.5.0</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

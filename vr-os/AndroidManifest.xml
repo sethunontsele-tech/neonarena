@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.vros.launcher"
+    android:versionCode="1"
+    android:versionName="1.0.0">
+
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="32" />
+
+    <!-- VR Hardware & Software Requirements -->
+    <uses-feature android:name="android.hardware.vr.headtracking" android:required="true" android:version="1" />
+    <uses-feature android:name="oculus.software.handtracking" android:required="false" />
+    <uses-feature android:name="com.oculus.feature.PASSTHROUGH" android:required="false" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <application
+        android:allowBackup="true"
+        android:label="VR OS Launcher"
+        android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+
+        <meta-data android:name="com.samsung.android.vr.application.mode" android:value="vr_only" />
+        <meta-data android:name="com.oculus.supportedDevices" android:value="quest|quest2|quest3|pro" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:configChanges="density|keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|uiMode">
+            
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="com.oculus.intent.category.VR" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
