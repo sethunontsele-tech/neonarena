@@ -3,8 +3,9 @@ import {
   Search, Filter, BookOpen, Layers, Laptop, Monitor, Smartphone, Gamepad2, 
   Cpu, Users, Calendar, Coins, Settings, Award, HelpCircle, Trophy, Sparkles, 
   ArrowRightLeft, Clock, Info, Check, X, ShieldAlert, GraduationCap, 
-  ChevronDown, BarChart2, Tv, RefreshCw, Languages, Zap, Heart, Sliders
+  ChevronDown, BarChart2, Tv, RefreshCw, Languages, Zap, Heart, Sliders, Music
 } from 'lucide-react';
+import { MusicLoader } from './MusicLoader';
 
 // Interfaces for our comprehensive Software Encyclopedia
 export interface SoftwareMajorVersion {
@@ -426,6 +427,943 @@ const softwareDatabase: SoftwareTitle[] = [
     ],
     description: 'ChatGPT is a prominent generative artificial intelligence chatbot developed by OpenAI. It enables users to direct conversations towards desired length, format, style, and detail level, utilizing advanced neural transformer models.',
     educationFacts: 'CS Lesson: ChatGPT utilizes a Large Language Model (LLM) based on the Transformer architecture. This model processes tokens using self-attention heads to predict the probability of subsequent words, relying on billions of model weights mapped on clusters of H100 GPUs.'
+  },
+  {
+    id: 'bigscreen',
+    name: 'Bigscreen Beta',
+    category: 'VR Application',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2016-04-28',
+    developer: 'Bigscreen, Inc.',
+    publisher: 'Bigscreen, Inc.',
+    genres: ['Social', 'Entertainment', 'Media Player'],
+    gameplayMechanics: ['Virtual cinema screen projections', 'P2P desktop streaming', 'Interactive spatial avatars', 'Virtual popcorn/soda grab vectors'],
+    supportedPlatforms: ['Windows (SteamVR)', 'Meta Quest 2/3/Pro', 'PlayStation VR'],
+    minHardwareRequirements: {
+      cpu: 'Intel i5-4590',
+      gpu: 'NVIDIA GTX 970',
+      ram: '8 GB RAM',
+      storage: '2 GB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Intel i7-7700K',
+      gpu: 'NVIDIA GTX 1070',
+      ram: '16 GB RAM',
+      storage: '2 GB'
+    },
+    multiplayerFeatures: ['Cross-platform shared cinema lobbies', 'Spatial audio voice chat'],
+    vrHeadsetCompatibility: ['Valve Index', 'Meta Quest Family', 'HTC Vive', 'Windows Mixed Reality'],
+    controllersSupported: ['Hand tracking', 'Oculus Touch', 'Index Knuckles'],
+    officialWebsite: 'https://www.bigscreenvr.com',
+    dlcAndExpansions: ['Premium movie ticket purchases', 'Special visual environment packs'],
+    achievementsCount: 0,
+    accessibilityFeatures: ['Adjustable screen size', 'Subtitles on corporate streams', 'Teleport locomotion', 'One-handed control schemes'],
+    ratings: {
+      steam: 'Very Positive (88%)',
+      userRating: 9.1
+    },
+    communityStats: {
+      monthlyActiveUsers: '350,000 active watch-party users',
+      totalSales: 'Free-to-Play with millions of downloads'
+    },
+    fileSize: '1.2 GB',
+    languages: ['English', 'Spanish', 'French', 'German', 'Japanese', 'Korean'],
+    crossPlatformSupport: true,
+    cloudSaves: true,
+    monetizationModel: 'Free-to-Play',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2016-04-28', notes: 'Initial public beta launch' },
+      { version: 'v2.5', releaseDate: '2019-12-16', notes: 'Launched official cinema ticket streaming channel partnerships' },
+      { version: 'v3.0', releaseDate: '2023-10-10', notes: 'Complete UI overhaul and high-performance AV1 streaming codec integration' }
+    ],
+    description: 'Bigscreen lets you watch movies, videos, and play games in immersive virtual reality theaters with friends. Experience simulated high-fidelity screens from cozy bedrooms to massive IMAX-style cinemas.',
+    educationFacts: 'CS Lesson: Bigscreen uses real-time desktop frame capture and high-efficiency low-latency WebRTC streams, transmitting remote computer frames across a decentralized mesh network with sub-100ms latency.'
+  },
+  {
+    id: 'youtube_vr',
+    name: 'YouTube VR',
+    category: 'VR Application',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2016-11-10',
+    developer: 'Google LLC',
+    publisher: 'Google LLC',
+    genres: ['Entertainment', 'Media Player', 'Spherical Exploration'],
+    gameplayMechanics: ['Spherical projection wraps', 'Voice command searches', 'Dynamic foveated streaming', 'Spatial soundscapes'],
+    supportedPlatforms: ['Meta Quest Family', 'PlayStation VR', 'Android (Cardboard/Daydream)', 'Apple Vision Pro'],
+    minHardwareRequirements: {
+      cpu: 'Snapdragon XR1 (Stand-alone)',
+      gpu: 'Adreno 615',
+      ram: '4 GB RAM',
+      storage: '200 MB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Snapdragon XR2 Gen 2',
+      gpu: 'Adreno 740',
+      ram: '8 GB RAM',
+      storage: '200 MB'
+    },
+    multiplayerFeatures: ['Co-watching virtual spaces (discontinued)', 'Single player streaming'],
+    vrHeadsetCompatibility: ['Meta Quest Family', 'Apple Vision Pro', 'HTC Vive', 'PlayStation VR'],
+    controllersSupported: ['Hand gestures', 'Pinch vectors', 'Standard VR track controllers'],
+    officialWebsite: 'https://youtube.com/vr',
+    dlcAndExpansions: ['YouTube Premium membership integration'],
+    achievementsCount: 0,
+    accessibilityFeatures: ['Full voice dictation', 'Enlarged custom font rendering', 'Dynamic zoom viewport centering'],
+    ratings: {
+      userRating: 8.8
+    },
+    communityStats: {
+      monthlyActiveUsers: '2.8 million active headset viewers',
+      totalSales: 'Free application'
+    },
+    fileSize: '150 MB',
+    languages: ['Over 45 languages supported'],
+    crossPlatformSupport: true,
+    cloudSaves: true,
+    monetizationModel: 'Free-to-Play',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2016-11-10', notes: 'Initial Daydream VR launch' },
+      { version: 'v2.0', releaseDate: '2018-10-25', notes: 'Meta Quest native platform deployment with 4K spherical playback' },
+      { version: 'v3.2', releaseDate: '2024-02-02', notes: 'Native VisionOS spatial rendering upgrade' }
+    ],
+    description: 'YouTube VR transforms the world’s most popular video-sharing platform into an immersive 3D spherical experience, allowing you to step inside 360-degree videos or stream standard films on a massive floating screen.',
+    educationFacts: 'CS Lesson: To project spherical videos, YouTube VR wraps flat equirectangular video frames around the interior vertices of an inverted virtual 3D sphere mesh, placing the player camera at coordinate (0,0,0).'
+  },
+  {
+    id: 'virtual_desktop',
+    name: 'Virtual Desktop',
+    category: 'VR Application',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2016-03-31',
+    developer: 'Guy Godin',
+    publisher: 'Virtual Desktop Inc.',
+    genres: ['Utility', 'Productivity', 'Streaming Tools'],
+    gameplayMechanics: ['Ultra-low-latency desktop encoding', 'Remote controller emulation', 'Dynamic SSW frame extrapolation', 'Virtual environment spawning'],
+    supportedPlatforms: ['Windows (Oculus/SteamVR)', 'Meta Quest Family', 'Pico 4', 'HTC Vive XR Elite'],
+    minHardwareRequirements: {
+      cpu: 'Intel i5-2500K',
+      gpu: 'NVIDIA GTX 970 / AMD RX 480',
+      ram: '8 GB RAM',
+      storage: '1 GB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Intel i7-9700K / AMD Ryzen 7 3700X',
+      gpu: 'NVIDIA RTX 3070 / AMD RX 6800',
+      ram: '16 GB RAM',
+      storage: '1 GB'
+    },
+    multiplayerFeatures: ['Single User Streaming with remote guest features'],
+    vrHeadsetCompatibility: ['Meta Quest Family', 'Pico headsets', 'Valve Index', 'HTC Vive'],
+    controllersSupported: ['SteamVR Controller arrays', 'Hand tracking gesture mapping'],
+    officialWebsite: 'https://www.vrdesktop.net',
+    dlcAndExpansions: ['Free continuous streamer utility updates'],
+    achievementsCount: 5,
+    accessibilityFeatures: ['High-contrast UI settings', 'Adjustable curvature for curved monitors', 'Complete voice control presets'],
+    ratings: {
+      steam: 'Very Positive (94%)',
+      userRating: 9.7
+    },
+    communityStats: {
+      monthlyActiveUsers: '800,000 active power users',
+      totalSales: 'Over 2.5 million licenses purchased'
+    },
+    fileSize: '750 MB',
+    languages: ['English', 'French', 'German', 'Japanese', 'Traditional Chinese', 'Korean'],
+    crossPlatformSupport: true,
+    cloudSaves: true,
+    monetizationModel: 'Paid',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2016-03-31', notes: 'Initial Steam release for HTC Vive and Oculus Rift' },
+      { version: 'v1.15', releaseDate: '2019-05-21', notes: 'Quest standalone release introducing high-quality Wi-Fi PC streaming' },
+      { version: 'v1.30', releaseDate: '2023-11-15', notes: 'AV1 10-bit codec support and ultra-low latency Synchronous Spacewarp (SSW) generation' }
+    ],
+    description: 'Virtual Desktop is a highly optimized streaming application that allows you to connect to your PC wirelessly over Wi-Fi to use your computer, stream flat PC games, or play SteamVR titles on standalone headsets.',
+    educationFacts: 'CS Lesson: Virtual Desktop implements hardware-accelerated GPU screen capture APIs paired with custom slicing encoders, streaming frames over UDP with latency-optimized jitter buffers, achieving sub-20ms wireless hand-to-display loops.'
+  },
+  {
+    id: 'immersed',
+    name: 'Immersed',
+    category: 'VR Application',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2018-08-15',
+    developer: 'Immersed Inc.',
+    publisher: 'Immersed Inc.',
+    genres: ['Productivity', 'Collaboration', 'Office Workspace'],
+    gameplayMechanics: ['Virtual multi-display rendering', 'Shared whiteboards', 'Real-time team screen share portals', 'Integrated keyboard pass-through overlays'],
+    supportedPlatforms: ['Windows', 'macOS', 'Linux', 'Meta Quest Family', 'Apple Vision Pro', 'HTC Vive XR Elite'],
+    minHardwareRequirements: {
+      cpu: 'Intel i5-6500 / Apple M1',
+      gpu: 'Intel HD Graphics 530 / Apple Silicon GPU',
+      ram: '8 GB RAM',
+      storage: '800 MB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Intel i7-10700K / Apple M1 Pro',
+      gpu: 'NVIDIA RTX 2060 / Apple M1 Max',
+      ram: '16 GB RAM',
+      storage: '1 GB'
+    },
+    multiplayerFeatures: ['Shared visual business rooms', 'Cross-platform cursor mapping'],
+    vrHeadsetCompatibility: ['Meta Quest Family', 'Apple Vision Pro', 'HTC Vive', 'Pico Family'],
+    controllersSupported: ['Hand tracking pinch loops', 'Physical Bluetooth keyboard/mouse bindings'],
+    officialWebsite: 'https://immersed.com',
+    dlcAndExpansions: ['Immersed Pro subscription tier', 'Enterprise office customization bundles'],
+    achievementsCount: 0,
+    accessibilityFeatures: ['Custom text scaling', 'Passthrough windows around physical desk', 'Voice transcription assistant'],
+    ratings: {
+      userRating: 9.2
+    },
+    communityStats: {
+      monthlyActiveUsers: '180,000 professional spatial workers',
+      totalSales: 'Free core app with premium SaaS memberships'
+    },
+    fileSize: '450 MB',
+    languages: ['English', 'German', 'Spanish', 'Japanese', 'Korean'],
+    crossPlatformSupport: true,
+    cloudSaves: true,
+    monetizationModel: 'Subscription',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2018-08-15', notes: 'Initial public beta launch' },
+      { version: 'v3.5', releaseDate: '2021-12-08', notes: 'Launched multi-screen support (up to 5 monitors free for Pro)' },
+      { version: 'v5.0', releaseDate: '2023-10-12', notes: 'Quest 3 MR color passthrough and physical keyboard anchoring matrices' }
+    ],
+    description: 'Immersed creates a high-performance spatial workspace in virtual and mixed reality, enabling professionals to spawn up to 5 virtual monitors, work alongside team members in shared offices, and pair real keyboards.',
+    educationFacts: 'CS Lesson: Immersed installs custom virtual kernel display drivers inside the host computer OS. The OS treats these drivers as real physical screens, letting the CPU render display frames directly into GPU memories for immediate network transport.'
+  },
+  {
+    id: 'gravity_sketch',
+    name: 'Gravity Sketch',
+    category: 'VR Application',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2017-01-25',
+    developer: 'Gravity Sketch Ltd.',
+    publisher: 'Gravity Sketch Ltd.',
+    genres: ['Productivity', 'Creative Software', '3D Design'],
+    gameplayMechanics: ['NURBS mathematical curves sketch', 'Spatial subdivision polygon styling', 'Dynamic cloud sync exports', 'Real-time geometric co-creation'],
+    supportedPlatforms: ['Windows (SteamVR)', 'Meta Quest Family', 'iPadOS'],
+    minHardwareRequirements: {
+      cpu: 'Intel i5-4590',
+      gpu: 'NVIDIA GTX 970 / AMD R9 290',
+      ram: '8 GB RAM',
+      storage: '4 GB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Intel i7-8700K',
+      gpu: 'NVIDIA GTX 1070 / AMD Vega 56',
+      ram: '16 GB RAM',
+      storage: '4 GB'
+    },
+    multiplayerFeatures: ['Real-time co-design spatial rooms (LandingPad)'],
+    vrHeadsetCompatibility: ['Valve Index', 'Meta Quest Family', 'HTC Vive', 'HP Reverb G2'],
+    controllersSupported: ['Oculus Touch', 'Index Knuckles', 'Vive Wands', 'Hand tracking'],
+    officialWebsite: 'https://www.gravitysketch.com',
+    dlcAndExpansions: ['LandingPad Cloud collaboration enterprise workspace'],
+    achievementsCount: 12,
+    accessibilityFeatures: ['Custom hand sizing scales', 'Left-handed user layout mirror', 'Audio helper cues', 'Pinch spatial camera zooming'],
+    ratings: {
+      steam: 'Very Positive (91%)',
+      userRating: 9.4
+    },
+    communityStats: {
+      monthlyActiveUsers: '95,000 active industrial designers',
+      totalSales: 'Over 1 million downloads since transitioning to Free'
+    },
+    fileSize: '1.8 GB',
+    languages: ['English', 'German', 'French', 'Italian', 'Japanese', 'Simplified Chinese'],
+    crossPlatformSupport: true,
+    cloudSaves: true,
+    monetizationModel: 'Free-to-Play',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2017-01-25', notes: 'Initial paid creative release on SteamVR' },
+      { version: 'v4.0', releaseDate: '2021-01-25', notes: 'Transitioned to completely free model and released native Quest stand-alone app' },
+      { version: 'v6.2', releaseDate: '2023-09-28', notes: 'Launched LandingPad Room integrations and OBJ/FBX cloud pipeline synchronization' }
+    ],
+    description: 'Gravity Sketch is an intuitive spatial 3D design and wireframing application. It enables designers, artists, and creators to sketch ideas directly in 3D using controllers, producing high-fidelity CAD-ready geometric structures.',
+    educationFacts: 'Design Lesson: Rather than editing rasterized voxels, Gravity Sketch models surfaces mathematically using Non-Uniform Rational B-Splines (NURBS). This allows designers to zoom infinitely into curves without pixelation.'
+  },
+  {
+    id: 'open_brush',
+    name: 'Open Brush',
+    category: 'VR Application',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2021-02-04',
+    developer: 'Open Brush Contributors',
+    publisher: 'Open Brush Contributors',
+    genres: ['Creative Software', 'Art', 'Open Source'],
+    gameplayMechanics: ['Volumetric painting streams', 'Animated shader stroke engines', 'Audio-reactive frequency brushes', 'GLTF geometric model importing'],
+    supportedPlatforms: ['Windows (SteamVR)', 'Meta Quest Family', 'Pico 4', 'Linux (SteamVR)'],
+    minHardwareRequirements: {
+      cpu: 'Intel i5-4590 / AMD FX 8350',
+      gpu: 'NVIDIA GTX 970 / AMD Radeon R9 290',
+      ram: '8 GB RAM',
+      storage: '1.5 GB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Intel i7-6700K',
+      gpu: 'NVIDIA GTX 1060 / AMD RX 580',
+      ram: '16 GB RAM',
+      storage: '2 GB'
+    },
+    multiplayerFeatures: ['Local single player with open-source multi-user community builds'],
+    vrHeadsetCompatibility: ['Meta Quest Family', 'Valve Index', 'HTC Vive', 'Windows Mixed Reality'],
+    controllersSupported: ['SteamVR controller index, grip tracking', 'Hand tracking pinch'],
+    officialWebsite: 'https://openbrush.app',
+    dlcAndExpansions: ['None (Completely free open-source repository)'],
+    achievementsCount: 0,
+    accessibilityFeatures: ['Adjustable color palettes', 'Dynamic user-interface scaling', 'One-click stroke stabilization curves'],
+    ratings: {
+      steam: 'Overwhelmingly Positive (96%)',
+      userRating: 9.5
+    },
+    communityStats: {
+      monthlyActiveUsers: '40,000 active spatial painters',
+      totalSales: 'Completely free open-source (Forked from Tilt Brush)'
+    },
+    fileSize: '980 MB',
+    languages: ['English', 'German', 'Spanish', 'French', 'Japanese', 'Russian', 'Simplified Chinese'],
+    crossPlatformSupport: true,
+    cloudSaves: false,
+    monetizationModel: 'Open Source',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2021-02-04', notes: 'Initial community branch release after Google open-sourced Tilt Brush' },
+      { version: 'v2.4', releaseDate: '2022-10-14', notes: 'Added multilayer support, file indexing, and OpenXR platform updates' },
+      { version: 'v3.0', releaseDate: '2024-03-12', notes: 'Native MR passthrough drawing, customizable brush APIs, and FBX runtime assembly' }
+    ],
+    description: 'Open Brush is the community-driven, open-source successor to Google’s Tilt Brush. It lets you paint in three-dimensional space with virtual brushes, glowing neon, smoke, stars, and animated audio-reactive physical textures.',
+    educationFacts: 'CS Lesson: Open Brush converts controller coordinates into discrete 3D mathematical vectors, generating continuous dynamic triangle meshes on the fly and writing directly to GPU vertex buffers.'
+  },
+  {
+    id: 'vermillion',
+    name: 'Vermillion',
+    category: 'VR Application',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2021-07-29',
+    developer: 'Aviary Games',
+    publisher: 'Aviary Games',
+    genres: ['Creative Software', 'Art', 'Simulation'],
+    gameplayMechanics: ['Wet-on-wet oil blending shaders', 'Physical bristle collision tracking', 'Palette color scraping vectors', 'Built-in web browser overlay references'],
+    supportedPlatforms: ['Windows (SteamVR)', 'Meta Quest Family'],
+    minHardwareRequirements: {
+      cpu: 'Intel i5-4590',
+      gpu: 'NVIDIA GTX 970 / AMD Radeon R9 290',
+      ram: '8 GB RAM',
+      storage: '2 GB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Intel i7-7700K',
+      gpu: 'NVIDIA GTX 1060 / AMD RX 580',
+      ram: '16 GB RAM',
+      storage: '2 GB'
+    },
+    multiplayerFeatures: ['Shared art studios (up to 4 painters)'],
+    vrHeadsetCompatibility: ['Meta Quest Family', 'Valve Index', 'HTC Vive', 'HP Reverb G2'],
+    controllersSupported: ['Haptic feedback fine-motor controllers', 'Touch surface color mixers'],
+    officialWebsite: 'https://vermillion-vr.com',
+    dlcAndExpansions: ['Model importing, custom frame design models'],
+    achievementsCount: 22,
+    accessibilityFeatures: ['Seated painting mode', 'Height-adjustable digital easel', 'Brush-hand stabilizer filters', 'Custom left/right layouts'],
+    ratings: {
+      steam: 'Overwhelmingly Positive (97%)',
+      userRating: 9.6
+    },
+    communityStats: {
+      monthlyActiveUsers: '30,000 active painters',
+      totalSales: 'Over 250,000 units sold'
+    },
+    fileSize: '1.4 GB',
+    languages: ['English', 'German', 'Dutch', 'Spanish', 'French', 'Japanese', 'Korean', 'Simplified Chinese'],
+    crossPlatformSupport: true,
+    cloudSaves: true,
+    monetizationModel: 'Paid',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2021-07-29', notes: 'Initial Steam release with Bob Ross style tutorials integration' },
+      { version: 'v1.5', releaseDate: '2022-03-24', notes: 'Quest native port launch with complete 3D haptic collision algorithms' },
+      { version: 'v2.2', releaseDate: '2023-11-20', notes: 'Added multiplayer canvas sharing studios and high-fidelity texture exporting (up to 8K)' }
+    ],
+    description: 'Vermillion is a realistic oil painting simulator in virtual reality. Experience physical paint thickness, blend colors directly on the palette, scrap off errors, and paint on a highly responsive virtual canvas.',
+    educationFacts: 'Design Lesson: Vermillion solves a physical paint simulation on the GPU. By calculating brush pressure, stroke vectors, and paint thickness on a multi-layered pixel texture, it replicates realistic oil friction and color blending.'
+  },
+  {
+    id: 'tripp_meditation',
+    name: 'TRIPP VR',
+    category: 'VR Experience',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2018-06-01',
+    developer: 'TRIPP Inc.',
+    publisher: 'TRIPP Inc.',
+    genres: ['Wellness', 'Meditation', 'Psychology'],
+    gameplayMechanics: ['Breathing rhythm guiding visualizer', 'Cosmic abstraction morphs', 'Binaural sound sweeps', 'Mood telemetry diagnostics'],
+    supportedPlatforms: ['Meta Quest Family', 'PlayStation VR2', 'Apple Vision Pro'],
+    minHardwareRequirements: {
+      cpu: 'Snapdragon XR1 (Stand-alone)',
+      gpu: 'Integrated mobile VR processor',
+      ram: '4 GB RAM',
+      storage: '2 GB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Snapdragon XR2 Gen 2',
+      gpu: 'Adreno 740',
+      ram: '8 GB RAM',
+      storage: '3 GB'
+    },
+    multiplayerFeatures: ['Single Player immersive mood session guides'],
+    vrHeadsetCompatibility: ['Meta Quest Family', 'PlayStation VR2', 'Apple Vision Pro', 'HTC Vive Flow'],
+    controllersSupported: ['Gaze tracking select', 'Hand gestures', 'Standard VR game controllers'],
+    officialWebsite: 'https://www.tripp.com',
+    dlcAndExpansions: ['Annual TRIPP membership', 'Custom guided vocal packs', 'Corporate wellness sessions'],
+    achievementsCount: 0,
+    accessibilityFeatures: ['Gaze-only selections (no controllers required)', 'Subtitled session vocals', 'Color-frequency customization scales'],
+    ratings: {
+      userRating: 8.9
+    },
+    communityStats: {
+      monthlyActiveUsers: '120,000 monthly active meditators',
+      totalSales: 'SaaS subscription service with over 1 million sessions completed'
+    },
+    fileSize: '2.5 GB',
+    languages: ['English', 'German', 'Spanish', 'French', 'Japanese'],
+    crossPlatformSupport: true,
+    cloudSaves: true,
+    monetizationModel: 'Subscription',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2018-06-01', notes: 'Initial premium launch' },
+      { version: 'v2.8', releaseDate: '2021-11-05', notes: 'Introduced daily dynamic AI generative meditations and smartphone companion app integration' },
+      { version: 'v4.0', releaseDate: '2024-02-02', notes: 'Launch of native VisionOS Spatial Mindfulness environment' }
+    ],
+    description: 'TRIPP is an award-winning cinematic virtual reality meditation and wellness application. Using cognitive behavioral principles, abstract visual journeys, spatial sound, and breath guides, it elevates mental clarity.',
+    educationFacts: 'Design Lesson: TRIPP deploys specific visual patterns based on the Fibonacci sequence and binaural beats. By aligning frequency shifts (e.g., alpha waves at 10Hz) across ears, it induces slow-wave neurological relaxation.'
+  },
+  {
+    id: 'supernatural_fitness',
+    name: 'Supernatural',
+    category: 'VR Game',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'NA',
+    releaseDate: '2020-04-23',
+    developer: 'Within Unlimited (Meta)',
+    publisher: 'Meta Platforms Technologies',
+    genres: ['Fitness', 'Rhythm Game', 'Sports'],
+    gameplayMechanics: ['Speed target swiping', 'Squat/Lunge collision dodging', 'Real-time heart rate parsing', 'Virtual coach training overlays'],
+    supportedPlatforms: ['Meta Quest 2/3/Pro'],
+    minHardwareRequirements: {
+      cpu: 'Snapdragon XR2 Gen 1 (Stand-alone Quest)',
+      gpu: 'Adreno 650',
+      ram: '6 GB RAM',
+      storage: '4 GB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Snapdragon XR2 Gen 2',
+      gpu: 'Adreno 740',
+      ram: '8 GB RAM',
+      storage: '5 GB'
+    },
+    multiplayerFeatures: ['Asynchronous leaderboards', 'Community workout profiles'],
+    vrHeadsetCompatibility: ['Meta Quest Family Only'],
+    controllersSupported: ['Haptic dynamic tracking controllers'],
+    officialWebsite: 'https://www.getsupernatural.com',
+    dlcAndExpansions: ['Monthly active subscription updates', 'Licensed hit music artist packages'],
+    achievementsCount: 150,
+    accessibilityFeatures: ['Intensity level filters', 'One-handed workout adaptations', 'Height-calibration adjustments', 'Optional low-impact knee safety presets'],
+    ratings: {
+      userRating: 9.3
+    },
+    communityStats: {
+      monthlyActiveUsers: '240,000 active subscribers',
+      totalSales: 'Acquired by Meta in 2023 for reported $400 million'
+    },
+    fileSize: '3.8 GB',
+    languages: ['English'],
+    crossPlatformSupport: false,
+    cloudSaves: true,
+    monetizationModel: 'Subscription',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2020-04-23', notes: 'Initial Quest exclusive shadow launch' },
+      { version: 'v2.0', releaseDate: '2021-10-01', notes: 'Added Boxing training programs and personalized coaching algorithms' },
+      { version: 'v3.5', releaseDate: '2023-11-12', notes: 'Quest 3 mixed reality training setups, overlaying coaches into the user living room' }
+    ],
+    description: 'Supernatural is a premium, subscription-based virtual reality fitness application. Featuring expert coaches, workouts set in photorealistic global natural environments, and licensed pop/rock music, it provides intense cardio workouts.',
+    educationFacts: 'CS Lesson: Supernatural records real-time high-frequency controller velocity and direction vectors. It cross-references these with custom audio beatgrids to calculate impact accuracy and kinetic calorie metrics.'
+  },
+  {
+    id: 'engage_xr',
+    name: 'ENGAGE XR',
+    category: 'VR Application',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2016-05-18',
+    developer: 'ENGAGE XR Holdings PLC',
+    publisher: 'ENGAGE XR Holdings PLC',
+    genres: ['Education', 'Collaboration', 'Social Platform'],
+    gameplayMechanics: ['Whiteboard dynamic draw nodes', '3D asset spawning widgets', 'Presentation screen shares', 'Spatial classroom group splittings'],
+    supportedPlatforms: ['Windows (SteamVR)', 'Meta Quest Family', 'Apple Vision Pro', 'Pico 4', 'macOS', 'Android'],
+    minHardwareRequirements: {
+      cpu: 'Intel i5-4590 / AMD FX 8350',
+      gpu: 'NVIDIA GTX 970',
+      ram: '8 GB RAM',
+      storage: '4 GB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Intel i7-7700K',
+      gpu: 'NVIDIA GTX 1070 / AMD RX Vega 56',
+      ram: '16 GB RAM',
+      storage: '5 GB'
+    },
+    multiplayerFeatures: ['Up to 70-user shared concurrent sessions', 'Spatial voice groupings'],
+    vrHeadsetCompatibility: ['Meta Quest Family', 'Valve Index', 'HTC Vive', 'Apple Vision Pro', 'HP Reverb G2'],
+    controllersSupported: ['Standard VR grip arrays', 'Hand tracking input gesture maps'],
+    officialWebsite: 'https://engagevr.com',
+    dlcAndExpansions: ['Premium custom enterprise metaverses', 'Custom asset package licensing'],
+    achievementsCount: 0,
+    accessibilityFeatures: ['Speech-to-text transcript overlays', 'Custom high-contrast color choices', 'Laser-gaze selections'],
+    ratings: {
+      steam: 'Mostly Positive (76%)',
+      userRating: 8.5
+    },
+    communityStats: {
+      monthlyActiveUsers: '60,000 active students and professionals',
+      totalSales: 'B2B/B2C SaaS subscription frameworks'
+    },
+    fileSize: '3.5 GB',
+    languages: ['English', 'German', 'Spanish', 'French', 'Simplified Chinese', 'Korean', 'Japanese'],
+    crossPlatformSupport: true,
+    cloudSaves: true,
+    monetizationModel: 'Subscription',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2016-05-18', notes: 'Initial public classroom alpha' },
+      { version: 'v2.5', releaseDate: '2019-10-15', notes: 'Added LandingPage dashboard, PDF presentation overlays, and screen share sync' },
+      { version: 'v4.0', releaseDate: '2023-11-20', notes: 'Launch of ENGAGE Link corporate metaverse grid, spatial avatar facetrack sync' }
+    ],
+    description: 'ENGAGE XR is a leading virtual reality corporate training and spatial education platform. It allows users to host dynamic lectures, corporate events, and virtual classroom learning sessions with realistic avatars.',
+    educationFacts: 'CS Lesson: To support 70+ avatars in a classroom, ENGAGE uses a hybrid network model: player voice streams utilize low-latency peer-to-peer pipelines, while whiteboard coordinates are handled on a state-synchronized central server.'
+  },
+  {
+    id: 'wander_vr',
+    name: 'Wander',
+    category: 'VR Application',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2018-06-14',
+    developer: 'Parkline Interactive',
+    publisher: 'Parkline Interactive',
+    genres: ['Education', 'Exploration', 'Travel'],
+    gameplayMechanics: ['Spherical map imagery mapping', 'Voice command searches', 'Historical timeline visualizers', 'Wikipedia geo-article parsing'],
+    supportedPlatforms: ['Meta Quest Family', 'Go / GearVR'],
+    minHardwareRequirements: {
+      cpu: 'Snapdragon 835 (Quest 1)',
+      gpu: 'Adreno 540',
+      ram: '4 GB RAM',
+      storage: '1.2 GB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Snapdragon XR2 Gen 2',
+      gpu: 'Adreno 740',
+      ram: '8 GB RAM',
+      storage: '1.5 GB'
+    },
+    multiplayerFeatures: ['Shared exploration lobbies with synchronous teleporting'],
+    vrHeadsetCompatibility: ['Meta Quest Family', 'Oculus Go'],
+    controllersSupported: ['Oculus Touch controllers', 'Hand tracking support'],
+    officialWebsite: 'https://www.wander-vr.com',
+    dlcAndExpansions: ['Continuous API updates matching Google Maps integration'],
+    achievementsCount: 15,
+    accessibilityFeatures: ['Voice navigation input', 'Adjustable height projection standard', 'Continuous movement / Teleport choices'],
+    ratings: {
+      userRating: 9.2
+    },
+    communityStats: {
+      monthlyActiveUsers: '140,000 active travel explorers',
+      totalSales: 'Over 1 million units sold on Meta Store'
+    },
+    fileSize: '1.1 GB',
+    languages: ['English', 'German', 'Spanish', 'French', 'Italian', 'Japanese', 'Traditional Chinese'],
+    crossPlatformSupport: true,
+    cloudSaves: true,
+    monetizationModel: 'Paid',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2018-06-14', notes: 'Initial Oculus Go release' },
+      { version: 'v1.8', releaseDate: '2019-05-21', notes: 'Native Quest 1 port launching shared lobby explorations with speech-to-text searches' },
+      { version: 'v2.6', releaseDate: '2022-12-05', notes: 'Added Google Street View historic timeline datasets and multi-user pointer rays' }
+    ],
+    description: 'Wander lets you explore the entire world from the comfort of virtual reality. Utilizing Google Street View API, historical imagery, voice searches, and Wikipedia, you can travel anywhere on Earth.',
+    educationFacts: 'CS Lesson: Wander stitches spherical panoramic tiles fetched from online geodatabases, projection-mapping them onto a custom inverse sphere mesh with foveated mip-mapping based on head gaze.'
+  },
+  {
+    id: 'wooorld_mr',
+    name: 'Wooorld',
+    category: 'Mixed Reality App',
+    platformType: 'ar',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2022-10-25',
+    developer: 'Wooorld Inc.',
+    publisher: 'Wooorld Inc.',
+    genres: ['Education', 'Exploration', 'Simulation'],
+    gameplayMechanics: ['3D topographical mesh scaling', 'Spatial MR table anchors', 'Global search dictation', 'Dynamic elevation extrusion controls'],
+    supportedPlatforms: ['Meta Quest 2/3/Pro'],
+    minHardwareRequirements: {
+      cpu: 'Snapdragon XR2 Gen 1 (Stand-alone VR)',
+      gpu: 'Adreno 650',
+      ram: '6 GB RAM',
+      storage: '2 GB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Snapdragon XR2 Gen 2',
+      gpu: 'Adreno 740',
+      ram: '8 GB RAM',
+      storage: '2 GB'
+    },
+    multiplayerFeatures: ['Real-time co-exploring spatial MR rooms', 'Integrated avatar chat'],
+    vrHeadsetCompatibility: ['Meta Quest 2/3/Pro', 'HTC Vive XR Elite'],
+    controllersSupported: ['Hand tracking pinch and drag', 'Quest Touch haptics'],
+    officialWebsite: 'https://wooorld.com',
+    dlcAndExpansions: ['Premium custom building 3D data packs'],
+    achievementsCount: 0,
+    accessibilityFeatures: ['Pinch spatial sizing zoom', 'Height adaptation offsets', 'Left-handed tool orientation'],
+    ratings: {
+      userRating: 8.7
+    },
+    communityStats: {
+      monthlyActiveUsers: '35,000 active mixed reality users',
+      totalSales: 'Free app with professional mapping license upgrades'
+    },
+    fileSize: '1.4 GB',
+    languages: ['English', 'German', 'Japanese', 'Spanish'],
+    crossPlatformSupport: true,
+    cloudSaves: true,
+    monetizationModel: 'Free-to-Play',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2022-10-25', notes: 'Quest Pro mixed reality table-anchored world initial launch' },
+      { version: 'v2.0', releaseDate: '2023-10-10', notes: 'Complete Quest 3 color passthrough upgrade, adding 3D mesh detail maps and elevations' }
+    ],
+    description: 'Wooorld is a collaborative mixed reality application that lets you render 3D topographical map data of the entire globe on your living room table. Explore global cities, play geography games, and travel together.',
+    educationFacts: 'CS Lesson: Wooorld pulls actual elevation and photogrammetry mesh streams on-the-fly, clipping the 3D meshes to match the user\'s physical tabletop boundary via spatial anchoring vectors.'
+  },
+  {
+    id: 'mission_iss',
+    name: 'Mission: ISS',
+    category: 'VR Experience',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2017-03-09',
+    developer: 'Magnopus',
+    publisher: 'Meta / Magnopus',
+    genres: ['Education', 'Simulation', 'Science'],
+    gameplayMechanics: ['Zero-gravity dynamic locomotion', 'Spatial mechanical arms operations', 'EVA spacewalking hooks', 'Zero-G inventory anchoring'],
+    supportedPlatforms: ['Windows (Oculus Rift)', 'Meta Quest Family'],
+    minHardwareRequirements: {
+      cpu: 'Intel i5-4590',
+      gpu: 'NVIDIA GTX 970',
+      ram: '8 GB RAM',
+      storage: '3 GB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Intel i7-6700K',
+      gpu: 'NVIDIA GTX 1060 / AMD RX 580',
+      ram: '16 GB RAM',
+      storage: '3.5 GB'
+    },
+    multiplayerFeatures: ['Single Player educational aerospace simulation'],
+    vrHeadsetCompatibility: ['Meta Quest Family', 'Oculus Rift', 'Valve Index'],
+    controllersSupported: ['Haptic physical hand grab controllers'],
+    officialWebsite: 'https://www.magnopus.com',
+    dlcAndExpansions: ['None (Supported by NASA/ESA agreements)'],
+    achievementsCount: 18,
+    accessibilityFeatures: ['Seated motion-reduction mode', 'Snap-turn / Continuous-turn configurations', 'Optional horizon stabilization vectors'],
+    ratings: {
+      userRating: 9.4
+    },
+    communityStats: {
+      monthlyActiveUsers: '80,000 aerospace enthusiasts',
+      totalSales: 'Over 2 million free downloads on Oculus platforms'
+    },
+    fileSize: '2.4 GB',
+    languages: ['English', 'German', 'Spanish', 'French', 'Russian', 'Japanese'],
+    crossPlatformSupport: true,
+    cloudSaves: true,
+    monetizationModel: 'Open Source',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2017-03-09', notes: 'Initial Oculus Rift launch, co-designed with NASA' },
+      { version: 'v1.5', releaseDate: '2019-05-21', notes: 'Native Quest 1 port launching optimized zero-gravity hand grip systems' },
+      { version: 'v2.1', releaseDate: '2021-08-14', notes: 'Added real high-definition astronauts commentary video logs and redesigned Canadarm controls' }
+    ],
+    description: 'Mission: ISS is an educational virtual reality experience that lets you tour the International Space Station, perform spacewalks, guide real cargo capsules, and explore life in zero-gravity.',
+    educationFacts: 'CS Lesson: Mission: ISS simulates real momentum-conservation physics. Grabbing a wall handle applies virtual inverse counter-forces to the player\'s camera rig, recreating realistic zero-gravity inertia.'
+  },
+  {
+    id: 'anne_frank_vr',
+    name: 'Anne Frank House VR',
+    category: 'VR Experience',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2018-06-12',
+    developer: 'Force Field VR (Vertigo Games)',
+    publisher: 'Anne Frank House',
+    genres: ['History', 'Education', 'Museum'],
+    gameplayMechanics: ['Linear rooms walkthroughs', 'Hotspot historical audio triggers', 'Object inspection coordinates', 'Subtitled journal narrations'],
+    supportedPlatforms: ['Windows (Oculus)', 'Meta Quest Family', 'GearVR'],
+    minHardwareRequirements: {
+      cpu: 'Snapdragon 835 (Quest 1)',
+      gpu: 'Adreno 540',
+      ram: '4 GB RAM',
+      storage: '1.8 GB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Intel i5-4590 / Snapdragon XR2',
+      gpu: 'NVIDIA GTX 970 / Adreno 650',
+      ram: '8 GB RAM',
+      storage: '2 GB'
+    },
+    multiplayerFeatures: ['Single Player immersive history simulation'],
+    vrHeadsetCompatibility: ['Meta Quest Family', 'Oculus Rift', 'HTC Vive'],
+    controllersSupported: ['Touch pointer selects', 'Hand tracking'],
+    officialWebsite: 'https://www.annefrank.org',
+    dlcAndExpansions: ['None'],
+    achievementsCount: 0,
+    accessibilityFeatures: ['Seated only locomotion', 'Complete text-to-speech optioning', 'Adjustable language selection'],
+    ratings: {
+      userRating: 9.6
+    },
+    communityStats: {
+      monthlyActiveUsers: '45,000 active students',
+      totalSales: 'Completely free history preservation download'
+    },
+    fileSize: '1.9 GB',
+    languages: ['English', 'Dutch', 'German', 'Spanish', 'French', 'Hebrew', 'Japanese'],
+    crossPlatformSupport: true,
+    cloudSaves: false,
+    monetizationModel: 'Free-to-Play',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2018-06-12', notes: 'Initial launch commemorating Anne Frank\'s 89th birthday' },
+      { version: 'v1.3', releaseDate: '2020-05-15', notes: 'Quest native optimization with improved PBR texture lighting maps' }
+    ],
+    description: 'Anne Frank House VR offers a solemn, immersive 3D reconstruction of the Secret Annex in Amsterdam. Experience the small rooms where Anne Frank hid during WWII, accompanied by diary audio readings.',
+    educationFacts: 'Design Lesson: To maximize visual realism on mobile VR, Anne Frank House VR uses highly detailed static pre-baked lightmaps. Every light ray and ambient shadow was calculated offline using ray tracers.'
+  },
+  {
+    id: 'liminal_wellness',
+    name: 'Liminal',
+    category: 'VR Experience',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2017-08-30',
+    developer: 'Liminal VR',
+    publisher: 'Liminal VR',
+    genres: ['Wellness', 'Psychology', 'Casual'],
+    gameplayMechanics: ['Mindfulness interactive targets', 'Cognitive state selectors', 'Progressive abstract visual guides', 'Audio-frequency relaxation matrices'],
+    supportedPlatforms: ['Meta Quest Family', 'Pico 4'],
+    minHardwareRequirements: {
+      cpu: 'Snapdragon 835',
+      gpu: 'Integrated mobile GPU',
+      ram: '4 GB RAM',
+      storage: '1.2 GB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Snapdragon XR2 Gen 2',
+      gpu: 'Adreno 740',
+      ram: '8 GB RAM',
+      storage: '1.5 GB'
+    },
+    multiplayerFeatures: ['Single Player emotional tuning sessions'],
+    vrHeadsetCompatibility: ['Meta Quest Family', 'Pico headsets', 'HTC Vive XR Elite'],
+    controllersSupported: ['Hand gestures', 'Standard VR pointer controls'],
+    officialWebsite: 'https://liminalvr.com',
+    dlcAndExpansions: ['Weekly mental fitness module updates', 'Mindfulness corporate custom tracks'],
+    achievementsCount: 0,
+    accessibilityFeatures: ['Gaze-only selections', 'High-contrast colors', 'Slow pacing adjustment tools'],
+    ratings: {
+      userRating: 9.0
+    },
+    communityStats: {
+      monthlyActiveUsers: '65,000 wellness explorers',
+      totalSales: 'Freemium model with over 800k downloads'
+    },
+    fileSize: '1.3 GB',
+    languages: ['English', 'German', 'Spanish', 'French', 'Japanese'],
+    crossPlatformSupport: true,
+    cloudSaves: true,
+    monetizationModel: 'Premium',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2017-08-30', notes: 'Initial psychological wellness releases' },
+      { version: 'v3.2', releaseDate: '2021-12-10', notes: 'Redesigned core hub launching specialized Calm, Energy, Pain, and Awe zones' }
+    ],
+    description: 'Liminal is an immersive emotional tuning experience that leverages clinical cognitive behavioral research. Choose targeted states (Calm, Energy, Focus, or Awe) to rebalance your neurological mood.',
+    educationFacts: 'Design Lesson: Liminal features precise color-spectrum shifts. Utilizing warm amber/orange ranges for Calming loops, and cold high-frequency blue/indigo ranges for energetic Focus loops.'
+  },
+  {
+    id: 'vr_animation_player',
+    name: 'VR Animation Player',
+    category: 'VR Application',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2020-10-13',
+    developer: 'Meta / Quill Contributors',
+    publisher: 'Meta Platforms Technologies',
+    genres: ['Entertainment', 'Art', 'Media Player'],
+    gameplayMechanics: ['3D spline frame scrubbing', 'Spatial scale adjustment vectors', 'Volumetric audio coordinates', 'Infinite zoom viewport layers'],
+    supportedPlatforms: ['Meta Quest Family'],
+    minHardwareRequirements: {
+      cpu: 'Snapdragon 835',
+      gpu: 'Adreno 540',
+      ram: '4 GB RAM',
+      storage: '500 MB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Snapdragon XR2 Gen 2',
+      gpu: 'Adreno 740',
+      ram: '8 GB RAM',
+      storage: '500 MB'
+    },
+    multiplayerFeatures: ['Single Player immersive movie streaming'],
+    vrHeadsetCompatibility: ['Meta Quest Family Only'],
+    controllersSupported: ['Pinch-drag zoom triggers', 'Quill physical haptic coordinates'],
+    officialWebsite: 'https://quill.allumette.com',
+    dlcAndExpansions: ['Community dynamic story upload repositories'],
+    achievementsCount: 0,
+    accessibilityFeatures: ['Adjustable camera height offsets', 'One-handed scrubber play', 'Variable playback speed triggers'],
+    ratings: {
+      userRating: 9.1
+    },
+    communityStats: {
+      monthlyActiveUsers: '85,000 spatial story viewers',
+      totalSales: 'Free application'
+    },
+    fileSize: '450 MB',
+    languages: ['English', 'French', 'German', 'Spanish', 'Japanese', 'Korean'],
+    crossPlatformSupport: false,
+    cloudSaves: true,
+    monetizationModel: 'Free-to-Play',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2020-10-13', notes: 'Launched alongside Meta Quest 2 for streaming spatial illustrations' },
+      { version: 'v2.4', releaseDate: '2022-10-25', notes: 'Added complete support for dynamic immersive Quill stories and narrative loops' }
+    ],
+    description: 'VR Animation Player lets you step inside 3D immersive animated shorts, paintings, and visual masterpieces. Hand-drawn by creators using the spatial painting tool Quill, these animations come to life around you.',
+    educationFacts: 'CS Lesson: Instead of decoding raw pixel arrays, the VR Animation Player parses lightweight serialized vector splines and coordinate vertices in real-time, displaying hundreds of keyframed 3D paths.'
+  },
+  {
+    id: 'moon_vr_player',
+    name: 'Moon VR Video Player',
+    category: 'VR Application',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2017-06-20',
+    developer: 'Cosmic Dream Technologies',
+    publisher: 'Cosmic Dream Technologies',
+    genres: ['Utility', 'Media Player', 'Tools'],
+    gameplayMechanics: ['Multi-format hardware audio decoding', 'LAN/Samba local server file streaming', 'Subtitles timing calibration', 'VR spatial audio tracking'],
+    supportedPlatforms: ['Meta Quest Family', 'Apple Vision Pro', 'Windows (SteamVR)'],
+    minHardwareRequirements: {
+      cpu: 'Snapdragon 835 / Intel i5-4590',
+      gpu: 'Adreno 540 / NVIDIA GTX 970',
+      ram: '4 GB RAM',
+      storage: '150 MB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Snapdragon XR2 Gen 2 / Intel i7-7700K',
+      gpu: 'Adreno 740 / NVIDIA GTX 1060',
+      ram: '8 GB RAM',
+      storage: '150 MB'
+    },
+    multiplayerFeatures: ['Single Player high-performance local video rendering'],
+    vrHeadsetCompatibility: ['Meta Quest Family', 'Apple Vision Pro', 'HTC Vive', 'Valve Index'],
+    controllersSupported: ['Hand tracking pinch and point', 'Standard gamepads', 'Oculus Touch'],
+    officialWebsite: 'https://moonplayerapp.com',
+    dlcAndExpansions: ['Premium cloud server direct streaming connections'],
+    achievementsCount: 0,
+    accessibilityFeatures: ['Dynamic screen repositioning', 'Custom subtitles resizing', 'Eye-tracking navigation support'],
+    ratings: {
+      userRating: 9.3
+    },
+    communityStats: {
+      monthlyActiveUsers: '110,000 active stream viewers',
+      totalSales: 'Over 500,000 commercial download licenses'
+    },
+    fileSize: '220 MB',
+    languages: ['English', 'Simplified Chinese', 'Traditional Chinese', 'German', 'Japanese', 'Korean', 'Spanish'],
+    crossPlatformSupport: true,
+    cloudSaves: true,
+    monetizationModel: 'Paid',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2017-06-20', notes: 'Initial paid media player release on SteamVR' },
+      { version: 'v2.8', releaseDate: '2020-10-15', notes: 'Native standalone Quest release introducing Samba/DLNA streaming servers' },
+      { version: 'v4.5', releaseDate: '2024-02-02', notes: 'VisionOS Spatial Passthrough multi-window video decoding upgrade' }
+    ],
+    description: 'Moon VR Video Player is a premium, powerful media player that effortlessly streams high-resolution 2D, 3D, 180°, and 360° videos. Features optimized SMB/DLNA LAN server streaming and customized virtual backgrounds.',
+    educationFacts: 'CS Lesson: Moon VR implements optimized FFmpeg media filters, utilizing hardware acceleration pipelines directly on the SOC to perform real-time equirectangular anti-distortion.'
+  },
+  {
+    id: 'vrtravelx',
+    name: 'VRtravelX',
+    category: 'VR Experience',
+    platformType: 'vr',
+    status: 'Released',
+    region: 'Global',
+    releaseDate: '2021-05-12',
+    developer: 'Astro Travel XR Lab',
+    publisher: 'VRtravelX Labs',
+    genres: ['Travel', 'Education', 'Exploration'],
+    gameplayMechanics: ['Foveated ultra-high res image streaming', 'Voice-narrated geographic guides', 'Continuous waypoint teleports', 'Interactive informational tags'],
+    supportedPlatforms: ['Meta Quest Family', 'WebXR Browser'],
+    minHardwareRequirements: {
+      cpu: 'Snapdragon XR1 (Quest 1)',
+      gpu: 'Adreno 615',
+      ram: '4 GB RAM',
+      storage: '600 MB'
+    },
+    recHardwareRequirements: {
+      cpu: 'Snapdragon XR2 Gen 2',
+      gpu: 'Adreno 740',
+      ram: '8 GB RAM',
+      storage: '800 MB'
+    },
+    multiplayerFeatures: ['Single Player immersive geographical excursions'],
+    vrHeadsetCompatibility: ['Meta Quest Family', 'Oculus Go', 'Google Cardboard'],
+    controllersSupported: ['Hand tracking', 'Touch screen tap selections', 'Oculus Touch'],
+    officialWebsite: 'https://vrtravelx-tours.com',
+    dlcAndExpansions: ['Special high-definition European capital expansion packs', 'Premium African Safari VR tour'],
+    achievementsCount: 10,
+    accessibilityFeatures: ['Seated height-compensation filters', 'Closed captions on geographic narratives', 'Contrast adjustments in historical layers'],
+    ratings: {
+      userRating: 8.9
+    },
+    communityStats: {
+      monthlyActiveUsers: '40,000 global travel viewers',
+      totalSales: 'Freemium application model'
+    },
+    fileSize: '580 MB',
+    languages: ['English', 'German', 'Spanish', 'French', 'Chinese', 'Japanese'],
+    crossPlatformSupport: true,
+    cloudSaves: true,
+    monetizationModel: 'Premium',
+    majorVersions: [
+      { version: 'v1.0', releaseDate: '2021-05-12', notes: 'Initial public WebXR alpha tours' },
+      { version: 'v2.0', releaseDate: '2023-04-18', notes: 'Standalone Quest release featuring 8K spherical panoramic video channels' }
+    ],
+    description: 'VRtravelX delivers breathtaking, high-definition 360-degree immersive travel tours. Explore major historical sights, cities, and natural parks with dynamic narration and embedded educational markers.',
+    educationFacts: 'Design Lesson: VRtravelX implements foveated progressive video tile loaders. It stream-decodes only the specific directional high-definition quadrants that the player is actively gazing at, reducing network bandwidth.'
   }
 ];
 
@@ -444,6 +1382,9 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
 
   // Detail Modal State
   const [detailTitleId, setDetailTitleId] = useState<string | null>(null);
+
+  // Music Station State
+  const [showMusicStation, setShowMusicStation] = useState(false);
 
   // Education Mode States
   const [educationMode, setEducationMode] = useState(true);
@@ -593,6 +1534,15 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
             >
               <GraduationCap className="w-4 h-4" />
               {educationMode ? 'EDUCATION MODE ON' : 'ENABLE EDUCATION MODE'}
+            </button>
+
+            {/* Music Station Toggle Button */}
+            <button
+              onClick={() => setShowMusicStation(true)}
+              className="px-4 py-2.5 bg-zinc-900 border border-cyan-500/20 text-[9px] font-black text-cyan-400 hover:text-white hover:border-cyan-400 uppercase tracking-widest rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 shadow-[0_0_15px_rgba(6,182,212,0.15)]"
+            >
+              <Music className="w-4 h-4 text-cyan-400 animate-pulse" />
+              🎵 MUSIC STATION
             </button>
 
             {/* Close Button */}
@@ -1213,6 +2163,14 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
                 <div>🎮 Controllers: <span className="text-zinc-300 block mt-1">{detailTitle.controllersSupported?.join(', ') || 'Standard Input'}</span></div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showMusicStation && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[999999] flex items-center justify-center p-4">
+          <div className="max-w-xl w-full">
+            <MusicLoader onClose={() => setShowMusicStation(false)} />
           </div>
         </div>
       )}
