@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { 
   Sparkles, Bot, Dna, Compass, Award, CheckCircle2, Camera,
   HelpCircle, Volume2, Gamepad2, Laptop, Monitor, Smartphone, 
-  Tv, Eye, ChevronRight, Search, Trophy, Users, ShieldAlert, Zap, Layers 
+  Tv, Eye, ChevronRight, Search, Trophy, Users, ShieldAlert, Zap, Layers,
+  BookOpen
 } from 'lucide-react';
 import { useEduStore, ControlPlatformType, ActiveDimensionType } from './eduStore';
 import { NeonUniverse } from './NeonUniverse';
+import { SoftwareEncyclopedia } from './SoftwareEncyclopedia';
 
 const vrAppsCatalog = [
   {
@@ -171,6 +173,7 @@ export function EduOverlay() {
 
   const [activeTab, setActiveTab] = useState<'missions' | 'badges' | 'vrApps' | 'multiplayer' | 'settings'>('missions');
   const [showNeonHub, setShowNeonHub] = useState(false);
+  const [showEncyclopedia, setShowEncyclopedia] = useState(false);
 
   const getPlatformIcon = (platform: ControlPlatformType) => {
     switch (platform) {
@@ -386,6 +389,14 @@ export function EduOverlay() {
                   <span className="text-[8px] font-mono font-bold text-cyan-400">14 Apps Simulated</span>
                 </div>
                 
+                <button
+                  onClick={() => setShowEncyclopedia(true)}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-cyan-500 text-zinc-950 hover:from-amber-400 hover:to-cyan-400 font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.25)] border border-amber-400/20"
+                >
+                  <BookOpen className="w-4 h-4 text-zinc-950 animate-bounce" />
+                  📚 SOFTWARE ENCYCLOPEDIA
+                </button>
+
                 <p className="text-[9px] font-medium leading-relaxed text-zinc-500 uppercase">
                   Explore top real-world educational VR software. Click an app to load its full 3D telemetry specs in the right dossier!
                 </p>
@@ -649,6 +660,10 @@ export function EduOverlay() {
 
       {showNeonHub && (
         <NeonUniverse onClose={() => setShowNeonHub(false)} />
+      )}
+
+      {showEncyclopedia && (
+        <SoftwareEncyclopedia onClose={() => setShowEncyclopedia(false)} />
       )}
     </div>
   );
