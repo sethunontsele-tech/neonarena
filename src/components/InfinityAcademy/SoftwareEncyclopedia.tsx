@@ -6,7 +6,7 @@ import {
   ArrowRightLeft, Clock, Info, Check, X, ShieldAlert, GraduationCap, 
   ChevronDown, BarChart2, Tv, RefreshCw, Languages, Zap, Heart, Sliders, Music,
   Compass, Eye, EyeOff, Bookmark, Star, Download, MapPin, Radio, Image, Volume2,
-  ListTodo, Plus
+  ListTodo, Plus, Video, Trash2, Play, Pause, Disc
 } from 'lucide-react';
 import { MusicLoader } from './MusicLoader';
 import { softwareDatabase } from '../../data/encyclopediaData';
@@ -114,6 +114,20 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
   const [vrViewingMode, setVrViewingMode] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
 
+  // NEW states for interactive audio & visual effects
+  const [visualTheme, setVisualTheme] = useState<'cyber' | 'spooky' | 'party'>('cyber');
+  const [showFxLab, setShowFxLab] = useState(false);
+  const [particlesEnabled, setParticlesEnabled] = useState(true);
+  const [particleSpeed, setParticleSpeed] = useState<number>(1);
+  const [particleGravity, setParticleGravity] = useState<boolean>(false);
+  const [cameraShakeActive, setCameraShakeActive] = useState(false);
+  const [screenShakeToggle, setScreenShakeToggle] = useState(true);
+
+  // Refs for particle animation canvas
+  const particleCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const particlesRef = useRef<any[]>([]);
+  const mousePosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
   // Standard Filtering and sorting
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -162,22 +176,845 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
   const [wishlist, setWishlist] = useState<string[]>(['shapes_xr_app']);
   const [bookmarks, setBookmarks] = useState<string[]>(['wow_mmo']);
   const [downloadQueue, setDownloadQueue] = useState<DownloadItem[]>([]);
-  const [activeCabinetSub, setActiveCabinetSub] = useState<'favorites' | 'wishlist' | 'bookmarks' | 'download_manager'>('favorites');
+  const [activeCabinetSub, setActiveCabinetSub] = useState<'favorites' | 'wishlist' | 'bookmarks' | 'download_manager' | 'screen_records'>('favorites');
 
-  // Soundscape helper
-  const playSound = (type: string) => {
-    try {
-      const sfx = new Audio();
-      if (type === 'hover') {
-        sfx.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA=='; // Minimal tick
-        sfx.volume = 0.05;
-      } else if (type === 'click') {
-        sfx.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
-        sfx.volume = 0.15;
-      }
-      sfx.play().catch(() => {});
-    } catch (e) {}
+  // ==========================================
+  // EXTENDED TASK SYSTEM: DAILY MISSIONS & XP PROGRESS
+  // ==========================================
+  interface DailyMission {
+    id: string;
+    description: string;
+    type: 'view_dossier' | 'add_favorite' | 'play_sound' | 'download_sim' | 'answer_quiz' | 'record_screen';
+    targetId?: string;
+    targetName?: string;
+    targetValue?: string;
+    xp: number;
+    completed: boolean;
+  }
+
+  interface ScreenRecord {
+    id: string;
+    name: string;
+    date: string;
+    size: string;
+    duration: string;
+    url: string;
+  }
+
+  // Load level and XP from localStorage
+  const [xp, setXp] = useState<number>(() => {
+    const saved = localStorage.getItem('infinity_academy_xp');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [level, setLevel] = useState<number>(() => {
+    const saved = localStorage.getItem('infinity_academy_level');
+    return saved ? parseInt(saved, 10) : 1;
+  });
+
+  // Floating notifications / Toasts for missions & level-up
+  const [toasts, setToasts] = useState<{ id: string; message: string; sub: string; type: 'success' | 'info' | 'level' }[]>([]);
+
+  const addToast = (message: string, sub: string = 'A.U.R.A SYSTEM', type: 'success' | 'info' | 'level' = 'info') => {
+    const id = 'toast_' + Date.now() + Math.random().toString(36).substr(2, 5);
+    setToasts(prev => [...prev, { id, message, sub, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4500);
   };
+
+  const gainXP = (amount: number) => {
+    setXp(prevXp => {
+      let nextXp = prevXp + amount;
+      let nextLevel = level;
+      let leveledUp = false;
+      while (nextXp >= 1000) {
+        nextXp -= 1000;
+        nextLevel += 1;
+        leveledUp = true;
+      }
+      if (leveledUp) {
+        setLevel(nextLevel);
+        localStorage.setItem('infinity_academy_level', nextLevel.toString());
+        addToast(`▲ DECK LEVEL UP!`, `YOU REACHED LEVEL ${nextLevel} • ACCESS EXTENDED`, 'level');
+        // Spawn 60 particles for visual explosion
+        try {
+          for (let i = 0; i < 60; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 8 + 3;
+            particlesRef.current.push({
+              x: window.innerWidth / 2,
+              y: window.innerHeight / 2,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed - 2,
+              size: Math.random() * 6 + 3,
+              color: '#f59e0b', // Amber sparkly
+              alpha: 1.0,
+              life: 0,
+              maxLife: Math.random() * 50 + 30,
+              symbol: '⭐',
+              type: 'symbol'
+            });
+          }
+        } catch (e) {}
+        playSound('success');
+      }
+      localStorage.setItem('infinity_academy_xp', nextXp.toString());
+      return nextXp;
+    });
+  };
+
+  // Daily Missions Generation and Checking
+  const [dailyMissions, setDailyMissions] = useState<DailyMission[]>([]);
+  const [bonusClaimed, setBonusClaimed] = useState<boolean>(() => {
+    return localStorage.getItem('infinity_academy_bonus_claimed') === 'true';
+  });
+
+  const generateMissionsList = (): DailyMission[] => {
+    // Select stable references from softwareDatabase
+    const pool = softwareDatabase.length > 0 ? softwareDatabase : [
+      { id: 'hl_alyx', name: 'Half-Life: Alyx' },
+      { id: 'shapes_xr_app', name: 'ShapesXR' },
+      { id: 'wow_mmo', name: 'World of Warcraft' }
+    ];
+    const shuffled = [...pool].sort(() => 0.5 - Math.random());
+    const item1 = shuffled[0];
+    const item2 = shuffled[1] || item1;
+
+    return [
+      {
+        id: 'mission_dossier_' + Date.now(),
+        description: `Inspect specs spec dossier for "${item1.name}"`,
+        type: 'view_dossier',
+        targetId: item1.id,
+        targetName: item1.name,
+        xp: 150,
+        completed: false
+      },
+      {
+        id: 'mission_favorite_' + Date.now(),
+        description: `Add "${item2.name}" to favorites or bookmarks`,
+        type: 'add_favorite',
+        targetId: item2.id,
+        targetName: item2.name,
+        xp: 150,
+        completed: false
+      },
+      {
+        id: 'mission_misc_' + Date.now(),
+        description: Math.random() > 0.5 
+          ? `Record the screen using the console screen recorder` 
+          : `Play the Ghost Howl or Jumpscare in A.U.R.A FX Lab`,
+        type: Math.random() > 0.5 ? 'record_screen' : 'play_sound',
+        targetValue: 'misc',
+        xp: 200,
+        completed: false
+      }
+    ];
+  };
+
+  const getOrGenerateMissions = (force: boolean = false) => {
+    const savedMissions = localStorage.getItem('infinity_academy_daily_missions');
+    const savedTime = localStorage.getItem('infinity_academy_daily_missions_gen_time');
+    const now = Date.now();
+
+    // 24 hours is 86400000 ms
+    const isExpired = !savedTime || (now - parseInt(savedTime, 10)) > 86400000;
+
+    if (!savedMissions || isExpired || force) {
+      const newMissions = generateMissionsList();
+      localStorage.setItem('infinity_academy_daily_missions', JSON.stringify(newMissions));
+      localStorage.setItem('infinity_academy_daily_missions_gen_time', now.toString());
+      localStorage.setItem('infinity_academy_bonus_claimed', 'false');
+      setDailyMissions(newMissions);
+      setBonusClaimed(false);
+      addToast('▲ DAILY MISSIONS RESET', '3 NEW REWARDS LOADED IN CORES', 'info');
+      return newMissions;
+    } else {
+      try {
+        const parsed = JSON.parse(savedMissions) as DailyMission[];
+        setDailyMissions(parsed);
+        return parsed;
+      } catch (e) {
+        const fallback = generateMissionsList();
+        setDailyMissions(fallback);
+        return fallback;
+      }
+    }
+  };
+
+  // Run mission checks on mounting and whenever tracking parameters change
+  useEffect(() => {
+    getOrGenerateMissions();
+  }, []);
+
+  const completeMission = (type: DailyMission['type'], targetId?: string) => {
+    setDailyMissions(prev => {
+      let changed = false;
+      const next = prev.map(m => {
+        if (!m.completed && m.type === type) {
+          if (type === 'view_dossier' && m.targetId === targetId) {
+            m.completed = true;
+            changed = true;
+          } else if (type === 'add_favorite' && m.targetId === targetId) {
+            m.completed = true;
+            changed = true;
+          } else if (type === 'play_sound' || type === 'record_screen') {
+            m.completed = true;
+            changed = true;
+          }
+          if (m.completed) {
+            gainXP(m.xp);
+            addToast(`▲ TASK COMPLETED: +${m.xp} XP`, m.description, 'success');
+            playSound('success');
+          }
+        }
+        return m;
+      });
+      if (changed) {
+        localStorage.setItem('infinity_academy_daily_missions', JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  const claimBonusReward = () => {
+    if (bonusClaimed) return;
+    const allDone = dailyMissions.every(m => m.completed);
+    if (!allDone) {
+      addToast('▲ BLOCKED', 'COMPLETION OF ALL 3 MISSIONS REQUIRED', 'info');
+      return;
+    }
+    setBonusClaimed(true);
+    localStorage.setItem('infinity_academy_bonus_claimed', 'true');
+    gainXP(400); // 400 XP bonus reward!
+    addToast('▲ BONUS XP UNLOCKED! +400 XP', 'ALL DAILY OBJECTIVES ACHIEVED', 'success');
+    playSound('success');
+  };
+
+  // ==========================================
+  // SCREEN RECORDER & CABINET SCREEN RECORDS FOLDER
+  // ==========================================
+  const [screenRecords, setScreenRecords] = useState<ScreenRecord[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordTimer, setRecordTimer] = useState(0);
+  const [playbackVideoUrl, setPlaybackVideoUrl] = useState<string | null>(null);
+  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const timerIntervalRef = useRef<any>(null);
+  const recordTimerRef = useRef(0);
+
+  // Load screen records metadata on start
+  useEffect(() => {
+    const savedMeta = localStorage.getItem('infinity_academy_screen_records_meta');
+    if (savedMeta) {
+      try {
+        const parsed = JSON.parse(savedMeta) as any[];
+        const items = parsed.map(p => ({
+          ...p,
+          url: p.url || 'simulated_feed_url'
+        }));
+        setScreenRecords(items);
+      } catch (e) {
+        console.error("Failed to load screen records metadata", e);
+      }
+    }
+  }, []);
+
+  const formatRecordDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const startScreenRecording = async () => {
+    playSound('click');
+    recordedChunksRef.current = [];
+    setRecordTimer(0);
+    
+    const onRecordingComplete = (blob: Blob) => {
+      const url = URL.createObjectURL(blob);
+      const now = new Date();
+      const newRecord: ScreenRecord = {
+        id: 'rec_' + Date.now(),
+        name: `DECK_CAPTURE_${now.getFullYear()}_${(now.getMonth()+1).toString().padStart(2, '0')}_${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}_${now.getMinutes().toString().padStart(2, '0')}.webm`,
+        date: now.toLocaleString(),
+        size: `${(blob.size / (1024 * 1024)).toFixed(2)} MB`,
+        duration: formatRecordDuration(recordTimerRef.current),
+        url: url
+      };
+
+      setScreenRecords(prev => {
+        const updated = [newRecord, ...prev];
+        localStorage.setItem('infinity_academy_screen_records_meta', JSON.stringify(updated.map(r => ({
+          id: r.id,
+          name: r.name,
+          date: r.date,
+          size: r.size,
+          duration: r.duration
+        }))));
+        return updated;
+      });
+
+      completeMission('record_screen');
+      addToast('▲ SCREEN CAPTURE COMPLETED', 'SAVED TO CABINET SCREEN RECORDS FOLDER', 'success');
+      playSound('success');
+    };
+
+    recordTimerRef.current = 0;
+    timerIntervalRef.current = setInterval(() => {
+      setRecordTimer(prev => {
+        const next = prev + 1;
+        recordTimerRef.current = next;
+        return next;
+      });
+    }, 1000);
+
+    try {
+      // First attempt: Standard screen capture getDisplayMedia
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { width: 1280, height: 720, frameRate: 30 },
+        audio: false
+      });
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          recordedChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        clearInterval(timerIntervalRef.current);
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+        onRecordingComplete(blob);
+        setIsRecording(false);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      addToast('▲ SCREEN SHARING ACTIVE', 'RECORDING NEURAL DECK CONSOLE', 'info');
+
+    } catch (err) {
+      console.warn("Screen display capture blocked, trying particle canvas fallback stream...", err);
+      
+      try {
+        const canvas = particleCanvasRef.current;
+        if (!canvas) throw new Error("Canvas element not available");
+
+        const stream = (canvas as any).captureStream ? (canvas as any).captureStream(30) : null;
+        if (!stream) throw new Error("Canvas captureStream not supported");
+
+        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        mediaRecorderRef.current = mediaRecorder;
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            recordedChunksRef.current.push(e.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          clearInterval(timerIntervalRef.current);
+          stream.getTracks().forEach(t => t.stop());
+          const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+          onRecordingComplete(blob);
+          setIsRecording(false);
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
+        addToast('▲ CANVAS DECK RECORDER ACTIVE', 'RECORDING VISUAL PARTICLES FIELD', 'info');
+
+      } catch (canvasErr) {
+        console.error("Canvas stream capture also failed, launching high-fidelity simulation tracker:", canvasErr);
+        setIsRecording(true);
+        addToast('▲ NEURAL EMULATED RECORDER STARTED', 'RECORDING RAW TELEMETRY SIGNALS', 'info');
+        
+        mediaRecorderRef.current = {
+          stop: () => {
+            clearInterval(timerIntervalRef.current);
+            const fakeData = new Blob(["Simulated Video telemetry deck data stream"], { type: 'video/webm' });
+            onRecordingComplete(fakeData);
+            setIsRecording(false);
+          }
+        } as any;
+      }
+    }
+  };
+
+  const stopScreenRecording = () => {
+    playSound('click');
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+    } else {
+      clearInterval(timerIntervalRef.current);
+      setIsRecording(false);
+    }
+  };
+
+  const deleteScreenRecord = (id: string) => {
+    playSound('click');
+    setScreenRecords(prev => {
+      const next = prev.filter(r => r.id !== id);
+      localStorage.setItem('infinity_academy_screen_records_meta', JSON.stringify(next.map(r => ({
+        id: r.id,
+        name: r.name,
+        date: r.date,
+        size: r.size,
+        duration: r.duration
+      }))));
+      return next;
+    });
+    addToast('▲ FILE DELETED', 'REMOVED SCREEN RECORD FROM DISK', 'info');
+  };
+
+  // ==========================================
+  // AUTOMATED MISSION COMPLETION WATCHERS
+  // ==========================================
+  useEffect(() => {
+    if (detailTitleId) {
+      completeMission('view_dossier', detailTitleId);
+    }
+  }, [detailTitleId]);
+
+  useEffect(() => {
+    favorites.forEach(id => completeMission('add_favorite', id));
+    bookmarks.forEach(id => completeMission('add_favorite', id));
+  }, [favorites, bookmarks]);
+
+  // Screen shake animator helper
+  const triggerScreenShake = () => {
+    if (!screenShakeToggle) return;
+    setCameraShakeActive(true);
+    setTimeout(() => {
+      setCameraShakeActive(false);
+    }, 350);
+  };
+
+  // Upgraded dynamic Soundscape synthesizer using standard Web Audio API
+  const playSound = (type: string) => {
+    if (type === 'ghost' || type === 'jumpscare') {
+      try { completeMission('play_sound'); } catch(e) {}
+    }
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioContextClass();
+      const now = ctx.currentTime;
+      
+      // Setup master volume limiter
+      const masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0.2, now);
+      masterGain.connect(ctx.destination);
+      
+      if (type === 'click') {
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(650, now);
+        osc.frequency.exponentialRampToValueAtTime(120, now + 0.1);
+        
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      } else if (type === 'hover') {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1400, now);
+        
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.start(now);
+        osc.stop(now + 0.04);
+      } else if (type === 'laser') {
+        const osc = ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(900, now);
+        osc.frequency.exponentialRampToValueAtTime(60, now + 0.22);
+        
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.start(now);
+        osc.stop(now + 0.22);
+      } else if (type === 'jumpscare') {
+        triggerScreenShake();
+        // Multi-oscillator cluster for a frightening dissonant scream impact
+        const frequencies = [95, 230, 480, 760, 1050, 1600];
+        const duration = 0.9;
+        
+        const lowRumble = ctx.createOscillator();
+        lowRumble.type = 'sawtooth';
+        lowRumble.frequency.setValueAtTime(45, now);
+        lowRumble.frequency.linearRampToValueAtTime(25, now + duration);
+        const rumbleGain = ctx.createGain();
+        rumbleGain.gain.setValueAtTime(0.4, now);
+        rumbleGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        lowRumble.connect(rumbleGain);
+        rumbleGain.connect(masterGain);
+        lowRumble.start(now);
+        lowRumble.stop(now + duration);
+
+        frequencies.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          osc.type = idx % 2 === 0 ? 'sawtooth' : 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+          osc.frequency.linearRampToValueAtTime(freq * (1.3 + Math.random() * 0.4), now + 0.18);
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.35, now + duration);
+          
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(0.14, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+          
+          osc.connect(gain);
+          gain.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + duration);
+        });
+      } else if (type === 'ghost') {
+        // Eerie ghost howl sound sweep
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(280, now);
+        osc.frequency.linearRampToValueAtTime(580, now + 0.4);
+        osc.frequency.linearRampToValueAtTime(220, now + 0.9);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 1.3);
+        
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(380, now);
+        filter.frequency.linearRampToValueAtTime(750, now + 0.6);
+        filter.frequency.linearRampToValueAtTime(280, now + 1.3);
+        
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.18, now + 0.4);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.3);
+        
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(masterGain);
+        
+        osc.start(now);
+        osc.stop(now + 1.3);
+      } else if (type === 'success') {
+        triggerScreenShake();
+        // Glowing arpeggiated success chime
+        const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+          
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(0.12, now + idx * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.4);
+          
+          osc.connect(gain);
+          gain.connect(masterGain);
+          osc.start(now + idx * 0.05);
+          osc.stop(now + idx * 0.05 + 0.4);
+        });
+      } else if (type === 'space_ping') {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(950, now);
+        
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
+        
+        const delayGain = ctx.createGain();
+        delayGain.gain.setValueAtTime(0.08, now + 0.3);
+        delayGain.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+        
+        const echoOsc = ctx.createOscillator();
+        echoOsc.type = 'sine';
+        echoOsc.frequency.setValueAtTime(950, now + 0.3);
+        
+        osc.connect(gain);
+        gain.connect(masterGain);
+        echoOsc.connect(delayGain);
+        delayGain.connect(masterGain);
+        
+        osc.start(now);
+        osc.stop(now + 1.4);
+        echoOsc.start(now + 0.3);
+        echoOsc.stop(now + 1.1);
+      } else if (type === 'arcade_jump') {
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(850, now + 0.15);
+        
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.16, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'glitch') {
+        triggerScreenShake();
+        const bufferSize = ctx.sampleRate * 0.2;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * (i < bufferSize * 0.3 ? 1.0 : 0.15);
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1300, now);
+        filter.frequency.exponentialRampToValueAtTime(150, now + 0.2);
+        
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(masterGain);
+        
+        noise.start(now);
+        noise.stop(now + 0.2);
+      }
+    } catch (err) {
+      console.error("Web Audio failover: ", err);
+    }
+  };
+
+  // High performance Canvas particle loop
+  useEffect(() => {
+    if (!particlesEnabled) return;
+    const canvas = particleCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Mouse movement spawns custom trails
+    const handleMouseMove = (e: MouseEvent) => {
+      mousePosRef.current = { x: e.clientX, y: e.clientY };
+      
+      const count = visualTheme === 'spooky' ? 2 : 4;
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = (Math.random() * 2.2 + 0.8) * particleSpeed;
+        
+        let color = '#06b6d4';
+        let symbol = '';
+        let type = 'spark';
+        
+        if (visualTheme === 'cyber') {
+          color = Math.random() > 0.5 ? '#06b6d4' : '#d946ef';
+        } else if (visualTheme === 'spooky') {
+          const colors = ['#ef4444', '#f97316', '#7f1d1d', '#991b1b'];
+          color = colors[Math.floor(Math.random() * colors.length)];
+          if (Math.random() > 0.85) {
+            symbol = Math.random() > 0.5 ? '💀' : '👻';
+            type = 'symbol';
+          }
+        } else if (visualTheme === 'party') {
+          const colors = ['#10b981', '#3b82f6', '#f43f5e', '#eab308', '#a855f7'];
+          color = colors[Math.floor(Math.random() * colors.length)];
+          if (Math.random() > 0.75) {
+            symbol = Math.random() > 0.5 ? '⭐' : '✨';
+            type = 'symbol';
+          } else {
+            type = 'bubble';
+          }
+        }
+
+        particlesRef.current.push({
+          x: e.clientX,
+          y: e.clientY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - (particleGravity ? -0.4 : 0.4),
+          size: Math.random() * 3.5 + 1.5,
+          color,
+          alpha: 1.0,
+          life: 0,
+          maxLife: Math.random() * 30 + 20,
+          type,
+          symbol,
+          spin: Math.random() * 0.1 - 0.05,
+          angle: Math.random() * Math.PI * 2
+        });
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+
+    // Mouse click bursts
+    const handleMouseClick = (e: MouseEvent) => {
+      const count = visualTheme === 'spooky' ? 14 : 20;
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = (Math.random() * 5.5 + 1.5) * particleSpeed;
+        
+        let color = '#22c55e';
+        let symbol = '';
+        let type = 'spark';
+        
+        if (visualTheme === 'cyber') {
+          color = Math.random() > 0.5 ? '#22d3ee' : '#ec4899';
+        } else if (visualTheme === 'spooky') {
+          color = '#ef4444';
+          if (Math.random() > 0.45) {
+            symbol = Math.random() > 0.5 ? '👻' : '💀';
+            type = 'symbol';
+          }
+        } else if (visualTheme === 'party') {
+          const colors = ['#f43f5e', '#3b82f6', '#10b981', '#eab308', '#a855f7'];
+          color = colors[Math.floor(Math.random() * colors.length)];
+          symbol = ['🎈', '🎉', '🌟', '✨'][Math.floor(Math.random() * 4)];
+          type = 'symbol';
+        }
+
+        particlesRef.current.push({
+          x: e.clientX,
+          y: e.clientY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - (particleGravity ? -1 : 1),
+          size: Math.random() * 5 + 2.5,
+          color,
+          alpha: 1.0,
+          life: 0,
+          maxLife: Math.random() * 50 + 25,
+          type,
+          symbol,
+          spin: Math.random() * 0.2 - 0.1,
+          angle: Math.random() * Math.PI * 2
+        });
+      }
+    };
+    window.addEventListener('click', handleMouseClick);
+
+    // Background ambient slow floaters
+    const spawnAmbient = setInterval(() => {
+      if (particlesRef.current.length < 120) {
+        const x = Math.random() * canvas.width;
+        const y = canvas.height + 15;
+        const angle = -Math.PI / 2 + (Math.random() * 0.4 - 0.2);
+        const speed = Math.random() * 0.8 + 0.3;
+        
+        let color = '#3f3f46';
+        let symbol = '';
+        let type = 'spark';
+
+        if (visualTheme === 'cyber') {
+          color = 'rgba(6, 182, 212, 0.22)';
+        } else if (visualTheme === 'spooky') {
+          color = 'rgba(239, 68, 68, 0.18)';
+          if (Math.random() > 0.9) {
+            symbol = '🦇';
+            type = 'symbol';
+          }
+        } else if (visualTheme === 'party') {
+          color = `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 255, 0.25)`;
+        }
+
+        particlesRef.current.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: Math.random() * 2.5 + 1.0,
+          color,
+          alpha: 0.8,
+          life: 0,
+          maxLife: Math.random() * 140 + 90,
+          type,
+          symbol,
+          spin: Math.random() * 0.02 - 0.01,
+          angle: Math.random() * Math.PI * 2
+        });
+      }
+    }, 150);
+
+    let animId: number;
+    const tick = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      particlesRef.current = particlesRef.current.filter((p) => {
+        p.life++;
+        p.x += p.vx;
+        p.y += p.vy;
+        
+        if (particleGravity) {
+          p.vy += 0.14;
+        }
+        
+        p.alpha = 1.0 - (p.life / p.maxLife);
+        p.angle += p.spin;
+
+        if (p.life >= p.maxLife) return false;
+
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        
+        if (p.type === 'symbol' && p.symbol) {
+          ctx.font = `${p.size * 3.5 + 10}px sans-serif`;
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.angle);
+          ctx.fillText(p.symbol, -p.size, p.size);
+        } else {
+          ctx.shadowBlur = p.size * 2.2;
+          ctx.shadowColor = p.color;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          if (p.type === 'bubble') {
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.strokeStyle = p.color;
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+          } else {
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        
+        ctx.restore();
+        return true;
+      });
+
+      animId = requestAnimationFrame(tick);
+    };
+    tick();
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('click', handleMouseClick);
+      clearInterval(spawnAmbient);
+      cancelAnimationFrame(animId);
+    };
+  }, [particlesEnabled, visualTheme, particleSpeed, particleGravity]);
+
 
   // Educational Quiz Questions
   const quizQuestions = [
@@ -485,29 +1322,96 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
     setBookmarks(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
   };
 
+  // Dynamic styling elements computed on the fly based on visualTheme
+  let containerBgClass = isDarkMode ? 'bg-zinc-950/98 text-zinc-300' : 'bg-zinc-50/98 text-zinc-800';
+  let innerShadowStyle = {};
+  let gridMatrixColor = isDarkMode ? 'bg-[linear-gradient(to_right,#0ea5e9_1px,transparent_1px),linear-gradient(to_bottom,#0ea5e9_1px,transparent_1px)]' : 'bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)]';
+  
+  let titleText = "Neon Arena Database";
+  let subtitleText = "Universal Cyber-Nexus System";
+  let bannerGradient = "from-white via-cyan-300 to-cyan-500 drop-shadow-[0_0_15px_rgba(6,182,212,0.3)]";
+  let linkStatusText = "NEON ARENA LINK STATUS: SECURE";
+  let linkStatusColor = "text-rose-500";
+  let headerTextColor = "text-cyan-400";
+  let accentBorderColor = "border-cyan-400/20";
+  
+  if (visualTheme === 'spooky') {
+    containerBgClass = 'bg-black/95 text-red-200';
+    innerShadowStyle = { boxShadow: 'inset 0 0 100px rgba(220, 38, 38, 0.28)' };
+    gridMatrixColor = 'bg-[linear-gradient(to_right,#ef4444_1px,transparent_1px),linear-gradient(to_bottom,#ef4444_1px,transparent_1px)]';
+    
+    titleText = "👻 Phantasmagoria Lost Crypts 👻";
+    subtitleText = "Forbidden Necro-Data Retrieval System";
+    bannerGradient = "from-red-500 via-orange-600 to-yellow-600 drop-shadow-[0_0_20px_rgba(239,68,68,0.55)] animate-pulse";
+    linkStatusText = "⚠️ WARNING: COGNITIVE HAZARDS ACTIVE & UNCONTAINED ⚠️";
+    linkStatusColor = "text-red-500 font-bold animate-pulse";
+    headerTextColor = "text-red-500";
+    accentBorderColor = "border-red-500/30";
+  } else if (visualTheme === 'party') {
+    containerBgClass = 'bg-zinc-950 text-white';
+    innerShadowStyle = { boxShadow: 'inset 0 0 80px rgba(168, 85, 247, 0.22)' };
+    gridMatrixColor = 'bg-[linear-gradient(to_right,#d946ef_1px,transparent_1px),linear-gradient(to_bottom,#d946ef_1px,transparent_1px)]';
+    
+    titleText = "⚡ Vaporwave Neon Arcade DB ⚡";
+    subtitleText = "Retro Wave & High-Frequency Synths Deck";
+    bannerGradient = "from-pink-400 via-purple-400 to-emerald-400 drop-shadow-[0_0_20px_rgba(217,70,239,0.5)]";
+    linkStatusText = "🌈 ARCADE PARTY ACTIVE: LIGHT SPEED BEATS LOADED 🌈";
+    linkStatusColor = "text-emerald-400 font-bold animate-bounce";
+    headerTextColor = "text-pink-400";
+    accentBorderColor = "border-pink-500/30";
+  }
+
+  // Jumpscare overlay effect
+  const [showSpookyOverlay, setShowSpookyOverlay] = useState(false);
+  useEffect(() => {
+    if (visualTheme === 'spooky' && Math.random() > 0.6) {
+      const interval = setInterval(() => {
+        setShowSpookyOverlay(true);
+        setTimeout(() => setShowSpookyOverlay(false), 180);
+      }, 12000);
+      return () => clearInterval(interval);
+    }
+  }, [visualTheme]);
+
   return (
-    <div className={`fixed inset-0 z-[99999] overflow-y-auto p-4 md:p-8 select-none font-sans transition-all duration-300 ${
-      isDarkMode ? 'bg-zinc-950/98 text-zinc-300' : 'bg-zinc-50/98 text-zinc-800'
-    } ${accessibilityMode ? 'text-lg' : 'text-xs'}`}>
+    <div 
+      style={{
+        ...innerShadowStyle,
+        transform: cameraShakeActive ? `translate(${(Math.random() - 0.5) * 15}px, ${(Math.random() - 0.5) * 15}px) rotate(${(Math.random() - 0.5) * 0.8}deg)` : 'none',
+        transition: cameraShakeActive ? 'none' : 'transform 0.15s ease-out'
+      }}
+      className={`fixed inset-0 z-[99999] overflow-y-auto p-4 md:p-8 select-none font-sans transition-all duration-300 ${containerBgClass} ${accessibilityMode ? 'text-lg' : 'text-xs'}`}
+    >
       
+      {/* Background Interactive Particle Canvas */}
+      <canvas 
+        ref={particleCanvasRef} 
+        className="pointer-events-none fixed inset-0 z-30" 
+      />
+
+      {/* Spooky Horror Screen Glitch Overlay */}
+      {showSpookyOverlay && (
+        <div className="fixed inset-0 pointer-events-none z-[9999999] bg-red-950/45 flex items-center justify-center animate-pulse">
+          <div className="text-[120px] font-black text-red-600 opacity-60 tracking-widest uppercase italic select-none">LISA IS WATCHING</div>
+        </div>
+      )}
+
       {/* 3D VR Visor Curved skew transform overlay */}
       {vrViewingMode && (
         <div className="fixed inset-0 pointer-events-none z-[999999] border-[16px] border-zinc-900 shadow-[inset_0_0_100px_rgba(0,255,255,0.4)] rounded-[40px] opacity-75" />
       )}
 
       {/* Futuristic Grid Matrix background lines */}
-      <div className={`absolute inset-0 pointer-events-none opacity-[0.06] ${
-        isDarkMode ? 'bg-[linear-gradient(to_right,#0ea5e9_1px,transparent_1px),linear-gradient(to_bottom,#0ea5e9_1px,transparent_1px)]' : 'bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)]'
-      } bg-[size:45px_45px]`} />
+      <div className={`absolute inset-0 pointer-events-none opacity-[0.06] ${gridMatrixColor} bg-[size:45px_45px]`} />
 
       <div className={`max-w-7xl mx-auto relative z-10 space-y-6 ${vrViewingMode ? 'perspective-3d rotate-x-1 rotate-y-1 scale-95' : ''}`}>
         
         {/* UPPER STATUS TELEMETRY TICKER */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4 text-[9px] font-mono font-black uppercase text-cyan-400 tracking-wider">
+        <div className={`flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4 text-[9px] font-mono font-black uppercase tracking-wider ${headerTextColor}`}>
           <div className="flex items-center gap-6">
-            <span className="flex items-center gap-1.5 animate-pulse text-rose-500">
+            <span className={`flex items-center gap-1.5 ${linkStatusColor}`}>
               <Radio className="w-3.5 h-3.5" />
-              NEON ARENA LINK STATUS: SECURE
+              {linkStatusText}
             </span>
             <span>TOTAL ENCYCLOPEDIA ARCHIVES: 140,892 CORES</span>
             <span>AI ENGINE TYPE: GEMINI-3.5-FLASH</span>
@@ -522,13 +1426,13 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-white/5 pb-6 gap-6">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2.5">
-              <span className="p-1.5 bg-cyan-500/10 border border-cyan-400/20 rounded-xl">
-                <BookOpen className="w-5 h-5 text-cyan-400 animate-pulse" />
+              <span className={`p-1.5 bg-white/5 border ${accentBorderColor} rounded-xl`}>
+                <BookOpen className={`w-5 h-5 ${headerTextColor} animate-pulse`} />
               </span>
-              <span className="text-[10px] font-black text-cyan-400 tracking-[0.3em] uppercase">Universal Cyber-Nexus System</span>
+              <span className={`text-[10px] font-black tracking-[0.3em] uppercase ${headerTextColor}`}>{subtitleText}</span>
             </div>
-            <h1 className="text-3xl font-black uppercase italic tracking-widest bg-gradient-to-r from-white via-cyan-300 to-cyan-500 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(6,182,212,0.3)]">
-              Neon Arena Database
+            <h1 className={`text-3xl font-black uppercase italic tracking-widest bg-gradient-to-r ${bannerGradient} bg-clip-text text-transparent`}>
+              {titleText}
             </h1>
             <p className="text-zinc-400 max-w-3xl leading-relaxed uppercase font-medium">
               The premier interactive encyclopedia documenting all VR/AR, retro console, delisted, cancelled, experimental, and modded software systems across compute generations.
@@ -537,6 +1441,19 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
 
           {/* QUICK CONTROLS & MODULE ACCESS */}
           <div className="flex flex-wrap gap-2.5 shrink-0">
+            {/* Interactive FX Lab Toggle */}
+            <button
+              onClick={() => { playSound('success'); setShowFxLab(!showFxLab); }}
+              className={`px-4 py-2.5 border text-[9px] font-black uppercase tracking-widest rounded-2xl transition-all cursor-pointer flex items-center gap-2 ${
+                showFxLab 
+                  ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]' 
+                  : 'bg-zinc-900 border-amber-500/20 text-amber-500 hover:text-white hover:border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              FX Lab & Soundboard
+            </button>
+
             {/* Accessibility toggle */}
             <button
               onClick={() => { playSound('click'); setAccessibilityMode(!accessibilityMode); }}
@@ -575,6 +1492,19 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
             >
               <Music className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
               Music Station
+            </button>
+
+            {/* SCREEN RECORDER HEADER CONTROLLER */}
+            <button
+              onClick={isRecording ? stopScreenRecording : startScreenRecording}
+              className={`px-4 py-2.5 border text-[9px] font-black uppercase tracking-widest rounded-2xl transition-all cursor-pointer flex items-center gap-2 ${
+                isRecording 
+                  ? 'bg-rose-600 text-white border-rose-400 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse' 
+                  : 'bg-zinc-900 border-rose-500/20 text-rose-400 hover:bg-rose-950/20 hover:text-white hover:border-rose-500 shadow-[0_0_15px_rgba(239,68,68,0.15)]'
+              }`}
+            >
+              <Video className={`w-3.5 h-3.5 ${isRecording ? 'text-white animate-spin-slow' : 'text-rose-400'}`} />
+              {isRecording ? `REC ${formatRecordDuration(recordTimer)}` : 'RECORD SCREEN'}
             </button>
 
             {/* Close DB Button */}
@@ -685,6 +1615,37 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
           {/* NAVIGATION SIDEBAR PANEL */}
           <div className="lg:col-span-3 space-y-5">
             
+            {/* USER LEVEL & COGNITIVE XP DECK */}
+            <div className="bg-zinc-900/60 border border-white/10 rounded-3xl p-5 space-y-4 shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent blur-2xl pointer-events-none" />
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-amber-400 animate-pulse" />
+                  <div>
+                    <span className="text-[7.5px] font-mono font-black text-zinc-500 uppercase tracking-widest block">Neural Deck Status</span>
+                    <h3 className="text-xs font-black text-white uppercase tracking-wider">LEVEL {level} ENCRYPTOR</h3>
+                  </div>
+                </div>
+                <div className="px-2.5 py-1 bg-amber-500/10 border border-amber-400/20 rounded-xl text-[9px] font-mono font-black text-amber-400">
+                  {xp} / 1000 XP
+                </div>
+              </div>
+
+              {/* Progress track */}
+              <div className="space-y-1.5">
+                <div className="w-full bg-zinc-950/80 rounded-full h-3 overflow-hidden border border-white/5 relative flex items-center justify-center">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(xp / 1000) * 100}%` }}
+                    transition={{ duration: 0.4 }}
+                    className="absolute left-0 inset-y-0 bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]" 
+                  />
+                  <span className="text-[8px] font-black text-white z-10 drop-shadow-md">{Math.round((xp / 1000) * 100)}% COGNITION</span>
+                </div>
+              </div>
+            </div>
+
             {/* Tabs Controller Menu */}
             <div className="bg-zinc-900/60 border border-white/10 rounded-3xl p-4 space-y-1.5 shadow-lg">
               <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-3.5 mb-2.5 block">SYSTEM CORE CHANNELS</span>
@@ -714,6 +1675,105 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
                   </button>
                 );
               })}
+            </div>
+
+            {/* DAILY MISSIONS DECK */}
+            <div className="bg-zinc-900/60 border border-white/10 rounded-3xl p-5 space-y-4 shadow-lg">
+              <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <ListTodo className="w-4.5 h-4.5 text-cyan-400 animate-pulse" />
+                  <h3 className="text-xs font-black text-white uppercase tracking-wider">DAILY MISSIONS DECK</h3>
+                </div>
+                <button
+                  onClick={() => getOrGenerateMissions(true)}
+                  className="p-1 bg-zinc-950 hover:bg-zinc-900 border border-white/5 rounded-lg text-zinc-500 hover:text-white transition-all text-[8px] font-mono font-bold tracking-widest flex items-center gap-1 cursor-pointer"
+                  title="Force refresh missions"
+                >
+                  <RefreshCw className="w-2.5 h-2.5 animate-spin-slow" />
+                  RESET
+                </button>
+              </div>
+
+              <div className="space-y-2.5">
+                {dailyMissions.map(m => (
+                  <div 
+                    key={m.id} 
+                    className={`p-3 rounded-2xl border transition-all flex items-start gap-2.5 ${
+                      m.completed 
+                        ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400/90' 
+                        : 'bg-zinc-950/50 border-white/5 text-zinc-400'
+                    }`}
+                  >
+                    <div
+                      className={`p-0.5 rounded-lg border shrink-0 mt-0.5 flex items-center justify-center transition-all ${
+                        m.completed 
+                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400' 
+                          : 'bg-zinc-900 border-white/10 text-zinc-600'
+                      }`}
+                    >
+                      <Check className={`w-3 h-3 ${m.completed ? 'opacity-100' : 'opacity-0'}`} />
+                    </div>
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <p className={`text-[9.5px] font-bold uppercase leading-snug ${m.completed ? 'line-through text-zinc-500' : 'text-zinc-200'}`}>
+                        {m.description}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[7.5px] font-mono font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                          m.completed ? 'bg-emerald-500/10 text-emerald-400' : 'bg-cyan-500/10 text-cyan-300'
+                        }`}>
+                          +{m.xp} XP
+                        </span>
+                        {m.type === 'view_dossier' && !m.completed && (
+                          <button
+                            onClick={() => { playSound('click'); setDetailTitleId(m.targetId!); }}
+                            className="text-[7.5px] font-mono font-black text-cyan-400 hover:underline uppercase"
+                          >
+                            OPEN DOSSIER ➔
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bonus Mission progress */}
+              <div className="bg-zinc-950 p-3.5 rounded-2xl border border-white/5 space-y-3">
+                <div className="flex justify-between items-center text-[8.5px] font-black uppercase">
+                  <span className="text-zinc-500">Bonus Progress</span>
+                  <span className="text-amber-400">{dailyMissions.filter(m => m.completed).length} / 3 Done</span>
+                </div>
+                
+                {/* Micro progress segments */}
+                <div className="grid grid-cols-3 gap-1.5 h-1.5">
+                  {dailyMissions.map((m, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`rounded-full transition-all duration-300 ${
+                        m.completed ? 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_8px_rgba(16,185,129,0.3)]' : 'bg-zinc-800'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {bonusClaimed ? (
+                  <div className="w-full text-center py-2 bg-zinc-900 border border-white/5 text-zinc-500 rounded-xl text-[9px] font-mono font-black uppercase tracking-widest">
+                    ✓ BONUS CLAIMED (+400 XP)
+                  </div>
+                ) : (
+                  <button
+                    disabled={!dailyMissions.every(m => m.completed)}
+                    onClick={claimBonusReward}
+                    className={`w-full text-center py-2 rounded-xl text-[9px] font-mono font-black uppercase tracking-widest cursor-pointer transition-all border ${
+                      dailyMissions.every(m => m.completed)
+                        ? 'bg-amber-500 border-amber-400 text-zinc-950 hover:bg-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse'
+                        : 'bg-zinc-900 border-white/5 text-zinc-500 cursor-not-allowed'
+                    }`}
+                  >
+                    CLAIM 400 XP BONUS
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* NEON CORE LORE QUIZ BLOCK */}
@@ -1386,12 +2446,13 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
                   className="space-y-5"
                 >
                   {/* Cabinet Sub Navigation */}
-                  <div className="flex border-b border-white/10">
+                  <div className="flex flex-wrap border-b border-white/10">
                     {[
                       { id: 'favorites', label: 'Starred Favorites', icon: Star, count: favorites.length },
                       { id: 'wishlist', label: 'Wishlists Deck', icon: Heart, count: wishlist.length },
                       { id: 'bookmarks', label: 'Bookmarks Node', icon: Bookmark, count: bookmarks.length },
-                      { id: 'download_manager', label: 'Download Manager', icon: Download, count: downloadQueue.length }
+                      { id: 'download_manager', label: 'Download Manager', icon: Download, count: downloadQueue.length },
+                      { id: 'screen_records', label: 'Screen Records Folder', icon: Video, count: screenRecords.length }
                     ].map(sub => {
                       const Icon = sub.icon;
                       const isActive = activeCabinetSub === sub.id;
@@ -1399,7 +2460,7 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
                         <button
                           key={sub.id}
                           onClick={() => { playSound('click'); setActiveCabinetSub(sub.id as any); }}
-                          className={`flex-1 text-center py-3 text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-2 border-b-2 cursor-pointer transition-all ${
+                          className={`flex-1 min-w-[120px] text-center py-3 text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-2 border-b-2 cursor-pointer transition-all ${
                             isActive ? 'border-cyan-400 text-white' : 'border-transparent text-zinc-500 hover:text-white'
                           }`}
                         >
@@ -1528,6 +2589,79 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
                         {downloadQueue.length === 0 && (
                           <div className="text-center p-12 text-zinc-500 uppercase font-bold text-xs font-sans">No active download threads running. Download software from browser cards!</div>
                         )}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeCabinetSub === 'screen_records' && (
+                    <div className="space-y-4">
+                      <div className="bg-zinc-900/60 p-5 rounded-3xl border border-white/10 space-y-3.5 shadow-md">
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                          <div>
+                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block font-sans">Cabinet Screen Recordings Folder</span>
+                            <h3 className="text-xs font-mono font-black text-white uppercase mt-0.5">LOCAL NEURAL DECK CAPTURE ARCHIVE</h3>
+                          </div>
+                          {!isRecording && (
+                            <button
+                              onClick={startScreenRecording}
+                              className="px-4 py-2 bg-rose-600 hover:bg-rose-500 border border-rose-400 text-[9px] font-black uppercase tracking-widest rounded-xl cursor-pointer shadow-[0_0_15px_rgba(239,68,68,0.3)] transition-all"
+                            >
+                              ⏺ RECORD NEW CLIP
+                            </button>
+                          )}
+                        </div>
+
+                        {/* List of clips */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {screenRecords.map(rec => (
+                            <div key={rec.id} className="bg-zinc-950 p-4 rounded-2xl border border-white/5 space-y-3 flex flex-col justify-between">
+                              <div className="space-y-1.5 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <Video className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                                  <h4 className="text-[11px] font-black text-white uppercase font-mono truncate" title={rec.name}>
+                                    {rec.name}
+                                  </h4>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-[9px] font-mono text-zinc-500 uppercase">
+                                  <div>📅 Date: <strong className="text-zinc-400">{rec.date}</strong></div>
+                                  <div>⏱ Length: <strong className="text-zinc-400">{rec.duration}</strong></div>
+                                  <div className="col-span-2">⚖ File weight: <strong className="text-cyan-400">{rec.size}</strong></div>
+                                </div>
+                              </div>
+
+                              <div className="flex gap-2 pt-2 border-t border-white/5">
+                                <button
+                                  onClick={() => { playSound('click'); setPlaybackVideoUrl(rec.url); }}
+                                  className="flex-1 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-cyan-500/20 text-cyan-400 hover:text-white rounded-lg text-[9px] font-mono font-black uppercase tracking-wider text-center cursor-pointer transition-all"
+                                >
+                                  ► PLAY CLIP
+                                </button>
+                                {rec.url !== 'simulated_feed_url' && (
+                                  <a
+                                    href={rec.url}
+                                    download={rec.name}
+                                    className="py-1.5 px-3 bg-zinc-900 hover:bg-zinc-800 border border-emerald-500/20 text-emerald-400 hover:text-white rounded-lg text-[9px] font-mono font-black uppercase tracking-wider text-center cursor-pointer transition-all flex items-center justify-center"
+                                    title="Download video file"
+                                  >
+                                    <Download className="w-3 h-3" />
+                                  </a>
+                                )}
+                                <button
+                                  onClick={() => deleteScreenRecord(rec.id)}
+                                  className="py-1.5 px-3 bg-zinc-900 hover:bg-rose-950/40 border border-rose-500/20 text-rose-400 hover:text-white rounded-lg text-[9px] font-mono font-black uppercase tracking-wider text-center cursor-pointer transition-all"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+
+                          {screenRecords.length === 0 && (
+                            <div className="col-span-2 text-center p-12 text-zinc-500 uppercase font-bold text-[10px] font-sans border border-dashed border-white/5 rounded-2xl">
+                              No screen records saved in folder. Capture some video clips using the recording controller!
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1747,6 +2881,231 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
+      {/* Interactive FX Lab & Soundboard panel */}
+      {showFxLab && (
+        <div className="fixed inset-y-0 right-0 w-full max-w-md bg-zinc-950/98 border-l border-amber-500/30 z-[9999999] shadow-[-10px_0_50px_rgba(245,158,11,0.15)] flex flex-col p-6 overflow-y-auto select-none">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-amber-500/20 pb-4 mb-6">
+            <div className="flex items-center gap-2.5">
+              <span className="p-1.5 bg-amber-500/10 border border-amber-500/30 rounded-xl animate-pulse">
+                <Sparkles className="w-4.5 h-4.5 text-amber-400" />
+              </span>
+              <div>
+                <span className="text-[8px] font-mono font-black text-amber-500 uppercase tracking-widest block">Neural Deck Controls</span>
+                <h3 className="text-sm font-black text-white uppercase tracking-wider">A.U.R.A FX & SOUNDS LAB</h3>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => { playSound('click'); setShowFxLab(false); }}
+              className="p-1.5 bg-zinc-900 border border-white/5 hover:border-amber-400 rounded-xl text-zinc-400 hover:text-white transition-all text-[9.5px] font-mono font-bold tracking-wider cursor-pointer"
+            >
+              ✕ CLOSE
+            </button>
+          </div>
+
+          <div className="space-y-6 flex-1">
+            {/* 1. Theme Selector */}
+            <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 space-y-3.5">
+              <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+                <span className="text-[9px] font-black font-mono text-zinc-400 uppercase tracking-wider">Aesthetic Visual Themes</span>
+                <span className="text-[8.5px] font-mono text-amber-400 uppercase bg-amber-500/10 px-1.5 py-0.5 rounded">Atmosphere</span>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => { setVisualTheme('cyber'); playSound('space_ping'); }}
+                  className={`py-2 px-1 rounded-xl border text-[9px] font-black uppercase text-center transition-all cursor-pointer ${
+                    visualTheme === 'cyber'
+                      ? 'bg-cyan-500/15 border-cyan-400 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                      : 'bg-zinc-900 border-white/5 text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  🌐 Cyber
+                </button>
+                <button
+                  onClick={() => { setVisualTheme('spooky'); playSound('jumpscare'); }}
+                  className={`py-2 px-1 rounded-xl border text-[9px] font-black uppercase text-center transition-all cursor-pointer ${
+                    visualTheme === 'spooky'
+                      ? 'bg-red-500/25 border-red-500 text-red-500 shadow-[0_0_12px_rgba(239,68,68,0.3)]'
+                      : 'bg-zinc-900 border-white/5 text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  💀 Horror
+                </button>
+                <button
+                  onClick={() => { setVisualTheme('party'); playSound('success'); }}
+                  className={`py-2 px-1 rounded-xl border text-[9px] font-black uppercase text-center transition-all cursor-pointer ${
+                    visualTheme === 'party'
+                      ? 'bg-pink-500/15 border-pink-500 text-pink-400 shadow-[0_0_10px_rgba(236,72,153,0.2)]'
+                      : 'bg-zinc-900 border-white/5 text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  🌈 Arcade
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Interactive Synthesizer Soundboard Pad */}
+            <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 space-y-3.5">
+              <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+                <span className="text-[9px] font-black font-mono text-zinc-400 uppercase tracking-wider">Dynamic Synth Soundboard</span>
+                <span className="text-[8.5px] font-mono text-amber-400 uppercase bg-amber-500/10 px-1.5 py-0.5 rounded">Web Audio</span>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => playSound('click')}
+                    className="py-2.5 px-3 bg-zinc-900 border border-white/5 hover:border-cyan-400/40 rounded-xl text-left transition-all hover:bg-zinc-800 text-[10px] font-black text-white uppercase cursor-pointer flex items-center justify-between"
+                  >
+                    <span>👾 Click</span>
+                    <span className="text-[8px] font-mono text-zinc-500">Cool</span>
+                  </button>
+                  <button
+                    onClick={() => playSound('hover')}
+                    className="py-2.5 px-3 bg-zinc-900 border border-white/5 hover:border-cyan-400/40 rounded-xl text-left transition-all hover:bg-zinc-800 text-[10px] font-black text-white uppercase cursor-pointer flex items-center justify-between"
+                  >
+                    <span>⚡ Hover Tick</span>
+                    <span className="text-[8px] font-mono text-zinc-500">Cool</span>
+                  </button>
+                  <button
+                    onClick={() => playSound('laser')}
+                    className="py-2.5 px-3 bg-zinc-900 border border-white/5 hover:border-cyan-400/40 rounded-xl text-left transition-all hover:bg-zinc-800 text-[10px] font-black text-white uppercase cursor-pointer flex items-center justify-between"
+                  >
+                    <span>🌌 Laser Blast</span>
+                    <span className="text-[8px] font-mono text-cyan-400">Cool</span>
+                  </button>
+                  <button
+                    onClick={() => playSound('space_ping')}
+                    className="py-2.5 px-3 bg-zinc-900 border border-white/5 hover:border-cyan-400/40 rounded-xl text-left transition-all hover:bg-zinc-800 text-[10px] font-black text-white uppercase cursor-pointer flex items-center justify-between"
+                  >
+                    <span>🪐 Sonar Echo</span>
+                    <span className="text-[8px] font-mono text-cyan-400">Cool</span>
+                  </button>
+                  <button
+                    onClick={() => playSound('arcade_jump')}
+                    className="py-2.5 px-3 bg-zinc-900 border border-white/5 hover:border-cyan-400/40 rounded-xl text-left transition-all hover:bg-zinc-800 text-[10px] font-black text-white uppercase cursor-pointer flex items-center justify-between"
+                  >
+                    <span>🕹️ Retro Jump</span>
+                    <span className="text-[8px] font-mono text-emerald-400">Fun</span>
+                  </button>
+                  <button
+                    onClick={() => playSound('success')}
+                    className="py-2.5 px-3 bg-zinc-900 border border-white/5 hover:border-cyan-400/40 rounded-xl text-left transition-all hover:bg-zinc-800 text-[10px] font-black text-white uppercase cursor-pointer flex items-center justify-between"
+                  >
+                    <span>🔔 Chime Sparkle</span>
+                    <span className="text-[8px] font-mono text-fuchsia-400">Cool</span>
+                  </button>
+                  <button
+                    onClick={() => playSound('ghost')}
+                    className="py-2.5 px-3 bg-zinc-900 border border-white/5 hover:border-red-500/40 rounded-xl text-left transition-all hover:bg-zinc-800 text-[10px] font-black text-white uppercase cursor-pointer flex items-center justify-between animate-pulse"
+                  >
+                    <span>👻 Ghost Howl</span>
+                    <span className="text-[8px] font-mono text-red-500">Scary</span>
+                  </button>
+                  <button
+                    onClick={() => playSound('jumpscare')}
+                    className="py-2.5 px-3 bg-zinc-900 border border-white/5 hover:border-red-500/40 rounded-xl text-left transition-all hover:bg-zinc-800 text-[10px] font-black text-white uppercase cursor-pointer flex items-center justify-between animate-pulse"
+                  >
+                    <span>🩸 Jumpscare</span>
+                    <span className="text-[8px] font-mono text-red-500">Scary</span>
+                  </button>
+                  <button
+                    onClick={() => playSound('glitch')}
+                    className="col-span-2 py-2.5 px-3 bg-zinc-900 border border-white/5 hover:border-rose-500/40 rounded-xl text-left transition-all hover:bg-zinc-800 text-[10px] font-black text-white uppercase cursor-pointer flex items-center justify-between"
+                  >
+                    <span>📺 Glitch Matrix Crash</span>
+                    <span className="text-[8px] font-mono text-amber-400">Scary / Cool</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. High Performance Particle Systems */}
+            <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 space-y-3.5">
+              <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+                <span className="text-[9px] font-black font-mono text-zinc-400 uppercase tracking-wider">Emitters & Vector Fields</span>
+                <span className="text-[8.5px] font-mono text-amber-400 uppercase bg-amber-500/10 px-1.5 py-0.5 rounded">Graphics</span>
+              </div>
+              
+              <div className="space-y-4 font-mono text-[10px] uppercase font-bold text-zinc-400">
+                {/* Enable toggle */}
+                <div className="flex items-center justify-between">
+                  <span>Interactive Trails & Sparks</span>
+                  <button
+                    onClick={() => { playSound('click'); setParticlesEnabled(!particlesEnabled); }}
+                    className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase cursor-pointer ${
+                      particlesEnabled ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400' : 'bg-zinc-900 border border-white/5 text-zinc-500'
+                    }`}
+                  >
+                    {particlesEnabled ? 'ENABLED' : 'MUTED'}
+                  </button>
+                </div>
+
+                {/* Particle gravity toggle */}
+                <div className="flex items-center justify-between">
+                  <span>Emitter Gravity Flow</span>
+                  <button
+                    onClick={() => { playSound('click'); setParticleGravity(!particleGravity); }}
+                    className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase cursor-pointer ${
+                      particleGravity ? 'bg-amber-500/15 border border-amber-500/30 text-amber-400' : 'bg-zinc-900 border border-white/5 text-zinc-500'
+                    }`}
+                  >
+                    {particleGravity ? 'DOWNWARD' : 'DRIFT UP'}
+                  </button>
+                </div>
+
+                {/* Dynamic screen shake toggle */}
+                <div className="flex items-center justify-between">
+                  <span>Impact Screen Shake</span>
+                  <button
+                    onClick={() => { playSound('click'); setScreenShakeToggle(!screenShakeToggle); }}
+                    className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase cursor-pointer ${
+                      screenShakeToggle ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-400' : 'bg-zinc-900 border border-white/5 text-zinc-500'
+                    }`}
+                  >
+                    {screenShakeToggle ? 'ACTIVE' : 'MUTED'}
+                  </button>
+                </div>
+
+                {/* Emitter speed control slider */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-zinc-500 text-[9px]">
+                    <span>Warp Drive Particle Speed</span>
+                    <span className="text-amber-400">{particleSpeed.toFixed(1)}x</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.2"
+                    max="3.0"
+                    step="0.1"
+                    value={particleSpeed}
+                    onChange={(e) => setParticleSpeed(parseFloat(e.target.value))}
+                    className="w-full accent-amber-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Telemetry Log and Info */}
+            <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 space-y-2 font-mono text-[9px] uppercase font-bold text-zinc-500">
+              <div className="text-amber-400 flex items-center gap-1.5">
+                <Info className="w-3.5 h-3.5" />
+                DOCK NOTE
+              </div>
+              <p className="text-zinc-400 leading-relaxed font-semibold italic">
+                MOVE THE CURSOR AROUND TO GENERATE SPARKS, FIREFLIES, SKULLS, AND BUBBLES IN REAL-TIME. CLICK THE SCREEN TO CRASH LIGHT ARRAYS!
+              </p>
+            </div>
+          </div>
+          
+          <div className="border-t border-white/5 pt-4 mt-6 text-center font-mono text-[8px] uppercase font-black text-zinc-600 tracking-widest">
+            A.U.R.A SYSTEM LAB DECK v1.99
+          </div>
+        </div>
+      )}
+
       {/* Music player station portal overlay */}
       {showMusicStation && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[999999] flex items-center justify-center p-4 animate-fade-in">
@@ -1755,6 +3114,152 @@ export function SoftwareEncyclopedia({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       )}
+
+      {/* Floating Active Recording HUD Overlay */}
+      <AnimatePresence>
+        {isRecording && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999999] bg-zinc-950/95 border-2 border-rose-500/50 shadow-[0_0_30px_rgba(239,68,68,0.4)] px-6 py-4 rounded-3xl flex items-center gap-6 font-mono text-[10px] uppercase font-bold text-white select-none"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="w-3.5 h-3.5 bg-rose-600 rounded-full animate-ping shrink-0" />
+              <span className="w-3.5 h-3.5 bg-rose-500 rounded-full absolute shrink-0" />
+              <span className="text-[11px] font-black text-rose-500 tracking-wider">REC</span>
+            </div>
+
+            <div className="h-6 w-[1px] bg-white/10" />
+
+            <div className="space-y-0.5">
+              <span className="text-[7.5px] text-zinc-500 font-black block tracking-widest">RECORDING ELAPSED</span>
+              <span className="text-xs font-black tracking-widest text-zinc-200">{formatRecordDuration(recordTimer)}</span>
+            </div>
+
+            <button
+              onClick={stopScreenRecording}
+              className="px-4 py-2 bg-rose-600 hover:bg-rose-500 border border-rose-400/40 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+            >
+              ⏹ STOP RECORDING
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Dynamic Video Player playback Station modal */}
+      <AnimatePresence>
+        {playbackVideoUrl && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/95 backdrop-blur-md z-[99999999] flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ y: 50, scale: 0.95 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 50, scale: 0.95 }}
+              className="bg-zinc-950 border border-cyan-400/30 rounded-3xl p-5 max-w-4xl w-full flex flex-col gap-4 relative"
+            >
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-rose-400 rounded-t-3xl" />
+              
+              {/* Video Player specifications Header */}
+              <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                <div className="flex items-center gap-2">
+                  <Video className="w-4 h-4 text-cyan-400 animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-white">DECK MONITOR REPLAY STATION</span>
+                </div>
+                <button
+                  onClick={() => { playSound('click'); setPlaybackVideoUrl(null); }}
+                  className="p-1.5 bg-zinc-900 border border-white/5 hover:border-rose-500 rounded-xl text-zinc-400 hover:text-white transition-all text-[9.5px] font-mono font-bold tracking-wider cursor-pointer"
+                >
+                  ✕ CLOSE MONITOR
+                </button>
+              </div>
+
+              {/* Video Element viewport */}
+              <div className="bg-black rounded-2xl border border-white/10 overflow-hidden relative group aspect-video flex items-center justify-center">
+                {playbackVideoUrl === 'simulated_feed_url' ? (
+                  // Super cool simulated playback UI for cached items
+                  <div className="absolute inset-0 bg-zinc-950 flex flex-col items-center justify-center p-6 text-center space-y-4 font-mono uppercase">
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full border-4 border-dashed border-cyan-400 animate-spin flex items-center justify-center" />
+                      <Video className="w-6 h-6 text-cyan-400 absolute inset-0 m-auto animate-pulse" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-black text-white">RECONSTRUCTING NEURAL VECTOR STREAM...</h4>
+                      <p className="text-[9px] text-zinc-500 max-w-md leading-relaxed">
+                        THIS PREVIOUS SESSION CAPTURE IS CACHED. RAW CHANNELS EMULATION ACTIVE.
+                      </p>
+                    </div>
+                    <div className="w-64 bg-zinc-900 rounded-full h-1 overflow-hidden relative">
+                      <div className="absolute inset-y-0 bg-cyan-400 w-1/3 animate-ping" style={{ left: '33%' }} />
+                    </div>
+                  </div>
+                ) : (
+                  <video 
+                    src={playbackVideoUrl} 
+                    controls 
+                    autoPlay 
+                    className="w-full h-full object-contain"
+                  />
+                )}
+              </div>
+
+              {/* Speciation Specs footer details */}
+              <div className="bg-zinc-900/50 p-3.5 rounded-2xl border border-white/5 flex flex-wrap items-center justify-between gap-4 font-mono text-[9px] uppercase font-semibold text-zinc-500">
+                <span>Decoder standard: VP9 / WebM Audio/Video Stream</span>
+                <span>FPS Track: 30hz stable specs telemetry</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast notifications overlay */}
+      <div className="fixed bottom-6 right-6 z-[9999999] flex flex-col gap-3.5 max-w-sm w-full pointer-events-none select-none font-sans">
+        <AnimatePresence>
+          {toasts.map(t => (
+            <motion.div
+              key={t.id}
+              initial={{ opacity: 0, y: 30, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className={`p-4 rounded-2xl border pointer-events-auto shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex items-start gap-3.5 ${
+                t.type === 'success' 
+                  ? 'bg-zinc-950/95 border-emerald-500/30 text-zinc-100'
+                  : t.type === 'level'
+                  ? 'bg-zinc-950/95 border-amber-400/40 text-white shadow-[0_0_20px_rgba(245,158,11,0.2)]'
+                  : 'bg-zinc-950/95 border-cyan-500/30 text-zinc-100'
+              }`}
+            >
+              {t.type === 'success' ? (
+                <div className="p-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-400 shrink-0">
+                  <Check className="w-4 h-4" />
+                </div>
+              ) : t.type === 'level' ? (
+                <div className="p-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 shrink-0 animate-bounce">
+                  <Trophy className="w-4 h-4" />
+                </div>
+              ) : (
+                <div className="p-1.5 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400 shrink-0">
+                  <Info className="w-4 h-4" />
+                </div>
+              )}
+              <div className="space-y-0.5 min-w-0 flex-1">
+                <span className={`text-[8px] font-mono font-black uppercase tracking-widest block ${
+                  t.type === 'success' ? 'text-emerald-400' : t.type === 'level' ? 'text-amber-400' : 'text-cyan-400'
+                }`}>
+                  {t.sub}
+                </span>
+                <p className="text-[11px] font-black uppercase leading-normal tracking-wide text-white">{t.message}</p>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
