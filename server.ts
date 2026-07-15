@@ -1380,6 +1380,80 @@ Keep your responses descriptive, clear, and relatively concise (2-4 paragraphs m
     }
   });
 
+  // AI Semantic Search Endpoint for Software Encyclopedia
+  app.post('/api/encyclopedia/semantic-search', express.json(), async (req, res) => {
+    try {
+      const { query, database } = req.body;
+      const apiKey = process.env.GEMINI_API_KEY;
+
+      if (apiKey) {
+        const ai = new GoogleGenAI({
+          apiKey: apiKey,
+          httpOptions: {
+            headers: {
+              'User-Agent': 'aistudio-build',
+            }
+          }
+        });
+
+        const systemInstruction = `You are the AI Semantic Search Engine of the Neon Arena Universal Interactive Database.
+Analyze the user's natural language search query and rank the provided software entries by relevance.
+Return a valid JSON object matching this schema:
+{
+  "matches": [
+    { "id": "software_id_1", "relevance": 0.95, "reason": "Brief explanation of why this matches the user's criteria." }
+  ],
+  "aiSummary": "A friendly 1-2 sentence overview summarizing what was found and why."
+}
+Only return the JSON object, do not wrap it in any markdown blocks or text.`;
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.5-flash',
+          contents: [
+            { parts: [{ text: `User query: "${query}"\n\nDatabase titles:\n${JSON.stringify(database.map((d: any) => ({ id: d.id, name: d.name, category: d.category, genres: d.genres, description: d.description, status: d.status, platformType: d.platformType, subgenre: d.subgenre, gameplayMechanics: d.gameplayMechanics })))}` }] }
+          ],
+          config: {
+            systemInstruction: systemInstruction,
+            responseMimeType: "application/json",
+            temperature: 0.2,
+          }
+        });
+
+        const resultText = response.text || "{}";
+        try {
+          const parsedResult = JSON.parse(resultText);
+          return res.json({ success: true, ...parsedResult });
+        } catch (jsonErr) {
+          console.error("Failed to parse Gemini semantic search JSON response:", resultText);
+          return res.json({ success: false, error: "Invalid JSON response from AI model." });
+        }
+      } else {
+        // Fallback for local search
+        const lower = query.toLowerCase();
+        const matches = database.map((item: any) => {
+          let score = 0;
+          let reasons = [];
+          if (item.name.toLowerCase().includes(lower)) { score += 0.8; reasons.push("Title match"); }
+          if (item.description.toLowerCase().includes(lower)) { score += 0.5; reasons.push("Description match"); }
+          if (item.genres.some((g: string) => g.toLowerCase().includes(lower))) { score += 0.6; reasons.push("Genre match"); }
+          if (item.category.toLowerCase().includes(lower)) { score += 0.4; reasons.push("Category match"); }
+          if (item.subgenre && item.subgenre.toLowerCase().includes(lower)) { score += 0.5; reasons.push("Subgenre match"); }
+          if (score > 1) score = 1;
+          return { id: item.id, relevance: score, reason: reasons.join(", ") || "Keyword match" };
+        }).filter((m: any) => m.relevance > 0).sort((a: any, b: any) => b.relevance - a.relevance);
+
+        return res.json({
+          success: true,
+          matches,
+          aiSummary: `Local Database Search found ${matches.length} matching software systems for "${query}". (Offline engine active)`
+        });
+      }
+    } catch (err: any) {
+      console.error('Error in semantic search endpoint:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
