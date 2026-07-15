@@ -144,13 +144,16 @@ export function Game() {
   const playerPosition = useGameStore(state => state.playerPosition);
   const playerPosVector = useMemo(() => new THREE.Vector3(...playerPosition), [playerPosition]);
 
+  const is3DMode = useGameStore(state => state.is3DMode);
+  const isUltraGraphics = useGameStore(state => state.isUltraGraphics);
+
   return (
     <Canvas 
-      shadows={false} 
-      dpr={[1, 1.5]} 
+      shadows={isUltraGraphics} 
+      dpr={isUltraGraphics ? [1.5, 2] : [1, 1.5]} 
       gl={{ 
         powerPreference: "high-performance", 
-        antialias: false, 
+        antialias: isUltraGraphics, 
         preserveDrawingBuffer: false, 
         failIfMajorPerformanceCaveat: false,
         alpha: true
@@ -160,7 +163,21 @@ export function Game() {
     >
       <XR store={xrStore}>
         <ARTransparentHandler />
-        <ambientLight intensity={0.5} />
+        <ambientLight intensity={isUltraGraphics ? 0.9 : 0.5} color={isUltraGraphics ? "#e2f1ff" : "#ffffff"} />
+        {isUltraGraphics && (
+          <>
+            <directionalLight 
+              position={[25, 40, 20]} 
+              intensity={2.2} 
+              color="#fffaed" 
+              castShadow 
+              shadow-mapSize-width={2048} 
+              shadow-mapSize-height={2048}
+              shadow-bias={-0.0001}
+            />
+            <pointLight position={[-10, 15, -10]} intensity={1.5} color="#00ffcc" />
+          </>
+        )}
         <Sky />
         
         <Physics gravity={[0, -20, 0]}>
@@ -221,8 +238,22 @@ export function Game() {
         </Physics>
 
         <EffectComposer enableNormalPass={false}>
-          <Bloom luminanceThreshold={1.0} mipmapBlur intensity={1.0} radius={0.4} />
-          <Vignette eskil={false} offset={0.1} darkness={1.1} />
+          <Bloom 
+            luminanceThreshold={isUltraGraphics ? 0.25 : 1.0} 
+            mipmapBlur 
+            intensity={isUltraGraphics ? 2.8 : 1.0} 
+            radius={isUltraGraphics ? 0.8 : 0.4} 
+          />
+          <Vignette eskil={false} offset={isUltraGraphics ? 0.05 : 0.1} darkness={isUltraGraphics ? 1.4 : 1.1} />
+          {is3DMode && (
+            <ChromaticAberration 
+              offset={new THREE.Vector2(0.015, 0.015)} 
+              blendFunction={BlendFunction.NORMAL} 
+            />
+          )}
+          {isUltraGraphics && (
+            <Noise opacity={0.035} blendFunction={BlendFunction.OVERLAY} />
+          )}
         </EffectComposer>
       </XR>
     </Canvas>

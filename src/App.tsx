@@ -46,8 +46,9 @@ import { soundService } from './services/soundService';
 import { InfinityAcademyVR } from './components/InfinityAcademyVR';
 import { CustomCharacterFolder } from './components/CustomCharacterFolder';
 import { CharacterFolderModal } from './components/CharacterFolderModal';
+import { OfflineGamesCabinet } from './components/OfflineGamesCabinet';
 import { getAbilitiesForWeapon } from './data/abilities';
-import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, UserPlus, UserCheck, UserX, Terminal as TerminalIcon, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone, FolderOpen } from 'lucide-react';
+import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, UserPlus, UserCheck, UserX, Terminal as TerminalIcon, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone, FolderOpen, Gamepad2 } from 'lucide-react';
 import { auth, signInWithGoogle, logout, searchUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriends, getFriendRequests, createClan, getClan, joinClan, leaveClan, getTopClans, getUserProfile, ClanData, saveLoadoutPreset, getLoadoutPreset, getLeaderboard } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -2690,6 +2691,7 @@ export default function App() {
   const [showModStudio, setShowModStudio] = useState(false);
   const [showMRCameras, setShowMRCameras] = useState(false);
   const [showCharacterFolder, setShowCharacterFolder] = useState(false);
+  const [showOfflineCabinet, setShowOfflineCabinet] = useState(false);
   const [showWebXRPanel, setShowWebXRPanel] = useState(false);
   const [instantCopyProgress, setInstantCopyProgress] = useState(0);
   const [isInstantCopying, setIsInstantCopying] = useState(false);
@@ -2703,6 +2705,7 @@ export default function App() {
       setShowDossier(false);
       setShowModStudio(false);
       setShowCharacterFolder(false);
+      setShowOfflineCabinet(false);
       setShowMRCameras(false);
       setShowWebXRPanel(false);
       
@@ -3281,6 +3284,15 @@ export default function App() {
               <span className="text-[10px] uppercase tracking-widest hidden sm:inline">SKIN MATRIX</span>
             </button>
 
+            <button 
+              onClick={() => setShowOfflineCabinet(!showOfflineCabinet)}
+              className={`p-3 rounded-xl border transition-all flex items-center gap-2 ${showOfflineCabinet ? 'bg-emerald-400 border-emerald-400 text-black shadow-[0_0_20px_rgba(16,185,129,0.5)] font-black' : 'bg-black/40 border-white/10 text-white hover:border-emerald-400 font-bold'}`}
+              title="Open 1,000 Offline HTML Games Cabinet"
+            >
+              <Gamepad2 size={20} className={showOfflineCabinet ? 'animate-pulse text-black' : 'text-emerald-400'} />
+              <span className="text-[10px] uppercase tracking-widest hidden sm:inline">OFFLINE CABINET</span>
+            </button>
+
             {!isChatOpen && (
               <div className="bg-black/60 px-3 py-1 rounded-lg border border-white/10 text-[10px] font-black text-white/40 uppercase tracking-widest hidden md:block">
                 Press Enter to Chat
@@ -3339,6 +3351,7 @@ export default function App() {
         {showModStudio && <WorldAndModdingStudio onClose={() => setShowModStudio(false)} />}
         {showMRCameras && <MixedRealityCameras onClose={() => setShowMRCameras(false)} />}
         {showCharacterFolder && <CharacterFolderModal onClose={() => setShowCharacterFolder(false)} />}
+        {showOfflineCabinet && <OfflineGamesCabinet onClose={() => setShowOfflineCabinet(false)} />}
         {gameState === 'server_browser' && <ServerBrowser onClose={() => setGameState('lobby')} />}
 
         {/* 3D LiDAR World Copier Laser Scanning Screen Overlay */}

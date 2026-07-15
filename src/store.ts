@@ -446,6 +446,12 @@ interface GameStore {
   addCustomSkin: (skin: { id: string; name: string; fileType: 'obj' | 'gltf' | 'glb' | 'blend'; dataUrl: string; mtlUrl?: string }) => void;
   removeCustomSkin: (id: string) => void;
   autoRotation: boolean;
+  is3DMode: boolean;
+  set3DMode: (active: boolean) => void;
+  isUltraGraphics: boolean;
+  setUltraGraphics: (active: boolean) => void;
+  unlockedMods: string[];
+  buyMod: (modId: string, cost: number) => boolean;
   unlockedTrophies: Trophy[];
   gameVersion: string;
   survivalTime: number;
@@ -1128,6 +1134,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   attackType: null,
   lastDamageTime: 0,
   autoRotation: true,
+  is3DMode: false,
+  isUltraGraphics: false,
+  unlockedMods: [],
   botPower: 5,
   botAggression: 5,
   botAccuracy: 5,
@@ -2563,6 +2572,27 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
   setAutoRotation: (autoRotation) => set({ autoRotation }),
+  set3DMode: (active) => set({ is3DMode: active }),
+  setUltraGraphics: (active) => set({ isUltraGraphics: active }),
+  buyMod: (modId, cost) => {
+    const { credits } = get();
+    if (credits < cost) {
+      get().addEvent(`🚫 Insufficient credits! Need ${cost} credits.`);
+      return false;
+    }
+    set(state => {
+      const unlocked = [...state.unlockedMods];
+      if (!unlocked.includes(modId)) {
+        unlocked.push(modId);
+      }
+      return { 
+        credits: state.credits - cost, 
+        unlockedMods: unlocked 
+      };
+    });
+    get().addEvent(`🔥 MOD PURCHASED: ${modId}!`);
+    return true;
+  },
   setBotPower: (botPower) => set({ botPower }),
   unlockTrophy: (id) => {
     const { unlockedTrophies, user } = get();
