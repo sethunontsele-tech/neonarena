@@ -73,6 +73,7 @@ interface EduState {
   vrLaserActive: boolean;
   vrHandTracking: boolean;
   showMRCameras: boolean;
+  showCreatorStudio: boolean;
   
   // Actions
   setDimension: (dim: ActiveDimensionType) => void;
@@ -85,6 +86,7 @@ interface EduState {
   setVrLaserActive: (active: boolean) => void;
   setVrHandTracking: (active: boolean) => void;
   setMRCamerasActive: (active: boolean) => void;
+  setCreatorStudioActive: (active: boolean) => void;
 }
 
 export const useEduStore = create<EduState>((set, get) => ({
@@ -121,6 +123,7 @@ export const useEduStore = create<EduState>((set, get) => ({
   vrLaserActive: true,
   vrHandTracking: false,
   showMRCameras: false,
+  showCreatorStudio: false,
 
   setDimension: (dim) => {
     set({ activeDimension: dim });
@@ -235,4 +238,5 @@ export const useEduStore = create<EduState>((set, get) => ({
   setVrLaserActive: (active) => set({ vrLaserActive: active }),
   setVrHandTracking: (active) => set({ vrHandTracking: active }),
   setMRCamerasActive: (active) => set({ showMRCameras: active }),
+  setCreatorStudioActive: (active) => set({ showCreatorStudio: active }),
 }));

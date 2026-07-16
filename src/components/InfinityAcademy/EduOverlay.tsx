@@ -3,7 +3,7 @@ import {
   Sparkles, Bot, Dna, Compass, Award, CheckCircle2, Camera,
   HelpCircle, Volume2, Gamepad2, Laptop, Monitor, Smartphone, 
   Tv, Eye, ChevronRight, Search, Trophy, Users, ShieldAlert, Zap, Layers,
-  BookOpen
+  BookOpen, Video
 } from 'lucide-react';
 import { useEduStore, ControlPlatformType, ActiveDimensionType } from './eduStore';
 import { NeonUniverse } from './NeonUniverse';
@@ -170,6 +170,7 @@ export function EduOverlay() {
   const vrHandTracking = useEduStore(state => state.vrHandTracking);
   const setVrHandTracking = useEduStore(state => state.setVrHandTracking);
   const setMRCamerasActive = useEduStore(state => state.setMRCamerasActive);
+  const setCreatorStudioActive = useEduStore(state => state.setCreatorStudioActive);
 
   const [activeTab, setActiveTab] = useState<'missions' | 'badges' | 'vrApps' | 'multiplayer' | 'settings'>('missions');
   const [showNeonHub, setShowNeonHub] = useState(false);
@@ -618,6 +619,15 @@ export function EduOverlay() {
 
         {/* Dynamic Teleport Shortcuts */}
         <div className="flex gap-2.5">
+          <button 
+            onClick={() => {
+              setCreatorStudioActive(true);
+            }}
+            className="px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:scale-105 active:scale-95 flex items-center gap-1.5"
+          >
+            <Video className="w-3.5 h-3.5 animate-pulse" />
+            🎥 AI VR CREATOR STUDIO
+          </button>
           <button 
             onClick={() => setShowNeonHub(true)}
             className="px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:scale-105 active:scale-95 flex items-center gap-1.5"
