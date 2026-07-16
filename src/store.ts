@@ -589,6 +589,7 @@ interface GameStore {
   voiceChatPosition: 'top-left' | 'center' | 'top-right';
   voiceChatVolume: number;
   vibrationEnabled: boolean;
+  hapticIntensity: 'none' | 'low' | 'medium' | 'high';
   language: 'en' | 'es' | 'fr' | 'de' | 'ja';
   mobileControlsLayout: 'default' | 'compact' | 'lefthanded' | 'custom';
   customButtonPositions: Record<string, { x: number; y: number; size: number }>;
@@ -1375,6 +1376,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   voiceChatPosition: 'center',
   voiceChatVolume: 1.0,
   vibrationEnabled: true,
+  hapticIntensity: 'medium',
   language: 'en',
   mobileControlsLayout: 'default',
   customButtonPositions: {},

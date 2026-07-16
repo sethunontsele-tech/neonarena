@@ -5,7 +5,8 @@ import { saveSystem } from '../services/saveSystem';
 import { 
   X, RotateCw, Volume2, ShieldAlert, Cpu, Trophy, 
   Sparkles, Calendar, User, Sliders, Globe, Gamepad2, 
-  Download, Upload, Save, CloudLightning, ShieldCheck, Play, RefreshCw, AlertCircle
+  Download, Upload, Save, CloudLightning, ShieldCheck, Play, RefreshCw, AlertCircle,
+  Target, Box
 } from 'lucide-react';
 import { auth } from '../firebase';
 

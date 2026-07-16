@@ -44,8 +44,8 @@ export function MobileControls() {
       lookManagerRef.current.destroy();
     }
 
-    let movePosition = { left: '80px', bottom: '80px' };
-    let lookPosition = { right: '80px', bottom: '80px' };
+    let movePosition: { left?: string; right?: string; bottom: string } = { left: '80px', bottom: '80px' };
+    let lookPosition: { left?: string; right?: string; bottom: string } = { right: '80px', bottom: '80px' };
     let size = 120;
 
     if (layout === 'compact') {

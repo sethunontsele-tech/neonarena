@@ -124,8 +124,8 @@ export const saveSystem = {
     if (data.unlockedSkins) useGameStore.setState({ unlockedSkins: data.unlockedSkins });
     if (data.selectedSkin) useGameStore.setState({ selectedSkin: data.selectedSkin });
     if (data.selectedColor) useGameStore.setState({ selectedColor: data.selectedColor });
-    if (data.selectedPattern) useGameStore.setState({ selectedPattern: data.selectedPattern });
-    if (data.selectedAccessories) useGameStore.setState({ selectedAccessories: data.selectedAccessories });
+    if (data.selectedPattern) useGameStore.setState({ selectedPattern: data.selectedPattern as any });
+    if (data.selectedAccessories) useGameStore.setState({ selectedAccessories: data.selectedAccessories as any });
     if (data.selectedGunSkin) useGameStore.setState({ selectedGunSkin: data.selectedGunSkin });
     if (typeof data.vibrationEnabled === 'boolean') useGameStore.setState({ vibrationEnabled: data.vibrationEnabled });
     if (typeof data.musicVolume === 'number') store.setMusicVolume(data.musicVolume);
