@@ -48,6 +48,7 @@ import { InfinityAcademyVR } from './components/InfinityAcademyVR';
 import { CustomCharacterFolder } from './components/CustomCharacterFolder';
 import { CharacterFolderModal } from './components/CharacterFolderModal';
 import { OfflineGamesCabinet } from './components/OfflineGamesCabinet';
+import { LandscapeOverlay, AndroidBackButtonListener, CrashProtectionBoundary, PauseMenuOverlay, TutorialOverlay, AchievementsPanel, DailyRewardsPanel, SaveLoadManagerUI } from './components/AndroidSuite';
 import { getAbilitiesForWeapon } from './data/abilities';
 import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, UserPlus, UserCheck, UserX, Terminal as TerminalIcon, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone, FolderOpen, Gamepad2 } from 'lucide-react';
 import { auth, signInWithGoogle, logout, searchUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriends, getFriendRequests, createClan, getClan, joinClan, leaveClan, getTopClans, getUserProfile, ClanData, saveLoadoutPreset, getLoadoutPreset, getLeaderboard } from './firebase';
@@ -2694,6 +2695,7 @@ export default function App() {
   const [showCharacterFolder, setShowCharacterFolder] = useState(false);
   const [showOfflineCabinet, setShowOfflineCabinet] = useState(false);
   const [showWebXRPanel, setShowWebXRPanel] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [instantCopyProgress, setInstantCopyProgress] = useState(0);
   const [isInstantCopying, setIsInstantCopying] = useState(false);
 
@@ -2707,6 +2709,8 @@ export default function App() {
       setShowModStudio(false);
       setShowCharacterFolder(false);
       setShowOfflineCabinet(false);
+      setShowWebXRPanel(false);
+      setShowTutorial(false);
       setShowMRCameras(false);
       setShowWebXRPanel(false);
       
@@ -3138,14 +3142,22 @@ export default function App() {
   return (
     <div className="w-screen h-screen bg-black relative overflow-hidden font-mono select-none" style={{ backgroundColor: '#000000' }}>
       <RealLifeSync />
+      
+      {/* Android Native Integration Suite */}
+      <AndroidBackButtonListener />
+      <LandscapeOverlay />
+      <PauseMenuOverlay />
+
       <div 
         className="absolute inset-0"
       >
-        {gameState === 'playing' && selectedMap === 'infinity_academy' ? (
-          <InfinityAcademyVR />
-        ) : (
-          <Game />
-        )}
+        <CrashProtectionBoundary>
+          {gameState === 'playing' && selectedMap === 'infinity_academy' ? (
+            <InfinityAcademyVR />
+          ) : (
+            <Game />
+          )}
+        </CrashProtectionBoundary>
       </div>
 
       {/* Mobile Controls */}
@@ -3354,6 +3366,7 @@ export default function App() {
         {showMRCameras && <MixedRealityCameras onClose={() => setShowMRCameras(false)} />}
         {showCharacterFolder && <CharacterFolderModal onClose={() => setShowCharacterFolder(false)} />}
         {showOfflineCabinet && <OfflineGamesCabinet onClose={() => setShowOfflineCabinet(false)} />}
+        {showTutorial && <TutorialOverlay onClose={() => setShowTutorial(false)} />}
         {gameState === 'server_browser' && <ServerBrowser onClose={() => setGameState('lobby')} />}
 
         {/* 3D LiDAR World Copier Laser Scanning Screen Overlay */}
@@ -5317,6 +5330,166 @@ export default function App() {
                           </div>
                         </div>
                       )}
+                    </div>
+                  </div>
+                </section>
+
+                {/* ANDROID NATIVE PORT INTEGRATION & OPTIMIZATION SUITE */}
+                <section className="bg-gradient-to-br from-zinc-950 to-zinc-900 border-2 border-amber-500/20 p-8 rounded-3xl backdrop-blur-md col-span-1 md:col-span-2 shadow-[0_0_50px_rgba(245,158,11,0.05)]">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                    <div>
+                      <h2 className="text-3xl font-black text-amber-400 italic tracking-tighter uppercase flex items-center gap-3">
+                        <Smartphone className="w-8 h-8 text-amber-400 animate-pulse" /> ANDROID ENGINE PORT
+                      </h2>
+                      <p className="text-[10px] text-white/40 uppercase font-black tracking-widest mt-1">Configure native mobile performance, translations, secure backups, and APK compiling.</p>
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        setShowTutorial(true);
+                        soundService.playSFX('ui_click');
+                      }}
+                      className="px-5 py-3 bg-amber-400 hover:bg-amber-500 text-black font-black uppercase text-[10px] tracking-widest rounded-xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] flex items-center gap-2 cursor-pointer"
+                    >
+                      <Gamepad2 size={14} /> PLAY IN-GAME TUTORIAL
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Performance Optimization & Controls Grid */}
+                    <div className="space-y-6">
+                      <div className="bg-black/40 border border-white/5 p-6 rounded-2xl">
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4">OPTIMIZATIONS & GRAPHICS</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-[9px] text-white/40 font-black uppercase tracking-wider mb-2 block">Graphics Presets</label>
+                            <select 
+                              value={useGameStore.getState().graphicsQuality || 'high'}
+                              onChange={(e) => {
+                                useGameStore.setState({ graphicsQuality: e.target.value as any });
+                                soundService.playSFX('ui_click');
+                              }}
+                              className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-black uppercase tracking-wider outline-none focus:border-amber-400"
+                            >
+                              <option value="low">Low (60 FPS Safe)</option>
+                              <option value="medium">Medium</option>
+                              <option value="high">High (Standard)</option>
+                              <option value="ultra">Ultra (Max Quality)</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="text-[9px] text-white/40 font-black uppercase tracking-wider mb-2 block">Translation Language</label>
+                            <select 
+                              value={useGameStore.getState().language || 'en'}
+                              onChange={(e) => {
+                                useGameStore.setState({ language: e.target.value as any });
+                                soundService.playSFX('ui_click');
+                              }}
+                              className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-black uppercase tracking-wider outline-none focus:border-amber-400"
+                            >
+                              <option value="en">English (US)</option>
+                              <option value="es">Español (ES)</option>
+                              <option value="pt">Português (BR)</option>
+                              <option value="de">Deutsch (DE)</option>
+                              <option value="ja">日本語 (JP)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-[9px] text-white/40 font-black uppercase tracking-wider mb-2 block">Mobile Controls Preset</label>
+                            <select 
+                              value={useGameStore.getState().mobileControlsLayout || 'default'}
+                              onChange={(e) => {
+                                useGameStore.setState({ mobileControlsLayout: e.target.value as any });
+                                soundService.playSFX('ui_click');
+                              }}
+                              className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-black uppercase tracking-wider outline-none focus:border-amber-400"
+                            >
+                              <option value="default">Default Tactical</option>
+                              <option value="compact">Compact Arcade</option>
+                              <option value="lefthanded">Left Handed</option>
+                              <option value="custom">Reposition Mode</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="text-[9px] text-white/40 font-black uppercase tracking-wider mb-2 block">Haptic Feedback</label>
+                            <select 
+                              value={useGameStore.getState().hapticIntensity || 'medium'}
+                              onChange={(e) => {
+                                useGameStore.setState({ hapticIntensity: e.target.value as any });
+                                soundService.playSFX('ui_click');
+                                if (navigator.vibrate) navigator.vibrate(50);
+                              }}
+                              className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-black uppercase tracking-wider outline-none focus:border-amber-400"
+                            >
+                              <option value="none">Off (No Vibration)</option>
+                              <option value="low">Mild Pulse</option>
+                              <option value="medium">Medium Tactical</option>
+                              <option value="high">Heavy Shake</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
+                          <div>
+                            <span className="text-[10px] font-black text-white/80 uppercase block">Offline Mode (Single-Player)</span>
+                            <span className="text-[8px] text-white/30 uppercase font-black block mt-0.5">Bypasses cloud queues to play local matches immediately.</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              useGameStore.setState({ offlineMode: !useGameStore.getState().offlineMode });
+                              soundService.playSFX('ui_click');
+                            }}
+                            className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg border transition-all ${
+                              useGameStore.getState().offlineMode 
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
+                                : 'bg-white/5 text-white/30 border-white/10 hover:border-white/20'
+                            }`}
+                          >
+                            {useGameStore.getState().offlineMode ? "ENABLED (OFFLINE)" : "DISABLED (ONLINE)"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Backup save system files */}
+                      <SaveLoadManagerUI />
+                    </div>
+
+                    {/* Progression: Daily Rewards & Achievements Database */}
+                    <div className="space-y-6">
+                      <DailyRewardsPanel />
+                      <AchievementsPanel />
+                    </div>
+                  </div>
+
+                  {/* Android APK Compiler Guide */}
+                  <div className="mt-8 pt-8 border-t border-white/10 bg-black/50 border border-white/5 p-6 rounded-3xl">
+                    <h3 className="text-xs font-black text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                      <Sparkles size={14} className="animate-spin" /> EXPORT ANDROID APK & GOOGLE PLAY COMPILATION
+                    </h3>
+                    <p className="text-[10px] text-white/50 uppercase font-bold leading-relaxed mb-4">
+                      Neon Arena includes native integration with **CapacitorJS** for mobile cross-compilation. Complete standard Google Play developer steps using your preferred desktop terminal:
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left font-mono text-[9px] text-white/30">
+                      <div className="bg-zinc-950 p-4 rounded-xl border border-white/5 relative">
+                        <span className="text-amber-400 font-black absolute top-2 right-3">STEP 01</span>
+                        <div className="text-white/60 font-black mb-1">SYNC ANDROID STUDIO</div>
+                        <div>Run `npx cap sync android` to sync the optimized web app directly with the Android source folder.</div>
+                      </div>
+                      <div className="bg-zinc-950 p-4 rounded-xl border border-white/5 relative">
+                        <span className="text-amber-400 font-black absolute top-2 right-3">STEP 02</span>
+                        <div className="text-white/60 font-black mb-1">COMPILE APP WITH GRADLE</div>
+                        <div>Launch Android Studio with `npx cap open android`, or run `./gradlew assembleDebug` to test on devices.</div>
+                      </div>
+                      <div className="bg-zinc-950 p-4 rounded-xl border border-white/5 relative">
+                        <span className="text-amber-400 font-black absolute top-2 right-3">STEP 03</span>
+                        <div className="text-white/60 font-black mb-1">EXPORT APK / AAB</div>
+                        <div>Generate your final `.apk` or `.aab` file from the **Build &gt; Generate Signed Bundle / APK** submenu for play store release.</div>
+                      </div>
                     </div>
                   </div>
                 </section>

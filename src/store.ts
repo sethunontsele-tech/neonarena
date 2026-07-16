@@ -589,6 +589,13 @@ interface GameStore {
   voiceChatPosition: 'top-left' | 'center' | 'top-right';
   voiceChatVolume: number;
   vibrationEnabled: boolean;
+  language: 'en' | 'es' | 'fr' | 'de' | 'ja';
+  mobileControlsLayout: 'default' | 'compact' | 'lefthanded' | 'custom';
+  customButtonPositions: Record<string, { x: number; y: number; size: number }>;
+  isPaused: boolean;
+  offlineMode: boolean;
+  playerAvatar: string;
+  unlockedSkins: string[];
   streamerMode: boolean;
   lowLatencyMode: boolean;
   raytracingEnabled: boolean;
@@ -742,6 +749,12 @@ interface GameStore {
   
   // Tasks & Social
   tasks: GameTask[];
+  dailyMissions: GameTask[];
+  lastDailyMissionsGeneration: number;
+  dailyMissionsBonusClaimed: boolean;
+  generateDailyMissions: (force?: boolean) => void;
+  toggleDailyMission: (id: string) => void;
+  claimDailyMissionsBonus: () => void;
   mentions: ChatMention[];
   friends: UserProfile[];
   friendRequests: UserProfile[];
@@ -923,6 +936,14 @@ interface GameStore {
   seekReplay: (time: number) => void;
   stopReplay: () => void;
   logout: () => Promise<void>;
+  
+  setLanguage: (lang: 'en' | 'es' | 'fr' | 'de' | 'ja') => void;
+  setMobileControlsLayout: (layout: 'default' | 'compact' | 'lefthanded' | 'custom') => void;
+  setCustomButtonPosition: (buttonId: string, x: number, y: number, size: number) => void;
+  setIsPaused: (paused: boolean) => void;
+  setOfflineMode: (enabled: boolean) => void;
+  setPlayerAvatar: (avatar: string) => void;
+  setUnlockedSkins: (skins: string[]) => void;
   
   // Vehicle Actions
   spawnVehicle: (type: VehicleType, position: [number, number, number], team?: Team) => void;
@@ -1354,6 +1375,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   voiceChatPosition: 'center',
   voiceChatVolume: 1.0,
   vibrationEnabled: true,
+  language: 'en',
+  mobileControlsLayout: 'default',
+  customButtonPositions: {},
+  isPaused: false,
+  offlineMode: false,
+  playerAvatar: '🤖',
+  unlockedSkins: ['neon'],
   streamerMode: false,
   lowLatencyMode: true,
   raytracingEnabled: false,
@@ -1474,6 +1502,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   sessionHits: 0,
 
   tasks: [],
+  dailyMissions: [],
+  lastDailyMissionsGeneration: 0,
+  dailyMissionsBonusClaimed: false,
   mentions: [],
 
   stamina: 100,
@@ -2641,6 +2672,68 @@ export const useGameStore = create<GameStore>((set, get) => ({
     tasks: [...state.tasks, { ...task, id: Math.random().toString(36).substr(2, 9), completed: false }]
   })),
 
+  generateDailyMissions: (force = false) => {
+    const { lastDailyMissionsGeneration } = get();
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+    if (!force && (now - lastDailyMissionsGeneration < oneDay) && get().dailyMissions.length === 3) {
+      return;
+    }
+    // Pool of fun daily challenges
+    const pool = [
+      { title: "🤖 DEFEAT 3 ROGUE BOTS", description: "Vanquish at least three enemy bot operators in combat.", priority: "high" as const },
+      { title: "🌀 TRIGGER DIMENSION SHIFT", description: "Initiate a quantum shift between reality matrices.", priority: "medium" as const },
+      { title: "🏆 SCORE 500 ARENA POINTS", description: "Reach a score of at least 500 points on the scoreboard.", priority: "medium" as const },
+      { title: "🚗 COMMANDEER A VEHICLE", description: "Spawn and board a high-speed rover or hover craft.", priority: "low" as const },
+      { title: "💾 SECURE ENCRYPTED SAVE", description: "Use the pause settings menu to save game state to disk.", priority: "low" as const },
+      { title: "🛍️ INSPECT TRADE MARKET", description: "Spend credits or browse skin matrix modifications.", priority: "low" as const },
+      { title: "🦖 TAME AN ALIEN ANIMAL", description: "Encounter or summon wild life in open world exploration.", priority: "medium" as const },
+    ];
+    // Shuffle and pick 3
+    const shuffled = [...pool].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, 3).map((item, idx) => ({
+      id: `daily-mission-${idx}-${Date.now()}`,
+      title: item.title,
+      description: item.description,
+      completed: false,
+      priority: item.priority,
+    }));
+    set({
+      dailyMissions: selected,
+      lastDailyMissionsGeneration: now,
+      dailyMissionsBonusClaimed: false
+    });
+    get().addEvent('📅 DAILY MISSIONS ROTATED: 3 New Tasks Assigned!');
+  },
+
+  toggleDailyMission: (id) => set(state => {
+    const updated = state.dailyMissions.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+    // If all are completed, automatically notify user
+    const allCompleted = updated.every(t => t.completed);
+    if (allCompleted) {
+      state.addEvent('🎉 ALL DAILY MISSIONS COMPLETED! Claim your bonus XP in the Operations Log.');
+    }
+    return { dailyMissions: updated };
+  }),
+
+  claimDailyMissionsBonus: () => {
+    const { dailyMissions, dailyMissionsBonusClaimed, score, addEvent } = get();
+    const allCompleted = dailyMissions.length === 3 && dailyMissions.every(t => t.completed);
+    if (!allCompleted) {
+      alert("Complete all 3 Daily Missions to claim your reward!");
+      return;
+    }
+    if (dailyMissionsBonusClaimed) {
+      alert("Daily missions bonus already claimed today.");
+      return;
+    }
+    set({
+      score: score + 1000,
+      dailyMissionsBonusClaimed: true
+    });
+    addEvent('🎁 CLAIMED DAILY MISSIONS REWARD: +1000 XP BONUS!');
+  },
+
   toggleTask: (id) => set(state => ({
     tasks: state.tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t)
   })),
@@ -2859,6 +2952,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setBotAccuracy: (botAccuracy) => set({ botAccuracy }),
   setBotReactionTime: (botReactionTime) => set({ botReactionTime }),
   setBotStrategy: (botStrategy) => set({ botStrategy }),
+  
+  setLanguage: (language) => set({ language }),
+  setMobileControlsLayout: (mobileControlsLayout) => set({ mobileControlsLayout }),
+  setCustomButtonPosition: (buttonId, x, y, size) => set((state) => ({
+    customButtonPositions: {
+      ...state.customButtonPositions,
+      [buttonId]: { x, y, size }
+    }
+  })),
+  setIsPaused: (isPaused) => set({ isPaused }),
+  setOfflineMode: (offlineMode) => set({ offlineMode }),
+  setPlayerAvatar: (playerAvatar) => set({ playerAvatar }),
+  setUnlockedSkins: (unlockedSkins) => set({ unlockedSkins }),
   
   updateSettings: (settings) => {
     const { socket } = get();

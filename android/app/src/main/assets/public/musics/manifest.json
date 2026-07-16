@@ -1,0 +1,52 @@
+{
+  "tracks": [
+    {
+      "id": "neon_gate",
+      "title": "Neon Gate Overdrive",
+      "composer": "Neon Arena Synth Team",
+      "duration": "1:24",
+      "genre": "Synthwave / Cyberpunk",
+      "notes": "Classic driving futuristic beat with sawtooth bassline and pulsing retro leads.",
+      "fileUrl": "/musics/neon_gate.mp3",
+      "tempo": 120,
+      "scale": "A minor",
+      "synthPattern": {
+        "tempo": 120,
+        "bass": [55.0, 55.0, 65.4, 65.4, 58.3, 58.3, 49.0, 49.0],
+        "lead": [220.0, 261.6, 293.7, 329.6, 392.0, 329.6, 293.7, 261.6]
+      }
+    },
+    {
+      "id": "cyber_rain",
+      "title": "Cybernetic Rain",
+      "composer": "A.U.R.A Neural Synth",
+      "duration": "2:05",
+      "genre": "Ambient / Chillwave",
+      "notes": "Deep, evolving soundscape with resonant triangle sweeps and soft digital rain sounds.",
+      "fileUrl": "/musics/cyber_rain.mp3",
+      "tempo": 90,
+      "scale": "E minor",
+      "synthPattern": {
+        "tempo": 90,
+        "bass": [41.2, 41.2, 49.0, 49.0, 43.7, 43.7, 36.7, 36.7],
+        "lead": [164.8, 196.0, 220.0, 246.9, 293.7, 246.9, 220.0, 196.0]
+      }
+    },
+    {
+      "id": "glitch_arena",
+      "title": "Glitch Arena Anthems",
+      "composer": "Zephyr AI Audio Core",
+      "duration": "1:48",
+      "genre": "Industrial / Glitch Tech",
+      "notes": "Fast, distorted bass rhythm with high-pitched glitch notes and bitcrushed sweeps.",
+      "fileUrl": "/musics/glitch_arena.mp3",
+      "tempo": 140,
+      "scale": "D minor",
+      "synthPattern": {
+        "tempo": 140,
+        "bass": [73.4, 73.4, 87.3, 87.3, 82.4, 82.4, 65.4, 65.4],
+        "lead": [293.7, 349.2, 392.0, 440.0, 523.3, 440.0, 392.0, 349.2]
+      }
+    }
+  ]
+}
