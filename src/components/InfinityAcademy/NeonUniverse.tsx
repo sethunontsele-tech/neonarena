@@ -51,6 +51,52 @@ const YOUTUBE_VIDEOS = [
   { id: 'k9H8s2f3g8I', title: 'Biology for Kids: Animated Journey Inside a Tree Leaf Cell', category: 'kids', views: '1.9M', duration: '08:15', channel: 'BioKids' }
 ];
 
+// Gameplay clips IndexedDB utility for whiteboard sync
+const DB_NAME = 'GameplayRecorderDB';
+const STORE_NAME = 'gameplay_clips';
+
+function initDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function loadClipsFromDB(): Promise<any[]> {
+  return new Promise(async (resolve) => {
+    try {
+      const db = await initDB();
+      const transaction = db.transaction(STORE_NAME, 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const clips = request.result.map(item => {
+          const url = URL.createObjectURL(item.blob);
+          return {
+            id: item.id,
+            name: item.name,
+            date: item.date,
+            size: item.size,
+            duration: item.duration,
+            url
+          };
+        });
+        resolve(clips);
+      };
+      request.onerror = () => resolve([]);
+    } catch (e) {
+      resolve([]);
+    }
+  });
+}
+
 export function NeonUniverse({ onClose }: NeonUniverseProps) {
   const activeDimension = useEduStore(state => state.activeDimension);
   const xp = useEduStore(state => state.xp);
@@ -137,6 +183,27 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
 
   // --- VR OS & LOADER STATES ---
   const [boardRightTab, setBoardRightTab] = useState<'sticky' | 'vros'>('sticky');
+  const [vrosActiveFolder, setVrosActiveFolder] = useState<'system' | 'record' | 'youtube'>('system');
+  const [recordedClips, setRecordedClips] = useState<any[]>([]);
+  const [loadedMp3s, setLoadedMp3s] = useState<{ id: string; name: string; url: string; size: string }[]>([]);
+
+  // Refresh recorded clips helper
+  const refreshRecordedClips = () => {
+    loadClipsFromDB()
+      .then(clips => {
+        setRecordedClips(clips);
+      })
+      .catch(err => {
+        console.warn('Could not sync recorded clips inside NeonUniverse whiteboard:', err);
+      });
+  };
+
+  useEffect(() => {
+    refreshRecordedClips();
+    const interval = setInterval(refreshRecordedClips, 4000); // Poll every 4 seconds to catch new recordings automatically
+    return () => clearInterval(interval);
+  }, []);
+
   const [vrosFiles, setVrosFiles] = useState<{ name: string; size: string; content: string }[]>([
     { name: 'kernel.bin', size: '128 KB', content: 'VROS_KERNEL_ENTRY_POINT_0x00FF839\n// Initializing real-time 6DOF tracking handlers\n// Initializing virtual Vulkan driver interfaces\n// Binding OpenXR spatial coordinates' },
     { name: 'system.cfg', size: '4 KB', content: 'SYSTEM_NAME=NeonOS Spatial\nSYSTEM_RESOLUTION=2048x2048\nTARGET_FPS=120\nSTEREO_MODE=QUAD_BUFFERED\nDYNAMIC_LOD=ENABLED\nACCELEROMETER_SYNC_RATE=1000Hz\nTHERMAL_DAMPENING_FACTOR=0.75' },
@@ -650,6 +717,25 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
     }
   };
 
+  const handleMp3Upload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const url = URL.createObjectURL(file);
+      const size = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+      const id = 'mp3_' + Date.now();
+      const newMp3 = {
+        id,
+        name: file.name,
+        url,
+        size
+      };
+      setLoadedMp3s(prev => [...prev, newMp3]);
+      gainXP(20);
+      try { soundService.playSFX('achievement'); } catch (err) {}
+    }
+  };
+
   const executeVrosCommand = (cmdStr: string) => {
     const trimmed = cmdStr.trim();
     if (!trimmed) return;
@@ -742,8 +828,32 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
     }, 1500);
   };
 
-  // Filter YouTube Videos based on search/category/parental controls
-  const filteredVideos = YOUTUBE_VIDEOS.filter(vid => {
+  const customMp3Streams = loadedMp3s.map(mp3 => ({
+    id: `custom_mp3_${mp3.id}`,
+    title: mp3.name,
+    category: 'whiteboard_mp3s',
+    views: 'Local Whiteboard Sideload',
+    duration: 'Audio',
+    channel: 'Sideloaded MP3 Folder'
+  }));
+
+  const customClipStreams = recordedClips.map(clip => ({
+    id: `custom_clip_${clip.id}`,
+    title: clip.name,
+    category: 'arena_records',
+    views: clip.size,
+    duration: clip.duration,
+    channel: 'Neon Arena Capture'
+  }));
+
+  const allMediaStreams = [
+    ...YOUTUBE_VIDEOS,
+    ...customMp3Streams,
+    ...customClipStreams
+  ];
+
+  // Filter Media Streams based on search/category/parental controls
+  const filteredVideos = allMediaStreams.filter(vid => {
     if (parentalControls && (vid.category === 'gaming' || vid.category === 'music')) {
       return false; // Parental controls block gaming and lofi music
     }
@@ -924,6 +1034,8 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
               <div className="flex gap-1.5 overflow-x-auto pb-3 scrollbar-none shrink-0 border-b border-slate-800/60 mb-4">
                 {[
                   { id: 'all', label: 'All Streams' },
+                  ...(recordedClips.length > 0 ? [{ id: 'arena_records', label: '🎥 Arena Records' }] : []),
+                  ...(loadedMp3s.length > 0 ? [{ id: 'whiteboard_mp3s', label: '📁 Whiteboard MP3s' }] : []),
                   { id: 'gaming', label: '🎮 Gaming' },
                   { id: 'educational', label: '📚 Learning' },
                   { id: 'music', label: '🎵 Music' },
@@ -952,16 +1064,62 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
                 {/* Active Player Box */}
                 <div className="flex-1 flex flex-col bg-black rounded-3xl border border-slate-800 overflow-hidden relative">
                   
-                  {/* YouTube Iframe Embed */}
+                  {/* YouTube Iframe Embed OR Native Audio/Video Player for records & MP3s */}
                   <div className="flex-1 w-full bg-slate-950 relative">
-                    <iframe
-                      src={`https://www.youtube.com/embed/${selectedVideoId}?autoplay=1&enablejsapi=1`}
-                      title="YouTube stream viewer"
-                      className="w-full h-full border-none"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                      referrerPolicy="no-referrer"
-                    />
+                    {selectedVideoId.startsWith('custom_mp3_') ? (
+                      // Render gorgeous native audio player with custom lofi visual waves!
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950/40">
+                        <div className="w-16 h-16 bg-cyan-500/10 border-2 border-cyan-400 rounded-full flex items-center justify-center animate-pulse mb-3 shadow-[0_0_20px_rgba(34,211,238,0.25)]">
+                          <Music className="w-8 h-8 text-cyan-400" />
+                        </div>
+                        <h4 className="text-[11px] font-black text-white uppercase tracking-wider text-center max-w-md px-4 truncate">
+                          {loadedMp3s.find(m => `custom_mp3_${m.id}` === selectedVideoId)?.name || 'Custom Sideloaded Track'}
+                        </h4>
+                        <span className="text-[8px] text-zinc-400 uppercase tracking-widest block mt-1">WHITEBOARD AUDIO GATEWAY</span>
+                        
+                        {/* Audio Waveform Animation */}
+                        <div className="flex items-center gap-1 mt-4 mb-4">
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1].map((h, i) => (
+                            <div 
+                              key={i} 
+                              className="w-1 bg-cyan-400 rounded-full animate-bounce" 
+                              style={{ 
+                                height: `${h * 3}px`,
+                                animationDelay: `${i * 0.08}s`,
+                                animationDuration: '1s'
+                              }} 
+                            />
+                          ))}
+                        </div>
+
+                        <audio 
+                          src={loadedMp3s.find(m => `custom_mp3_${m.id}` === selectedVideoId)?.url} 
+                          controls 
+                          autoPlay 
+                          className="w-56 h-8 accent-cyan-400 rounded-lg bg-slate-900 text-cyan-400 text-[10px]"
+                        />
+                      </div>
+                    ) : selectedVideoId.startsWith('custom_clip_') ? (
+                      // Render native video player for captured gameplay clips!
+                      <div className="absolute inset-0 bg-black flex items-center justify-center">
+                        <video 
+                          src={recordedClips.find(c => `custom_clip_${c.id}` === selectedVideoId)?.url} 
+                          controls 
+                          autoPlay 
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    ) : (
+                      // Default YouTube Embed
+                      <iframe
+                        src={`https://www.youtube.com/embed/${selectedVideoId}?autoplay=1&enablejsapi=1`}
+                        title="YouTube stream viewer"
+                        className="w-full h-full border-none"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
                   </div>
 
                   {/* Player Metadata & Controls */}
@@ -969,12 +1127,12 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
                     <div className="flex justify-between items-start gap-3">
                       <div>
                         <h4 className="text-[12px] font-black text-white uppercase tracking-wide">
-                          {YOUTUBE_VIDEOS.find(v => v.id === selectedVideoId)?.title || 'Now Playing YouTube Stream'}
+                          {allMediaStreams.find(v => v.id === selectedVideoId)?.title || 'Now Playing YouTube Stream'}
                         </h4>
                         <div className="flex items-center gap-2 mt-1.5 text-[8.5px] font-mono text-slate-500 uppercase">
-                          <span>Channel: {YOUTUBE_VIDEOS.find(v => v.id === selectedVideoId)?.channel || 'Verified Creator'}</span>
+                          <span>Source: {allMediaStreams.find(v => v.id === selectedVideoId)?.channel || 'Verified Creator'}</span>
                           <span>•</span>
-                          <span>Views: {YOUTUBE_VIDEOS.find(v => v.id === selectedVideoId)?.views || '100K'}</span>
+                          <span>Info/Views: {allMediaStreams.find(v => v.id === selectedVideoId)?.views || '100K'}</span>
                         </div>
                       </div>
 
@@ -2066,16 +2224,140 @@ export function NeonUniverse({ onClose }: NeonUniverseProps) {
                             FOLDER: mounts/vr_os/
                           </span>
 
-                          <div className="bg-slate-950 border border-slate-800 p-1.5 rounded-xl text-[7.5px] max-h-24 overflow-y-auto custom-scrollbar space-y-0.5 text-slate-300">
-                            {vrosFiles.map((f, i) => (
-                              <div key={i} className="flex justify-between items-center py-0.5 border-b border-white/5 last:border-0">
-                                <span className="truncate max-w-[120px] text-slate-400 flex items-center gap-1">
-                                  <span className="text-[7px]">📄</span>
-                                  {f.name}
-                                </span>
-                                <span className="text-[6.5px] text-slate-600 font-bold uppercase">{f.size}</span>
-                              </div>
-                            ))}
+                          {/* Subfolder tabs selector */}
+                          <div className="grid grid-cols-3 gap-1 mb-1">
+                            {(['system', 'record', 'youtube'] as const).map(folder => {
+                              const isActive = vrosActiveFolder === folder;
+                              let label = 'SYSTEM';
+                              if (folder === 'record') label = 'RECORD';
+                              else if (folder === 'youtube') label = 'YOUTUBE';
+                              return (
+                                <button
+                                  key={folder}
+                                  onClick={() => {
+                                    setVrosActiveFolder(folder);
+                                    try { soundService.playSFX('ui_hover'); } catch (e) {}
+                                  }}
+                                  className={`p-1 rounded-lg text-center text-[6.5px] font-black uppercase tracking-wider transition-all cursor-pointer border ${
+                                    isActive
+                                      ? (folder === 'system' ? 'bg-amber-500/10 border-amber-400 text-amber-400' : folder === 'record' ? 'bg-rose-500/10 border-rose-400 text-rose-400' : 'bg-cyan-500/10 border-cyan-400 text-cyan-400')
+                                      : 'bg-slate-950/40 border-slate-800 text-slate-500 hover:text-slate-300'
+                                  }`}
+                                >
+                                  📁 {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <div className="bg-slate-950 border border-slate-800 p-1.5 rounded-xl text-[7.5px] max-h-36 overflow-y-auto custom-scrollbar space-y-1 text-slate-300">
+                            {vrosActiveFolder === 'system' && (
+                              <>
+                                {vrosFiles.map((f, i) => (
+                                  <div key={i} className="flex justify-between items-center py-0.5 border-b border-white/5 last:border-0">
+                                    <span className="truncate max-w-[120px] text-slate-400 flex items-center gap-1">
+                                      <span className="text-[7px]">📄</span>
+                                      {f.name}
+                                    </span>
+                                    <span className="text-[6.5px] text-slate-600 font-bold uppercase">{f.size}</span>
+                                  </div>
+                                ))}
+                              </>
+                            )}
+
+                            {vrosActiveFolder === 'record' && (
+                              <>
+                                {recordedClips.length === 0 ? (
+                                  <div className="text-center py-2 text-rose-400/50 uppercase font-black tracking-wider text-[6.5px]">
+                                    No captured arena clips yet. Press "RECORD PLAY" at the bottom-left!
+                                  </div>
+                                ) : (
+                                  recordedClips.map((clip, i) => (
+                                    <div key={i} className="flex flex-col gap-1 py-1 border-b border-white/5 last:border-0">
+                                      <div className="flex justify-between items-center">
+                                        <span className="truncate max-w-[100px] text-rose-300 font-bold flex items-center gap-1">
+                                          <span className="text-[7px]">🎥</span>
+                                          {clip.name}
+                                        </span>
+                                        <span className="text-[6px] text-zinc-500 font-bold">{clip.size}</span>
+                                      </div>
+                                      <div className="flex gap-1">
+                                        <button
+                                          onClick={() => {
+                                            try { soundService.playSFX('ui_click'); } catch (e) {}
+                                            setSelectedVideoId(`custom_clip_${clip.id}`);
+                                            setActiveUniverseTab('stream');
+                                          }}
+                                          className="flex-1 py-0.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded text-[6px] text-rose-400 font-black uppercase text-center cursor-pointer"
+                                        >
+                                          📺 Load Player
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))
+                                )}
+                              </>
+                            )}
+
+                            {vrosActiveFolder === 'youtube' && (
+                              <>
+                                <div className="mb-1">
+                                  <input
+                                    type="file"
+                                    accept="audio/mpeg,audio/mp3,audio/*"
+                                    onChange={handleMp3Upload}
+                                    id="board-mp3-upload-input"
+                                    className="hidden"
+                                  />
+                                  <label
+                                    htmlFor="board-mp3-upload-input"
+                                    className="cursor-pointer py-1 px-1.5 bg-cyan-500/15 border border-cyan-500/30 hover:bg-cyan-500/20 text-cyan-400 text-center rounded text-[6.5px] uppercase font-black tracking-widest block transition-all"
+                                  >
+                                    ➕ LOAD MP3 AUDIO
+                                  </label>
+                                </div>
+
+                                {loadedMp3s.length === 0 ? (
+                                  <div className="text-center py-2 text-cyan-400/50 uppercase font-black tracking-wider text-[6.5px]">
+                                    Empty folder. Sideload MP3s using the button above!
+                                  </div>
+                                ) : (
+                                  loadedMp3s.map((mp3, i) => (
+                                    <div key={i} className="flex flex-col gap-1 py-1 border-b border-white/5 last:border-0">
+                                      <div className="flex justify-between items-center">
+                                        <span className="truncate max-w-[100px] text-cyan-300 font-bold flex items-center gap-1">
+                                          <span className="text-[7px]">🎵</span>
+                                          {mp3.name}
+                                        </span>
+                                        <span className="text-[6px] text-zinc-500 font-bold">{mp3.size}</span>
+                                      </div>
+                                      <div className="flex gap-1">
+                                        <button
+                                          onClick={() => {
+                                            try { soundService.playSFX('ui_click'); } catch (e) {}
+                                            setSelectedVideoId(`custom_mp3_${mp3.id}`);
+                                            setActiveUniverseTab('stream');
+                                          }}
+                                          className="flex-1 py-0.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded text-[6px] text-cyan-400 font-black uppercase text-center cursor-pointer"
+                                        >
+                                          🎧 Load Player
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            try { soundService.playSFX('ui_click'); } catch (e) {}
+                                            setLoadedMp3s(prev => prev.filter(m => m.id !== mp3.id));
+                                          }}
+                                          className="px-1.5 py-0.5 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 rounded text-[6px] cursor-pointer"
+                                          title="Delete MP3"
+                                        >
+                                          🗑️
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))
+                                )}
+                              </>
+                            )}
                           </div>
                         </div>
 

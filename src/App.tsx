@@ -22,6 +22,7 @@ import { VehicleHUD } from './components/VehicleHUD';
 import { AIBuilderInput } from './components/AIBuilderInput';
 import { VisualFeedback } from './components/VisualFeedback';
 import { FaceCam } from './components/FaceCam';
+import { WebRecorder } from './components/WebRecorder';
 import { FeaturesController } from './components/FeaturesController';
 import { Casino } from './components/Casino';
 import { BiggestUpdateModal } from './components/BiggestUpdateModal';
@@ -3329,6 +3330,7 @@ export default function App() {
           <TimeWarpOverlay />
           <VisualFeedback />
           <FaceCam />
+          <WebRecorder />
           <FeaturesController />
         </>
       )}
