@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { ImportTutorialModal } from '../ImportTutorialModal';
 import { 
   UploadCloud, 
   CheckCircle, 
@@ -32,6 +33,145 @@ import {
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { soundService } from '../../services/soundService';
+
+interface RecentImport {
+  id: string;
+  fileName: string;
+  timestamp: string;
+  fileType: string;
+  size: string;
+  status: 'SUCCESS' | 'FAILED';
+  importTimeMs: number;
+}
+
+export function WireframePreview({ modelName }: { modelName: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationId: number;
+    let angleX = 0.01;
+    let angleY = 0.02;
+    let angleZ = 0.005;
+
+    let vertices: [number, number, number][] = [];
+    let faces: number[][] = [];
+
+    const nameLower = modelName.toLowerCase();
+    if (nameLower.includes('alien') || nameLower.includes('animal')) {
+      vertices = [
+        [0, 1.2, 0],
+        [-0.4, 0.4, 0.8], [0.4, 0.4, 0.8],
+        [-0.4, 0.4, -0.8], [0.4, 0.4, -0.8],
+        [-0.5, -0.8, 1], [0.5, -0.8, 1],
+        [-0.5, -0.8, -1], [0.5, -0.8, -1],
+        [0, 0.6, 1.2],
+      ];
+      faces = [
+        [0, 1, 2], [1, 2, 6, 5], [3, 4, 8, 7],
+        [0, 3, 4], [1, 3, 7, 5], [2, 4, 8, 6],
+        [0, 9, 3]
+      ];
+    } else if (nameLower.includes('weapon') || nameLower.includes('saber') || nameLower.includes('gun') || nameLower.includes('rifle') || nameLower.includes('obj')) {
+      vertices = [
+        [-1.2, 0.15, -0.15], [-1.2, 0.15, 0.15], [-1.2, -0.15, 0.15], [-1.2, -0.15, -0.15],
+        [1.2, 0.1, -0.1], [1.2, 0.1, 0.1], [1.2, -0.1, 0.1], [1.2, -0.1, -0.1],
+        [0.2, -0.6, -0.15], [0.4, -0.6, 0.15],
+      ];
+      faces = [
+        [0, 1, 2, 3], [4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7],
+        [2, 6, 9, 8]
+      ];
+    } else {
+      const t = (1 + Math.sqrt(5)) / 2;
+      vertices = [
+        [-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0],
+        [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
+        [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]
+      ];
+      faces = [
+        [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+        [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+        [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+        [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
+      ];
+    }
+
+    const scale = 42;
+
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1;
+
+      const projected: [number, number][] = [];
+      for (const v of vertices) {
+        let y1 = v[1] * Math.cos(angleX) - v[2] * Math.sin(angleX);
+        let z1 = v[1] * Math.sin(angleX) + v[2] * Math.cos(angleX);
+        let x2 = v[0] * Math.cos(angleY) + z1 * Math.sin(angleY);
+        let z2 = -v[0] * Math.sin(angleY) + z1 * Math.cos(angleY);
+        let x3 = x2 * Math.cos(angleZ) - y1 * Math.sin(angleZ);
+        let y3 = x2 * Math.sin(angleZ) + y1 * Math.cos(angleZ);
+
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        projected.push([cx + x3 * scale, cy - y3 * scale]);
+      }
+
+      ctx.beginPath();
+      for (const face of faces) {
+        if (face.length === 0) continue;
+        ctx.moveTo(projected[face[0]][0], projected[face[0]][1]);
+        for (let i = 1; i < face.length; i++) {
+          ctx.lineTo(projected[face[i]][0], projected[face[i]][1]);
+        }
+        ctx.closePath();
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = '#22d3ee';
+      for (const p of projected) {
+        ctx.beginPath();
+        ctx.arc(p[0], p[1], 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      angleX += 0.006;
+      angleY += 0.008;
+      angleZ += 0.003;
+
+      animationId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      cancelAnimationFrame(animationId);
+    };
+  }, [modelName]);
+
+  return (
+    <div className="flex flex-col items-center justify-center bg-black/60 border border-amber-500/10 rounded-2xl p-3 relative overflow-hidden">
+      <div className="text-[7.5px] text-amber-500 font-bold uppercase tracking-widest mb-1.5 absolute top-2 left-3 flex items-center gap-1">
+        <span className="w-1 h-1 bg-amber-500 rounded-full animate-ping" />
+        3D WIREFRAME TELEMETRY PREVIEW
+      </div>
+      <canvas 
+        ref={canvasRef} 
+        width={200} 
+        height={140} 
+        className="w-[200px] h-[140px] drop-shadow-[0_0_15px_rgba(245,158,11,0.1)]"
+      />
+      <div className="text-[6.5px] text-zinc-500 font-mono mt-1 uppercase">
+        {modelName} • Low-Poly Mesh Representation
+      </div>
+    </div>
+  );
+}
 
 // Curated App Store definition for Quest/VR sideload experiences
 interface StoreApp {
@@ -180,6 +320,161 @@ export function BlenderZipUpload({ onUploadSuccess, className = '' }: BlenderZip
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilesList, setShowFilesList] = useState(true);
 
+  // Background Tracker & Tutorial Modal states
+  const [showTutorialModal, setShowTutorialModal] = useState(false);
+  const [enableWireframePreview, setEnableWireframePreview] = useState(true);
+  const scanStartTime = useRef<number>(0);
+
+  const [telemetryMetrics, setTelemetryMetrics] = useState<Array<{
+    fileType: string;
+    totalImports: number;
+    successCount: number;
+    totalTimeMs: number;
+  }>>(() => {
+    const saved = localStorage.getItem('infinity_academy_telemetry');
+    if (saved) {
+      try { return JSON.parse(saved); } catch(e) {}
+    }
+    return [
+      { fileType: 'FBX', totalImports: 14, successCount: 14, totalTimeMs: 11900 },
+      { fileType: 'OBJ', totalImports: 28, successCount: 28, totalTimeMs: 11760 },
+      { fileType: 'BLEND', totalImports: 5, successCount: 4, totalTimeMs: 11000 },
+      { fileType: 'GLTF', totalImports: 12, successCount: 12, totalTimeMs: 7440 },
+      { fileType: 'APK', totalImports: 8, successCount: 8, totalTimeMs: 11600 }
+    ];
+  });
+
+  const [recentImports, setRecentImports] = useState<RecentImport[]>(() => {
+    const saved = localStorage.getItem('infinity_academy_recent_imports');
+    if (saved) {
+      try { return JSON.parse(saved); } catch(e) {}
+    }
+    return [
+      { id: 'imp-1', fileName: '20-alienanimal_obj.zip', timestamp: '2h ago', fileType: 'OBJ', size: '42.5 KB', status: 'SUCCESS', importTimeMs: 420 },
+      { id: 'imp-2', fileName: 'laser_carbine_v2.zip', timestamp: '5h ago', fileType: 'FBX', size: '1.2 MB', status: 'SUCCESS', importTimeMs: 850 },
+      { id: 'imp-3', fileName: 'nexus_ruins_mesh.zip', timestamp: '1d ago', fileType: 'BLEND', size: '8.5 MB', status: 'SUCCESS', importTimeMs: 2400 }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('infinity_academy_telemetry', JSON.stringify(telemetryMetrics));
+  }, [telemetryMetrics]);
+
+  useEffect(() => {
+    localStorage.setItem('infinity_academy_recent_imports', JSON.stringify(recentImports));
+  }, [recentImports]);
+
+  const logNewImport = (fileName: string, fileType: string, sizeStr: string, success: boolean, durationMs: number) => {
+    const newImp: RecentImport = {
+      id: `imp-${Date.now()}`,
+      fileName,
+      timestamp: 'Just now',
+      fileType: fileType.toUpperCase(),
+      size: sizeStr,
+      status: success ? 'SUCCESS' : 'FAILED',
+      importTimeMs: durationMs
+    };
+    setRecentImports(prev => [newImp, ...prev.slice(0, 9)]);
+
+    setTelemetryMetrics(prev => {
+      return prev.map(m => {
+        if (m.fileType === fileType.toUpperCase()) {
+          return {
+            ...m,
+            totalImports: m.totalImports + 1,
+            successCount: m.successCount + (success ? 1 : 0),
+            totalTimeMs: m.totalTimeMs + durationMs
+          };
+        }
+        return m;
+      });
+    });
+  };
+
+  const handleInjectPreset = async (presetName: string) => {
+    const startTime = Date.now();
+    setScanningZip(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    
+    setTimeout(() => {
+      setScanningZip(false);
+      const cleanName = presetName.replace(/\.[^/.]+$/, "");
+      const sizeStr = presetName.includes('alien') ? '42.5 KB' : presetName.includes('obj') ? '12.2 KB' : '1.4 MB';
+      
+      setCustomMeta({
+        appName: cleanName.toUpperCase(),
+        packageName: `com.mod.${cleanName.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+        version: '1.2',
+        developer: 'Infinity Preset Depot',
+        description: `Verified high-quality low-poly mesh asset package. Injected via universal ingestion tutorial tools.`,
+        targetPlatform: 'Quest OpenXR Platform',
+        hasApk: false,
+        hasObb: false,
+        permissions: [],
+        features: [],
+        files: ['model_mesh.obj', 'diffuse_texture.png', 'manifest.json']
+      });
+
+      setScannedFiles([
+        { name: 'model_mesh.obj', dir: false, category: 'model', ext: 'obj' },
+        { name: 'diffuse_texture.png', dir: false, category: 'texture', ext: 'png' },
+        { name: 'manifest.json', dir: false, category: 'config', ext: 'json' }
+      ]);
+
+      const durationMs = Date.now() - startTime;
+      logNewImport(presetName, 'OBJ', sizeStr, true, durationMs);
+      
+      setSuccessMsg(`Preset package "${presetName}" successfully injected and parsed in the local workspace!`);
+      setShowTutorialModal(false);
+      try { soundService.playSFX('achievement'); } catch(e){}
+    }, 1200);
+  };
+
+  const handleReRunImport = (imp: RecentImport) => {
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    setScanningZip(true);
+    try { soundService.playSFX('ui_hover'); } catch(e){}
+
+    setTimeout(() => {
+      setScanningZip(false);
+      
+      setCustomMeta({
+        appName: imp.fileName.replace(/\.[^/.]+$/, "").toUpperCase(),
+        packageName: `com.mod.${imp.fileName.replace(/\.[^/.]+$/, "").toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+        version: '2.0',
+        developer: 'Re-run Restorer',
+        description: `Restored scan from local history. Custom parsed ${imp.fileType} mesh file assets.`,
+        targetPlatform: 'Quest OpenXR Platform',
+        hasApk: false,
+        hasObb: false,
+        permissions: [],
+        features: [],
+        files: ['model_mesh.obj', 'diffuse_texture.png', 'manifest.json']
+      });
+
+      setScannedFiles([
+        { name: 'model_mesh.obj', dir: false, category: 'model', ext: imp.fileType.toLowerCase() },
+        { name: 'diffuse_texture.png', dir: false, category: 'texture', ext: 'png' },
+        { name: 'manifest.json', dir: false, category: 'config', ext: 'json' }
+      ]);
+
+      setSuccessMsg(`Successfully re-run import pipeline for "${imp.fileName}"! Scanned meshes active.`);
+      try { soundService.playSFX('quest_complete'); } catch(e){}
+    }, 800);
+  };
+
+  const handleRevertImport = (imp: RecentImport) => {
+    try { soundService.playSFX('hit'); } catch(e){}
+    setRecentImports(prev => prev.filter(i => i.id !== imp.id));
+    setCustomMeta(null);
+    setScannedFiles([]);
+    setFile(null);
+    
+    setSuccessMsg(`Reverted import of "${imp.fileName}". Active workspace model reset to default placeholder.`);
+  };
+
   // Store Selected App
   const [selectedStoreApp, setSelectedStoreApp] = useState<StoreApp | null>(null);
 
@@ -258,6 +553,7 @@ export function BlenderZipUpload({ onUploadSuccess, className = '' }: BlenderZip
 
   // Perform client-side ZIP scanning and validation
   const scanZipContents = async (zipFile: File) => {
+    scanStartTime.current = Date.now();
     setScanningZip(true);
     setScannedFiles([]);
     setCustomMeta(null);
@@ -376,6 +672,9 @@ export function BlenderZipUpload({ onUploadSuccess, className = '' }: BlenderZip
       }
 
       setScannedFiles(tempFiles);
+      const durationMs = Date.now() - scanStartTime.current;
+      const mainExt = tempFiles.find(f => f.category === 'model')?.ext || 'OBJ';
+      logNewImport(zipFile.name, mainExt.toUpperCase(), `${(zipFile.size / 1024).toFixed(1)} KB`, true, durationMs);
       try { soundService.playSFX('achievement'); } catch (e) {}
     } catch (err: any) {
       console.error('Error scanning ZIP file:', err);
@@ -557,7 +856,18 @@ export function BlenderZipUpload({ onUploadSuccess, className = '' }: BlenderZip
           <Folder size={11} className="text-amber-400" />
           📂 Sideload Cabinet & Mod Scanner
         </div>
-        <div className="flex-1 border-b border-white/10 self-end" />
+        <div className="flex-1 border-b border-white/10 self-end flex justify-end px-3">
+          <button
+            onClick={() => {
+              setShowTutorialModal(true);
+              try { soundService.playSFX('spell'); } catch(e){}
+            }}
+            className="mb-1 text-[8.5px] font-black bg-amber-500/15 border border-amber-500/35 text-amber-400 px-3 py-1 rounded-md uppercase tracking-wider flex items-center gap-1.5 hover:bg-amber-400 hover:text-black transition-all cursor-pointer"
+          >
+            <HelpCircle size={10} className="animate-pulse" />
+            Import Tutorial Guide
+          </button>
+        </div>
       </div>
 
       {/* Main Folder Frame Body */}
@@ -675,6 +985,32 @@ export function BlenderZipUpload({ onUploadSuccess, className = '' }: BlenderZip
                     <p className="text-[7.5px] text-zinc-500 font-mono mt-0.5 truncate uppercase">ID: {customMeta.packageName}</p>
                     <p className="text-[8px] text-zinc-400 mt-1 leading-normal">{customMeta.description}</p>
                   </div>
+                </div>
+
+                {/* 3D Wireframe Ingestion Preview Toggle */}
+                <div className="border-t border-b border-white/5 py-2.5 my-1 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px] text-zinc-400 font-black uppercase tracking-widest flex items-center gap-1">
+                      <Box size={10} className="text-amber-500" />
+                      Live wireframe preview
+                    </span>
+                    <button
+                      onClick={() => {
+                        setEnableWireframePreview(!enableWireframePreview);
+                        try { soundService.playSFX('ui_hover'); } catch(e){}
+                      }}
+                      className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border transition-all ${
+                        enableWireframePreview
+                          ? 'bg-amber-400/15 border-amber-400/30 text-amber-400'
+                          : 'bg-zinc-800/50 border-zinc-700 text-zinc-500'
+                      }`}
+                    >
+                      {enableWireframePreview ? 'PREVIEW ON' : 'PREVIEW OFF'}
+                    </button>
+                  </div>
+                  {enableWireframePreview && (
+                    <WireframePreview modelName={customMeta.appName} />
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-[8px]">
@@ -884,7 +1220,105 @@ export function BlenderZipUpload({ onUploadSuccess, className = '' }: BlenderZip
           </div>
         )}
 
+        {/* Telemetry and Recent Imports section */}
+        <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+          {/* Telemetry Console */}
+          <div className="bg-zinc-950/40 border border-white/5 p-3 rounded-2xl space-y-2.5 flex flex-col">
+            <div className="text-[8.5px] font-black text-zinc-400 uppercase tracking-widest border-b border-white/5 pb-1.5 flex items-center gap-1.5">
+              <Cpu size={11} className="text-cyan-400 animate-pulse" />
+              Telemetry Performance Console
+            </div>
+            
+            <div className="space-y-2 flex-1">
+              {telemetryMetrics.map(metric => {
+                const avgTime = metric.totalImports > 0 
+                  ? Math.round(metric.totalTimeMs / metric.totalImports) 
+                  : 0;
+                const successRate = metric.totalImports > 0 
+                  ? Math.round((metric.successCount / metric.totalImports) * 100) 
+                  : 100;
+                
+                return (
+                  <div key={metric.fileType} className="space-y-1">
+                    <div className="flex items-center justify-between text-[7.5px] font-mono text-zinc-400">
+                      <span className="font-bold text-white">{metric.fileType}</span>
+                      <span>Avg: <strong className="text-zinc-350">{avgTime}ms</strong> • Rate: <strong className="text-emerald-400">{successRate}%</strong></span>
+                    </div>
+                    <div className="w-full bg-zinc-900/60 h-1 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-cyan-400 h-full rounded-full transition-all duration-300"
+                        style={{ width: `${successRate}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Recent Imports Registry */}
+          <div className="bg-zinc-950/40 border border-white/5 p-3 rounded-2xl space-y-2.5 flex flex-col min-h-0">
+            <div className="text-[8.5px] font-black text-zinc-400 uppercase tracking-widest border-b border-white/5 pb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <FileArchive size={11} className="text-amber-500" />
+                Recent Imports Registry
+              </span>
+              <span className="text-[7px] text-zinc-600">History Limit: 10</span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-1.5 max-h-48 pr-1.5 custom-scrollbar">
+              {recentImports.length === 0 ? (
+                <div className="text-zinc-600 italic text-[7.5px] py-4 text-center">No previous imports found in registry.</div>
+              ) : (
+                recentImports.map(imp => (
+                  <div 
+                    key={imp.id}
+                    className="bg-zinc-900/30 border border-white/[0.03] hover:border-amber-500/20 p-2 rounded-xl flex items-center justify-between gap-2 group transition-all"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[8px] font-black text-white truncate uppercase max-w-[110px]">{imp.fileName}</span>
+                        <span className="text-[6.5px] px-1 bg-zinc-800 text-zinc-400 rounded border border-white/5 uppercase shrink-0 font-bold">{imp.fileType}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[6.5px] text-zinc-500 font-mono mt-0.5 uppercase">
+                        <span>{imp.size}</span>
+                        <span>•</span>
+                        <span>{imp.timestamp}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 text-[7px] shrink-0">
+                      <button 
+                        onClick={() => handleReRunImport(imp)}
+                        className="px-1.5 py-0.5 bg-amber-400/10 hover:bg-amber-400 hover:text-black border border-amber-400/20 text-amber-400 rounded uppercase font-black transition-all cursor-pointer"
+                        title="Re-run asset ingestion"
+                      >
+                        Re-run
+                      </button>
+                      <button 
+                        onClick={() => handleRevertImport(imp)}
+                        className="px-1.5 py-0.5 bg-red-500/10 hover:bg-red-500 hover:text-white border border-red-500/20 text-red-400 rounded uppercase font-black transition-all cursor-pointer"
+                        title="Revert and purge history"
+                      >
+                        Revert
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
       </div>
+
+      {/* Tutorial Modal Overlay */}
+      {showTutorialModal && (
+        <ImportTutorialModal 
+          onClose={() => setShowTutorialModal(false)} 
+          onInjectSample={handleInjectPreset}
+        />
+      )}
     </div>
   );
 }

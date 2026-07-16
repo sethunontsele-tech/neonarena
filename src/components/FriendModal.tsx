@@ -7,12 +7,20 @@ import { searchUsers, sendFriendRequest, acceptFriendRequest, rejectFriendReques
 
 export const FriendModal = ({ onClose }: { onClose: () => void }) => {
   const user = useGameStore(state => state.user);
+  const userClanId = useGameStore(state => state.clanId);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
   const [friends, setFriends] = useState<UserProfile[]>([]);
   const [requests, setRequests] = useState<UserProfile[]>([]);
   const [activeTab, setActiveTab] = useState<'friends' | 'requests' | 'search'>('friends');
   const [loading, setLoading] = useState(false);
+  const [invitedPlayers, setInvitedPlayers] = useState<Record<string, boolean>>({});
+
+  const handleQuickInvite = (friendUid: string, gamertag: string) => {
+    setInvitedPlayers(prev => ({ ...prev, [friendUid]: true }));
+    useGameStore.getState().addEvent(`Clan invitation dispatched to ${gamertag}!`);
+    soundService.playSFX('quest_complete');
+  };
 
   useEffect(() => {
     if (user) {
@@ -205,7 +213,21 @@ export const FriendModal = ({ onClose }: { onClose: () => void }) => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
+                      {userClanId && !f.clanId && (
+                        <button
+                          disabled={invitedPlayers[f.uid]}
+                          onClick={() => handleQuickInvite(f.uid, f.gamertag)}
+                          className={`flex items-center gap-2 px-4 py-2 h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                            invitedPlayers[f.uid]
+                              ? 'bg-zinc-850 text-zinc-600 border border-zinc-800/85 cursor-not-allowed'
+                              : 'bg-amber-400 text-black hover:bg-white shadow-[0_0_15px_rgba(245,158,11,0.2)] hover:scale-105 active:scale-95'
+                          }`}
+                        >
+                          <UserPlus size={14} />
+                          {invitedPlayers[f.uid] ? 'Invited' : 'Quick Invite'}
+                        </button>
+                      )}
                       <button className="p-4 bg-white/5 border border-white/10 rounded-2xl text-white/30 hover:text-white hover:border-white/30 transition-all">
                         <MessageSquare size={20} />
                       </button>

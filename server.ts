@@ -1251,6 +1251,10 @@ async function startServer() {
     }
   });
 
+
+
+
+
   // A.U.R.A AI Teacher API Endpoint for Infinity Academy VR
   app.post('/api/academy/ai-teacher', async (req, res) => {
     try {

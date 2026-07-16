@@ -858,6 +858,7 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
 
           {/* Active World Selector / Directories */}
           <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+
             {worlds.map(w => {
               const isSelectedWorld = w.id === activeWorldId;
               const pathPrefix = `${w.id}`;
@@ -1113,169 +1114,169 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
 
         {/* PANEL 2: HIGH-FIDELITY CODE EDITOR IDE */}
         <div className="col-span-6 bg-zinc-950/90 border border-white/5 rounded-3xl p-5 flex flex-col min-h-0 relative">
-          
-          {selectedFilePath ? (
-            <>
-              {/* Editor Header / Toolbars */}
-              <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
-                <div className="flex items-center gap-2">
-                  <Code2 size={16} className="text-cyan-400" />
-                  <span className="text-[10px] font-mono text-zinc-400 bg-white/5 px-2 py-1 rounded border border-white/5">
-                    {selectedFilePath}
-                  </span>
+              
+              {selectedFilePath ? (
+                <>
+                  {/* Editor Header / Toolbars */}
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
+                    <div className="flex items-center gap-2">
+                      <Code2 size={16} className="text-cyan-400" />
+                      <span className="text-[10px] font-mono text-zinc-400 bg-white/5 px-2 py-1 rounded border border-white/5">
+                        {selectedFilePath}
+                      </span>
+                    </div>
+                    
+                    {/* Instant Templates Injection for Fast Modding */}
+                    <div className="flex items-center gap-2">
+                      {selectedFilePath.endsWith('.cs') && (
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value === 'speed') setEditorContent(TEMPLATES.cs_speed);
+                            if (e.target.value === 'balanced') setEditorContent(TEMPLATES.cs_balanced);
+                          }}
+                          className="text-[9px] bg-black border border-white/10 rounded px-2 py-1 font-black uppercase text-amber-400"
+                        >
+                          <option value="">-- Apply C# Preset --</option>
+                          <option value="speed">C# 3.5x Speed & Anti-Gravity</option>
+                          <option value="balanced">C# Safe 1.4x Speed</option>
+                        </select>
+                      )}
+
+                      {selectedFilePath.endsWith('.py') && (
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value === 'havoc') setEditorContent(TEMPLATES.py_havoc);
+                            if (e.target.value === 'ghost') setEditorContent(TEMPLATES.py_ghost);
+                          }}
+                          className="text-[9px] bg-black border border-white/10 rounded px-2 py-1 font-black uppercase text-green-400"
+                        >
+                          <option value="">-- Apply Python Preset --</option>
+                          <option value="havoc">Python Absolute Havoc Bots</option>
+                          <option value="ghost">Python Mini Stealth Bots</option>
+                        </select>
+                      )}
+
+                      {selectedFilePath.endsWith('.cpp') && (
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value === 'neon') setEditorContent(TEMPLATES.cpp_neon);
+                            if (e.target.value === 'golden') setEditorContent(TEMPLATES.cpp_golden);
+                          }}
+                          className="text-[9px] bg-black border border-white/10 rounded px-2 py-1 font-black uppercase text-pink-400"
+                        >
+                          <option value="">-- Apply C++ Theme Preset --</option>
+                          <option value="neon">C++ Violet Neon Overlay</option>
+                          <option value="golden">C++ Golden Sunset Theme</option>
+                        </select>
+                      )}
+
+                      <button
+                        onClick={handleSaveFile}
+                        className="flex items-center gap-1.5 text-[9px] font-black bg-cyan-400 text-black px-2.5 py-1 rounded hover:bg-cyan-300 transition-all cursor-pointer"
+                      >
+                        <Save size={12} />
+                        SAVE
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Code TextArea */}
+                  <div className="flex-1 flex overflow-hidden font-mono text-xs bg-black rounded-2xl border border-white/5 p-4 min-h-0 relative">
+                    {/* Simulated Gutter */}
+                    <div className="text-zinc-600 text-right pr-4 select-none border-r border-white/5 mr-4 h-full overflow-hidden shrink-0 space-y-0.5">
+                      {Array.from({ length: editorContent.split('\n').length || 1 }).map((_, i) => (
+                        <div key={i} className="leading-relaxed">{i + 1}</div>
+                      ))}
+                    </div>
+                    {/* Main Text Editor Input */}
+                    <textarea
+                      value={editorContent}
+                      onChange={e => setEditorContent(e.target.value)}
+                      className="flex-1 bg-transparent text-zinc-300 outline-none resize-none overflow-y-auto leading-relaxed h-full custom-scrollbar selection:bg-cyan-500/25 select-text"
+                      spellCheck={false}
+                    />
+
+                    {isSuccessToast && (
+                      <div className="absolute top-4 right-4 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-full backdrop-blur-md text-emerald-400 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 animate-bounce">
+                        <Check size={12} />
+                        File saved to /worlds/ mods/!
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-zinc-500 border border-dashed border-white/5 rounded-3xl">
+                  <Code2 size={48} className="text-zinc-600 mb-4 animate-pulse" />
+                  <h4 className="text-sm font-black uppercase text-zinc-400 tracking-wider">No Active Code File Selected</h4>
+                  <p className="text-xs max-w-sm mt-2 leading-relaxed">
+                    Click to expand directories on your left and load C#, C++, Python script files or meta JSON profiles.
+                  </p>
                 </div>
-                
-                {/* Instant Templates Injection for Fast Modding */}
-                <div className="flex items-center gap-2">
-                  {selectedFilePath.endsWith('.cs') && (
-                    <select
-                      onChange={(e) => {
-                        if (e.target.value === 'speed') setEditorContent(TEMPLATES.cs_speed);
-                        if (e.target.value === 'balanced') setEditorContent(TEMPLATES.cs_balanced);
-                      }}
-                      className="text-[9px] bg-black border border-white/10 rounded px-2 py-1 font-black uppercase text-amber-400"
-                    >
-                      <option value="">-- Apply C# Preset --</option>
-                      <option value="speed">C# 3.5x Speed & Anti-Gravity</option>
-                      <option value="balanced">C# Safe 1.4x Speed</option>
-                    </select>
-                  )}
+              )}
 
-                  {selectedFilePath.endsWith('.py') && (
-                    <select
-                      onChange={(e) => {
-                        if (e.target.value === 'havoc') setEditorContent(TEMPLATES.py_havoc);
-                        if (e.target.value === 'ghost') setEditorContent(TEMPLATES.py_ghost);
-                      }}
-                      className="text-[9px] bg-black border border-white/10 rounded px-2 py-1 font-black uppercase text-green-400"
-                    >
-                      <option value="">-- Apply Python Preset --</option>
-                      <option value="havoc">Python Absolute Havoc Bots</option>
-                      <option value="ghost">Python Mini Stealth Bots</option>
-                    </select>
-                  )}
+            </div>
 
-                  {selectedFilePath.endsWith('.cpp') && (
-                    <select
-                      onChange={(e) => {
-                        if (e.target.value === 'neon') setEditorContent(TEMPLATES.cpp_neon);
-                        if (e.target.value === 'golden') setEditorContent(TEMPLATES.cpp_golden);
-                      }}
-                      className="text-[9px] bg-black border border-white/10 rounded px-2 py-1 font-black uppercase text-pink-400"
-                    >
-                      <option value="">-- Apply C++ Theme Preset --</option>
-                      <option value="neon">C++ Violet Neon Overlay</option>
-                      <option value="golden">C++ Golden Sunset Theme</option>
-                    </select>
-                  )}
-
-                  <button
-                    onClick={handleSaveFile}
-                    className="flex items-center gap-1.5 text-[9px] font-black bg-cyan-400 text-black px-2.5 py-1 rounded hover:bg-cyan-300 transition-all cursor-pointer"
-                  >
-                    <Save size={12} />
-                    SAVE
-                  </button>
-                </div>
+            {/* PANEL 3: COMPILER TERMINAL & RUN CONTROLLER */}
+            <div className="col-span-3 bg-black/50 border border-white/5 rounded-3xl p-5 flex flex-col min-h-0">
+              <div className="pb-2 border-b border-white/5 mb-3">
+                <h3 className="text-[10px] font-black tracking-widest text-zinc-400 uppercase flex items-center gap-2">
+                  <Terminal size={14} className="text-cyan-400" />
+                  System Compile logs
+                </h3>
               </div>
 
-              {/* Code TextArea */}
-              <div className="flex-1 flex overflow-hidden font-mono text-xs bg-black rounded-2xl border border-white/5 p-4 min-h-0 relative">
-                {/* Simulated Gutter */}
-                <div className="text-zinc-600 text-right pr-4 select-none border-r border-white/5 mr-4 h-full overflow-hidden shrink-0 space-y-0.5">
-                  {Array.from({ length: editorContent.split('\n').length || 1 }).map((_, i) => (
-                    <div key={i} className="leading-relaxed">{i + 1}</div>
-                  ))}
-                </div>
-                {/* Main Text Editor Input */}
-                <textarea
-                  value={editorContent}
-                  onChange={e => setEditorContent(e.target.value)}
-                  className="flex-1 bg-transparent text-zinc-300 outline-none resize-none overflow-y-auto leading-relaxed h-full custom-scrollbar selection:bg-cyan-500/25 select-text"
-                  spellCheck={false}
-                />
+              {/* Scrolling Compiler Console Terminal */}
+              <div className="flex-1 bg-black/80 rounded-2xl border border-white/5 p-4 overflow-y-auto font-mono text-[9px] leading-relaxed text-zinc-400 space-y-1.5 custom-scrollbar min-h-0">
+                {compileLog.length === 0 ? (
+                  <div className="text-zinc-600 italic">No mod compiler output. Click the Compile button below to scan C#/Python overrides.</div>
+                ) : (
+                  compileLog.map((log, index) => {
+                    let colorClass = 'text-zinc-400';
+                    if (log.includes('[SUCCESS]') || log.includes('ENABLED')) colorClass = 'text-emerald-400';
+                    if (log.includes('[ERROR]') || log.includes('havoc')) colorClass = 'text-red-400';
+                    if (log.includes('[C#') || log.includes('[C++')) colorClass = 'text-amber-400';
+                    if (log.includes('[PY')) colorClass = 'text-green-400';
 
-                {isSuccessToast && (
-                  <div className="absolute top-4 right-4 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-full backdrop-blur-md text-emerald-400 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 animate-bounce">
-                    <Check size={12} />
-                    File saved to /worlds/ mods/!
+                    return (
+                      <div key={index} className={colorClass}>
+                        {log}
+                      </div>
+                    );
+                  })
+                )}
+                {compiling && (
+                  <div className="text-cyan-400 animate-pulse mt-2 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-ping" />
+                    Executing WebAssembly compilers...
                   </div>
                 )}
               </div>
-            </>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-zinc-500 border border-dashed border-white/5 rounded-3xl">
-              <Code2 size={48} className="text-zinc-600 mb-4 animate-pulse" />
-              <h4 className="text-sm font-black uppercase text-zinc-400 tracking-wider">No Active Code File Selected</h4>
-              <p className="text-xs max-w-sm mt-2 leading-relaxed">
-                Click to expand directories on your left and load C#, C++, Python script files or meta JSON profiles.
-              </p>
-            </div>
-          )}
 
-        </div>
+              {/* LAUNCH / COMPILE CONTROLS */}
+              <div className="mt-4 pt-3 border-t border-white/5 space-y-3">
+                {/* Blender .zip Upload Zone */}
+                <BlenderZipUpload onUploadSuccess={checkBlenderStatus} className="bg-zinc-950/80 border border-white/10" />
 
-        {/* PANEL 3: COMPILER TERMINAL & RUN CONTROLLER */}
-        <div className="col-span-3 bg-black/50 border border-white/5 rounded-3xl p-5 flex flex-col min-h-0">
-          <div className="pb-2 border-b border-white/5 mb-3">
-            <h3 className="text-[10px] font-black tracking-widest text-zinc-400 uppercase flex items-center gap-2">
-              <Terminal size={14} className="text-cyan-400" />
-              System Compile logs
-            </h3>
-          </div>
-
-          {/* Scrolling Compiler Console Terminal */}
-          <div className="flex-1 bg-black/80 rounded-2xl border border-white/5 p-4 overflow-y-auto font-mono text-[9px] leading-relaxed text-zinc-400 space-y-1.5 custom-scrollbar min-h-0">
-            {compileLog.length === 0 ? (
-              <div className="text-zinc-600 italic">No mod compiler output. Click the Compile button below to scan C#/Python overrides.</div>
-            ) : (
-              compileLog.map((log, index) => {
-                let colorClass = 'text-zinc-400';
-                if (log.includes('[SUCCESS]') || log.includes('ENABLED')) colorClass = 'text-emerald-400';
-                if (log.includes('[ERROR]') || log.includes('havoc')) colorClass = 'text-red-400';
-                if (log.includes('[C#') || log.includes('[C++')) colorClass = 'text-amber-400';
-                if (log.includes('[PY')) colorClass = 'text-green-400';
-
-                return (
-                  <div key={index} className={colorClass}>
-                    {log}
+                <div className="bg-zinc-950 p-3 rounded-2xl border border-white/5 text-zinc-500 space-y-1.5">
+                  <div className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Active World Sandbox</div>
+                  <div className="text-[10px] font-black text-white uppercase italic">
+                    {activeWorld?.name || 'NONE SELECTED'}
                   </div>
-                );
-              })
-            )}
-            {compiling && (
-              <div className="text-cyan-400 animate-pulse mt-2 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-ping" />
-                Executing WebAssembly compilers...
-              </div>
-            )}
-          </div>
+                  <div className="text-[8px] font-medium leading-relaxed">
+                    Clicking Compile generates a secure 3D telemetry configuration, loading placed structures alongside mod values.
+                  </div>
+                </div>
 
-          {/* LAUNCH / COMPILE CONTROLS */}
-          <div className="mt-4 pt-3 border-t border-white/5 space-y-3">
-            {/* Blender .zip Upload Zone */}
-            <BlenderZipUpload onUploadSuccess={checkBlenderStatus} className="bg-zinc-950/80 border border-white/10" />
-
-            <div className="bg-zinc-950 p-3 rounded-2xl border border-white/5 text-zinc-500 space-y-1.5">
-              <div className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Active World Sandbox</div>
-              <div className="text-[10px] font-black text-white uppercase italic">
-                {activeWorld?.name || 'NONE SELECTED'}
-              </div>
-              <div className="text-[8px] font-medium leading-relaxed">
-                Clicking Compile generates a secure 3D telemetry configuration, loading placed structures alongside mod values.
-              </div>
-            </div>
-
-            <button
-              onClick={handleCompile}
-              disabled={compiling}
-              className={`w-full py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                compiling ? 'opacity-50' : ''
-              }`}
-            >
-              <Cpu size={14} className={compiling ? 'animate-spin' : ''} />
-              COMPILE ACTIVE MODS
-            </button>
+                <button
+                  onClick={handleCompile}
+                  disabled={compiling}
+                  className={`w-full py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    compiling ? 'opacity-50' : ''
+                  }`}
+                >
+                  <Cpu size={14} className={compiling ? 'animate-spin' : ''} />
+                  COMPILE ACTIVE MODS
+                </button>
 
             <button
               onClick={handleLaunchGame}
