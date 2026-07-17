@@ -9,6 +9,7 @@ import { useGameStore } from '../store';
 import { soundService } from '../services/soundService';
 import { BlenderZipUpload } from './BlenderZipUpload';
 import { MegaModsStudio } from './MegaModsStudio';
+import { MinecraftImporter } from './MinecraftImporter';
 
 // Define structures
 interface VirtualFile {
@@ -230,7 +231,7 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
   const setMap = useGameStore(state => state.setMap);
 
   // Loaded custom worlds state
-  const [activeTab, setActiveTab] = useState<'compiler' | 'mega_mods'>('mega_mods');
+  const [activeTab, setActiveTab] = useState<'compiler' | 'mega_mods' | 'minecraft_importer'>('mega_mods');
   const [worlds, setWorlds] = useState<VirtualWorld[]>([]);
   const [activeWorldId, setActiveWorldId] = useState<string>('');
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
@@ -822,6 +823,19 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
           <button
             onClick={() => {
               try { soundService.playSFX('ui_click'); } catch(e){}
+              setActiveTab('minecraft_importer');
+            }}
+            className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'minecraft_importer'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-black shadow-[0_0_20px_rgba(16,185,129,0.3)]'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            🌾 Minecraft Bedrock Importer
+          </button>
+          <button
+            onClick={() => {
+              try { soundService.playSFX('ui_click'); } catch(e){}
               setActiveTab('compiler');
             }}
             className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
@@ -843,7 +857,9 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
       </div>
 
       {activeTab === 'mega_mods' ? (
-        <MegaModsStudio onClose={onClose} />
+        <MegaModsStudio onClose={onClose} onMinecraftImportClick={() => setActiveTab('minecraft_importer')} />
+      ) : activeTab === 'minecraft_importer' ? (
+        <MinecraftImporter />
       ) : (
         /* THREE PANEL GRID */
         <div className="flex-1 grid grid-cols-12 gap-6 overflow-hidden min-h-0">

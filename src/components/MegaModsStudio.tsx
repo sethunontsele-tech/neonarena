@@ -66,7 +66,7 @@ const ICON_LIST = [
   { id: 'harddrive', Icon: HardDrive, label: 'Storage' }
 ];
 
-export function MegaModsStudio({ onClose }: { onClose: () => void }) {
+export function MegaModsStudio({ onClose, onMinecraftImportClick }: { onClose: () => void; onMinecraftImportClick?: () => void }) {
   // Folder core state
   const [folders, setFolders] = useState<FolderConfig[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<FolderConfig | null>(null);
@@ -857,6 +857,17 @@ export function MegaModsStudio({ onClose }: { onClose: () => void }) {
                     </span>
 
                     <div className="flex gap-1.5">
+                      {onMinecraftImportClick && (
+                        <button 
+                          onClick={() => {
+                            try { soundService.playSFX('ui_click'); } catch (e) {}
+                            onMinecraftImportClick();
+                          }}
+                          className="text-[8px] font-black bg-gradient-to-r from-emerald-500 to-teal-400 text-black px-2 py-0.5 rounded uppercase flex items-center gap-1 hover:brightness-110 transition-all cursor-pointer"
+                        >
+                          🌾 Import Minecraft Pack
+                        </button>
+                      )}
                       <button 
                         onClick={() => {
                           playSuccess();
