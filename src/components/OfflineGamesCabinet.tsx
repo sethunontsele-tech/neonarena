@@ -34,6 +34,7 @@ import {
 import JSZip from 'jszip';
 import { useGameStore } from '../store';
 import { soundService } from '../services/soundService';
+import { WidelandsLoader } from './WidelandsLoader';
 
 interface OfflineGame {
   id: string;
@@ -556,8 +557,8 @@ const BUILT_IN_GAMES_SRC = {
 };
 
 export function OfflineGamesCabinet({ onClose }: OfflineGamesCabinetProps) {
-  // Tabs: 'library' or 'store'
-  const [activeTab, setActiveTab] = useState<'library' | 'store'>('library');
+  // Tabs: 'library' or 'store' or 'widelands'
+  const [activeTab, setActiveTab] = useState<'library' | 'store' | 'widelands'>('library');
   
   const [games, setGames] = useState<OfflineGame[]>([]);
   const [selectedGameId, setSelectedGameId] = useState<string>('pong');
@@ -1604,6 +1605,12 @@ export function OfflineGamesCabinet({ onClose }: OfflineGamesCabinetProps) {
                 🎮 PLAY DECK
               </button>
               <button 
+                onClick={() => { setActiveTab('widelands'); try { soundService.playSFX('ui_hover'); } catch (e) {} }}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${activeTab === 'widelands' ? 'bg-emerald-500 text-black shadow-md' : 'text-zinc-400 hover:text-white'}`}
+              >
+                🌾 WIDELANDS LOADER
+              </button>
+              <button 
                 onClick={() => { setActiveTab('store'); try { soundService.playSFX('ui_hover'); } catch (e) {} }}
                 className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${activeTab === 'store' ? 'bg-emerald-500 text-black shadow-md' : 'text-zinc-400 hover:text-white'}`}
               >
@@ -2061,6 +2068,8 @@ export function OfflineGamesCabinet({ onClose }: OfflineGamesCabinetProps) {
               </div>
 
             </div>
+          ) : activeTab === 'widelands' ? (
+            <WidelandsLoader onClose={onClose} />
           ) : (
             
             /* STORE TAB: Buy Core mods with credits */
