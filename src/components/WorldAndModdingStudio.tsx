@@ -8,6 +8,7 @@ import {
 import { useGameStore } from '../store';
 import { soundService } from '../services/soundService';
 import { BlenderZipUpload } from './BlenderZipUpload';
+import { MegaModsStudio } from './MegaModsStudio';
 
 // Define structures
 interface VirtualFile {
@@ -229,6 +230,7 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
   const setMap = useGameStore(state => state.setMap);
 
   // Loaded custom worlds state
+  const [activeTab, setActiveTab] = useState<'compiler' | 'mega_mods'>('mega_mods');
   const [worlds, setWorlds] = useState<VirtualWorld[]>([]);
   const [activeWorldId, setActiveWorldId] = useState<string>('');
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
@@ -801,6 +803,37 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
             </p>
           </div>
         </div>
+
+        {/* HIGH-FIDELITY TAB SWITCHER */}
+        <div className="flex gap-2 bg-white/5 p-1 rounded-2xl border border-white/5">
+          <button
+            onClick={() => {
+              try { soundService.playSFX('ui_click'); } catch(e){}
+              setActiveTab('mega_mods');
+            }}
+            className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'mega_mods'
+                ? 'bg-gradient-to-r from-fuchsia-500 to-cyan-500 text-black shadow-[0_0_20px_rgba(217,70,239,0.3)]'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            📂 Mods Store & 40+ Directories
+          </button>
+          <button
+            onClick={() => {
+              try { soundService.playSFX('ui_click'); } catch(e){}
+              setActiveTab('compiler');
+            }}
+            className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'compiler'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-black shadow-[0_0_20px_rgba(6,182,212,0.3)]'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            💻 Classic Compiler IDE
+          </button>
+        </div>
+
         <button 
           onClick={onClose}
           className="p-3 hover:bg-white/5 border border-white/10 rounded-2xl text-zinc-400 hover:text-white transition-all cursor-pointer"
@@ -809,8 +842,11 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
         </button>
       </div>
 
-      {/* THREE PANEL GRID */}
-      <div className="flex-1 grid grid-cols-12 gap-6 overflow-hidden min-h-0">
+      {activeTab === 'mega_mods' ? (
+        <MegaModsStudio onClose={onClose} />
+      ) : (
+        /* THREE PANEL GRID */
+        <div className="flex-1 grid grid-cols-12 gap-6 overflow-hidden min-h-0">
         
         {/* PANEL 1: WORLD DIRECTORY EXPLORER */}
         <div className="col-span-3 bg-black/40 border border-white/5 rounded-3xl p-5 flex flex-col min-h-0">
@@ -1290,6 +1326,7 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
         </div>
 
       </div>
+      )}
 
       {/* FOOTER METRICS BAR */}
       <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-[10px] uppercase font-semibold text-zinc-500 tracking-wider shrink-0">
