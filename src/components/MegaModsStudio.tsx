@@ -16,7 +16,7 @@ import { soundService } from '../services/soundService';
 export interface VirtualFile {
   name: string;
   content: string;
-  type: 'image' | 'audio' | 'video' | 'text' | 'zip' | 'mod';
+  type: 'image' | 'audio' | 'video' | 'text' | 'zip' | 'mod' | 'mcpack';
   sizeMB: number;
   version?: string;
   author?: string;
@@ -219,13 +219,59 @@ export function MegaModsStudio({ onClose, onMinecraftImportClick }: { onClose: (
       { name: 'Logs', path: '/Logs/', color: 'gold', icon: 'terminal', isPinned: false, isFavorite: false, files: [] },
       { name: 'Workshop', path: '/Workshop/', color: 'fuchsia', icon: 'zap', isPinned: false, isFavorite: false, files: [] },
       { name: 'Downloads', path: '/Downloads/', color: 'cyan', icon: 'archive', isPinned: false, isFavorite: false, files: [] },
-      { name: 'Exports', path: '/Exports/', color: 'emerald', icon: 'harddrive', isPinned: false, isFavorite: false, files: [] }
+      { name: 'Exports', path: '/Exports/', color: 'emerald', icon: 'harddrive', isPinned: false, isFavorite: false, files: [] },
+      {
+        name: 'Videos',
+        path: '/Videos/',
+        color: 'rose',
+        icon: 'video',
+        isPinned: true,
+        isFavorite: true,
+        files: [
+          {
+            name: 'neon_arena_intro_cinematic.mp4',
+            type: 'video',
+            content: 'https://assets.mixkit.co/videos/preview/mixkit-cyberpunk-city-street-with-neon-lights-at-night-40134-large.mp4',
+            sizeMB: 45.2
+          },
+          {
+            name: 'tournament_gameplay_highlights.mp4',
+            type: 'video',
+            content: 'https://assets.mixkit.co/videos/preview/mixkit-gamers-playing-in-a-cyberpunk-room-40142-large.mp4',
+            sizeMB: 32.8
+          }
+        ]
+      },
+      {
+        name: 'mcpacks',
+        path: '/mcpacks/',
+        color: 'emerald',
+        icon: 'archive',
+        isPinned: true,
+        isFavorite: true,
+        files: [
+          {
+            name: 'neon_survival_hub.mcworld',
+            type: 'mcpack',
+            content: 'LevelDB structure: world_name=Neon Voxel Hub; level_seed=482910482; chunk_depth=16',
+            sizeMB: 18.5,
+            version: '1.21.0'
+          },
+          {
+            name: 'futuristic_laser_weapons.mcpack',
+            type: 'mcpack',
+            content: 'ResourcePack manifest: name=LaserWeapons; textures=32; animations=active',
+            sizeMB: 4.2,
+            version: '1.21.0'
+          }
+        ]
+      }
     ];
 
     // Build remaining folders programmatically up to 30!
     const extraFolderNames = [
       'Maps', 'Characters', 'Weapons', 'Vehicles', 'NPCs',
-      'Missions', 'Shaders', 'Textures', 'Audio', 'Videos',
+      'Missions', 'Shaders', 'Textures', 'Audio',
       'CloudSync', 'Updates', 'Languages', 'Themes', 'Achievements',
       'Profiles', 'Templates', 'Scripts', 'AI', 'Developer'
     ];
@@ -1075,6 +1121,60 @@ export function MegaModsStudio({ onClose, onMinecraftImportClick }: { onClose: (
               {selectedFile.type === 'image' ? (
                 <div className="flex-1 bg-black rounded-2xl overflow-hidden flex items-center justify-center p-4">
                   <img src={selectedFile.content} referrerPolicy="no-referrer" className="max-h-40 rounded border border-white/10" alt="Capture Preview" />
+                </div>
+              ) : selectedFile.type === 'video' ? (
+                <div className="flex-1 bg-black rounded-2xl overflow-hidden flex flex-col justify-between p-3.5 border border-white/5">
+                  <span className="text-[9px] font-black uppercase text-rose-400 tracking-wider mb-2 flex items-center gap-1.5">
+                    📺 HIGH-RESOLUTION VIDEO DETECTED
+                  </span>
+                  <div className="flex-1 rounded-lg overflow-hidden bg-zinc-900 border border-white/5 flex items-center justify-center relative">
+                    <video 
+                      src={selectedFile.content} 
+                      controls 
+                      className="w-full max-h-36 rounded" 
+                      poster="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600"
+                    />
+                  </div>
+                  <p className="text-[8px] font-mono text-zinc-500 uppercase mt-2">
+                    Size: {selectedFile.sizeMB} MB | Decoded via neon video framework
+                  </p>
+                </div>
+              ) : (selectedFile.type as string) === 'mcpack' ? (
+                <div className="flex-1 bg-zinc-950 rounded-2xl p-4 flex flex-col justify-between border border-emerald-500/20">
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider block mb-2">
+                      🌾 MINECRAFT BEDROCK PACK DETECTED
+                    </span>
+                    <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 space-y-2">
+                      <div className="flex justify-between text-[9px] font-mono uppercase text-zinc-400">
+                        <span>File Name:</span>
+                        <strong className="text-white">{selectedFile.name}</strong>
+                      </div>
+                      <div className="flex justify-between text-[9px] font-mono uppercase text-zinc-400">
+                        <span>Status:</span>
+                        <span className="text-emerald-400 font-bold">Unpacked / Valid</span>
+                      </div>
+                      <div className="flex justify-between text-[9px] font-mono uppercase text-zinc-400">
+                        <span>Voxel Mappings:</span>
+                        <span className="text-cyan-400 font-bold">Ready</span>
+                      </div>
+                    </div>
+                    <p className="text-[8.5px] font-mono text-zinc-500 uppercase mt-3 leading-normal">
+                      This package is placed in the Neon Arena main Minecraft mod loader folder. You can load it directly to inject block structures or custom behavior hooks.
+                    </p>
+                  </div>
+
+                  {onMinecraftImportClick && (
+                    <button 
+                      onClick={() => {
+                        try { soundService.playSFX('powerup'); } catch (e) {}
+                        onMinecraftImportClick();
+                      }}
+                      className="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-400 text-zinc-950 font-black text-[9px] uppercase tracking-wider rounded-lg shadow-md hover:brightness-110 transition-all cursor-pointer"
+                    >
+                      ⚡ COMPILE & LOAD IN ARENA IMPORTER
+                    </button>
+                  )}
                 </div>
               ) : selectedFile.type === 'audio' ? (
                 <div className="flex-1 bg-black rounded-2xl p-4 flex flex-col justify-center items-center space-y-4">

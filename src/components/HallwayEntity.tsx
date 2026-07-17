@@ -125,7 +125,7 @@ export function HallwayEntity() {
       const now = Date.now();
       if (now - lastDamageTime.current > 1400) {
         lastDamageTime.current = now;
-        useGameStore.getState().takeDamage(15);
+        useGameStore.getState().takeDamage(15, false, 'DECAYING ANOMALY', Math.random() * 360);
         useGameStore.getState().addEvent('⚠️ INTRUSION CONTACT: DECAYING REALITY ANOMALY INTERACTION!');
         try {
           soundService.playSFX('hit');

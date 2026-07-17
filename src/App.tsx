@@ -37,6 +37,7 @@ import { MixedRealityCameras } from './components/MixedRealityCameras';
 import { MVPAnnouncementOverlay } from './components/MVPAnnouncementOverlay';
 import { MapVotingPanel } from './components/MapVotingPanel';
 import { WebXRHUD } from './components/WebXRHUD';
+import { AIAnimationStudio } from './components/AIAnimationStudio';
 import { ARENA_MAPS } from './data/arenaMaps';
 import { useGameStore, WEAPONS, SPELLS, SpellType, DIMENSIONS, DimensionType, WeaponType, MapType } from './store';
 import { useShallow } from 'zustand/react/shallow';
@@ -1160,7 +1161,8 @@ function HUD() {
     setGamertag, gamertag, privateServerName, setPrivateServerName, selectedRegion,
     setRegion, isChatOpen, setChatOpen, chatMessages, sendChatMessage, isReloading,
     currentKillStreak, bestKillStreak, activeStreakPower, isInspecting, inspectStartTime,
-    hitIndicator, environment, bloodSplatter, processCommand, user, isMapOpen, setMapOpen
+    hitIndicator, environment, bloodSplatter, processCommand, user, isMapOpen, setMapOpen,
+    killerName, lastDamageAngle, lastDamageAngleTime, playerDisabledUntil
   } = useGameStore(useShallow(state => ({
     gameState: state.gameState,
     score: state.score,
@@ -1252,12 +1254,29 @@ function HUD() {
     processCommand: state.processCommand,
     user: state.user,
     isMapOpen: state.isMapOpen,
-    setMapOpen: state.setMapOpen
+    setMapOpen: state.setMapOpen,
+    killerName: state.killerName,
+    lastDamageAngle: state.lastDamageAngle,
+    lastDamageAngleTime: state.lastDamageAngleTime,
+    playerDisabledUntil: state.playerDisabledUntil
   })));
 
   const playerCount = Object.keys(otherPlayers).length + 1;
 
   const [hasApiKey, setHasApiKey] = useState(true);
+  const [timeLeftMs, setTimeLeftMs] = useState(0);
+
+  useEffect(() => {
+    if (playerState === 'disabled') {
+      const interval = setInterval(() => {
+        const remaining = Math.max(0, playerDisabledUntil - Date.now());
+        setTimeLeftMs(remaining);
+      }, 100);
+      return () => clearInterval(interval);
+    } else {
+      setTimeLeftMs(0);
+    }
+  }, [playerState, playerDisabledUntil]);
 
   useEffect(() => {
     const checkKey = async () => {
@@ -2236,11 +2255,173 @@ function HUD() {
           <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Voice On</span>
         </div>
       )}
+
+      {/* Damage Directional Indicator */}
+      {lastDamageAngle !== null && Date.now() - lastDamageAngleTime < 1500 && (
+        <div 
+          className="absolute inset-0 pointer-events-none z-[120] transition-opacity duration-300"
+          style={{
+            opacity: Math.max(0, 1 - (Date.now() - lastDamageAngleTime) / 1500),
+          }}
+        >
+          {/* Main fading red arc at the edge of the screen */}
+          <div 
+            className="absolute inset-2 rounded-full border-[12px] border-transparent border-t-red-600/60 blur-[3px]"
+            style={{
+              transform: `rotate(${lastDamageAngle}deg)`,
+            }}
+          />
+          <div 
+            className="absolute inset-2 rounded-full border-[22px] border-transparent border-t-red-500/30 blur-[8px]"
+            style={{
+              transform: `rotate(${lastDamageAngle}deg)`,
+            }}
+          />
+          <div className="absolute inset-0 bg-red-600/[0.03] animate-pulse" />
+        </div>
+      )}
       {playerState === 'disabled' && (
-        <div className="absolute inset-0 bg-red-500/20 pointer-events-none flex items-center justify-center">
-          <div className="text-red-500 text-6xl font-black tracking-widest drop-shadow-[0_0_20px_rgba(239,68,68,1)] animate-pulse">
-            SYSTEM DISABLED
-          </div>
+        <div className="absolute inset-0 bg-zinc-950/90 pointer-events-auto z-[150] flex flex-col justify-between p-8 font-mono overflow-hidden select-none">
+          {/* Scanline CRT overlay */}
+          <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,_rgba(0,0,0,0.25)_50%),_linear-gradient(90deg,_rgba(255,0,0,0.06),_rgba(0,255,0,0.02),_rgba(0,0,255,0.06))] bg-[length:100%_4px,_6px_100%] z-50 opacity-40 animate-pulse" />
+          
+          {/* Main Visuals depending on timer */}
+          {timeLeftMs > 3000 ? (
+            /* --- 1. DEATH CAM PERSPECTIVE VIEW (5 SECONDS) --- */
+            <div className="flex-1 flex flex-col justify-between">
+              {/* Header Telemetry */}
+              <div className="flex justify-between items-start border-b border-red-500/20 pb-4">
+                <div className="flex items-center gap-3">
+                  <span className="w-3 h-3 rounded-full bg-red-600 animate-ping" />
+                  <span className="text-sm font-black text-red-500 tracking-[0.25em] uppercase">
+                    REC ● KILLER PERSPECTIVE
+                  </span>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">CHRONO-FEED SYNC // CHIP_8501</div>
+                  <div className="text-xs font-bold text-zinc-300 font-mono">00:0{Math.ceil((timeLeftMs - 3000) / 1000)} SEC REPLAY</div>
+                </div>
+              </div>
+
+              {/* Centered Simulated Killer's Tactical Viewport */}
+              <div className="flex-1 my-6 rounded-3xl border border-red-500/20 bg-black/60 backdrop-blur-sm relative overflow-hidden flex flex-col items-center justify-center p-6">
+                {/* Visual Glitch Lines */}
+                <div className="absolute inset-0 pointer-events-none flex flex-col justify-around opacity-30">
+                  <div className="h-0.5 bg-red-500 animate-pulse" style={{ animationDuration: '0.8s' }} />
+                  <div className="h-[1px] bg-zinc-500 animate-pulse" style={{ animationDuration: '1.4s' }} />
+                </div>
+
+                {/* Animated HUD Crosshair & Tracking Bracket targeting Killer */}
+                <div className="absolute w-48 h-48 border border-red-500/30 rounded-full animate-spin-slow flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-red-500 rounded-full" />
+                </div>
+                
+                {/* Left/Right brackets */}
+                <div className="absolute left-1/4 top-1/3 w-8 h-12 border-l-2 border-t-2 border-red-500" />
+                <div className="absolute right-1/4 bottom-1/3 w-8 h-12 border-r-2 border-b-2 border-red-500" />
+
+                {/* Moving cyber telemetry graphics */}
+                <div className="absolute left-8 top-8 text-[9px] text-red-400 font-mono space-y-1">
+                  <div>AZIMUTH: 184.22° // TILT: -14.8°</div>
+                  <div>RANGE: {Math.floor(5 + Math.random() * 20)}m // COORD_X: 402.1</div>
+                  <div className="text-amber-500 font-black animate-pulse">🎯 ACQUISITION LOCK ON TARGET</div>
+                </div>
+
+                <div className="absolute right-8 bottom-8 text-[9px] text-zinc-500 font-mono text-right space-y-1">
+                  <div>RESOLUTION: 1440P@120HZ</div>
+                  <div>CODEC: NEON_H265_PRO</div>
+                  <div className="text-emerald-500 font-bold">DECRYPTED COMBAT LOGS</div>
+                </div>
+
+                {/* Big Killer Label */}
+                <div className="z-10 flex flex-col items-center text-center max-w-md">
+                  <div className="text-[10px] text-red-400 font-black tracking-[0.3em] uppercase mb-1">ELIMINATED BY</div>
+                  <h3 className="text-5xl font-black text-white italic tracking-tighter drop-shadow-[0_0_15px_rgba(239,68,68,0.5)] uppercase">
+                    {killerName || 'UNKNOWN OPERATOR'}
+                  </h3>
+                  
+                  {/* Stats of Killer */}
+                  <div className="mt-6 flex items-center gap-6 px-6 py-3 bg-red-950/30 border border-red-500/20 rounded-2xl">
+                    <div className="text-left">
+                      <div className="text-[8px] text-zinc-500 font-black uppercase">KILLER WEAPON</div>
+                      <div className="text-xs font-black text-zinc-200">💥 CYBER PLASMA CANNON</div>
+                    </div>
+                    <div className="w-[1px] h-6 bg-red-500/20" />
+                    <div className="text-left">
+                      <div className="text-[8px] text-zinc-500 font-black uppercase">SHIELD STATUS</div>
+                      <div className="text-xs font-black text-emerald-400">🛡️ 100% ONLINE</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Vintage static background noise */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[9px] text-red-500 font-black tracking-widest uppercase animate-pulse">
+                  {"<< OBSERVING COMBAT ENCOUNTER ENVELOPE >>"}
+                </div>
+              </div>
+
+              {/* Bottom Instructions */}
+              <div className="flex justify-between items-center text-[10px] text-zinc-500 uppercase font-black border-t border-white/5 pt-4">
+                <span>SIMULATED CHASSIS DECAY MATRIX ENABLED</span>
+                <span className="text-red-500 animate-pulse">SKIP TO RESPAWN IN 00:0{Math.ceil((timeLeftMs - 3000) / 1000)}s</span>
+              </div>
+            </div>
+          ) : (
+            /* --- 2. RESPAWN COUNTDOWN (3 SECONDS) --- */
+            <div className="flex-1 flex flex-col justify-between">
+              {/* Header Telemetry */}
+              <div className="flex justify-between items-start border-b border-pink-500/20 pb-4">
+                <div className="flex items-center gap-3">
+                  <span className="w-3 h-3 rounded-full bg-pink-500 animate-pulse" />
+                  <span className="text-sm font-black text-pink-500 tracking-[0.25em] uppercase">
+                    CHASSIS RE-ASSEMBLY STAGE
+                  </span>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">NEURAL RE-ALIGNMENT</div>
+                  <div className="text-xs font-bold text-pink-400">GRID SEQUENCE: ONLINE</div>
+                </div>
+              </div>
+
+              {/* Big central countdown */}
+              <div className="flex-1 flex flex-col items-center justify-center">
+                <div className="relative w-48 h-48 flex items-center justify-center">
+                  {/* Glowing spinning ring */}
+                  <div className="absolute inset-0 border-4 border-pink-500/20 rounded-full" />
+                  <div className="absolute inset-0 border-4 border-transparent border-t-pink-500 rounded-full animate-spin" style={{ animationDuration: '1s' }} />
+                  
+                  {/* Big pulsing seconds */}
+                  <motion.div 
+                    key={Math.ceil(timeLeftMs / 1000)}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="text-8xl font-black text-pink-400 drop-shadow-[0_0_20px_rgba(236,72,153,0.5)] italic"
+                  >
+                    {Math.ceil(timeLeftMs / 1000)}
+                  </motion.div>
+                </div>
+
+                {/* Reactive matrix messages */}
+                <div className="mt-8 text-center space-y-2 max-w-md">
+                  <h4 className="text-sm font-black text-white uppercase tracking-widest animate-pulse">
+                    {Math.ceil(timeLeftMs / 1000) === 3 && "SYNCHRONIZING CHASSIS AT MATRIX ANCHOR..."}
+                    {Math.ceil(timeLeftMs / 1000) === 2 && "RECONSTRUCTING CHROME CELLULAR CORES..."}
+                    {Math.ceil(timeLeftMs / 1000) === 1 && "COMMITTING NEURAL MEMORY FLUX..."}
+                    {Math.ceil(timeLeftMs / 1000) === 0 && "INITIATING BULWARK SHIELD INJECTION..."}
+                  </h4>
+                  <p className="text-[10px] text-zinc-500 uppercase leading-relaxed font-mono">
+                    Securing safe spawn parameters inside Neon Arena grid cells. Invulnerability shielding will deploy for 2.0 seconds post-chrono-drop.
+                  </p>
+                </div>
+              </div>
+
+              {/* Bottom logs */}
+              <div className="flex justify-between items-center text-[9px] text-zinc-500 uppercase font-black border-t border-white/5 pt-4">
+                <span>RESPAWNING AT ANCHOR POINT DELTA</span>
+                <span className="text-pink-400">SYSTEM RE-BOOT IN PROGRESS</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -2538,6 +2719,163 @@ const ActivePowerUpsHUD = () => {
   );
 };
 
+const DailyMissionsModal = ({ onClose }: { onClose: () => void }) => {
+  const addCoins = useGameStore(state => state.addCoins);
+  const addEvent = useGameStore(state => state.addEvent);
+  
+  // Load or initialize daily missions with local persistence
+  const [missions, setMissions] = useState(() => {
+    const saved = localStorage.getItem('neon_daily_missions');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [
+      { id: 'dm1', title: 'Glitch Disruptor', description: 'Eliminate 3 hostiles or bots in the arena.', progress: 1, requirement: 3, rewardCoins: 600, rewardXp: 400, isClaimed: false },
+      { id: 'dm2', title: 'Grid Runner', description: 'Traverse 1,500 meters inside the arena.', progress: 850, requirement: 1500, rewardCoins: 400, rewardXp: 300, isClaimed: false },
+      { id: 'dm3', title: 'Data Harvester', description: 'Collect 2 power-up capsules.', progress: 0, requirement: 2, rewardCoins: 500, rewardXp: 350, isClaimed: false },
+      { id: 'dm4', title: 'Mod Loader Boot', description: 'Initialize a custom .mcpack addon.', progress: 1, requirement: 1, rewardCoins: 800, rewardXp: 500, isClaimed: false },
+    ];
+  });
+
+  const saveMissions = (updated: any) => {
+    setMissions(updated);
+    localStorage.setItem('neon_daily_missions', JSON.stringify(updated));
+  };
+
+  const handleClaim = (id: string) => {
+    const updated = missions.map((m: any) => {
+      if (m.id === id && m.progress >= m.requirement && !m.isClaimed) {
+        addCoins(m.rewardCoins);
+        const currentXp = useGameStore.getState().xp;
+        useGameStore.setState({ xp: currentXp + m.rewardXp });
+        
+        addEvent(`🎁 DAILY MISSION COMPLETED: ${m.title} (+${m.rewardCoins} COINS / +${m.rewardXp} XP)`);
+        try {
+          soundService.playSFX('achievement');
+        } catch (e) {}
+        return { ...m, isClaimed: true };
+      }
+      return m;
+    });
+    saveMissions(updated);
+  };
+
+  const handleProgressAll = () => {
+    const updated = missions.map((m: any) => ({
+      ...m,
+      progress: Math.min(m.requirement, m.progress + Math.ceil(m.requirement * 0.25))
+    }));
+    saveMissions(updated);
+    addEvent('⚡ DAILY TRAINING LOGGED: PROGRESS ENHANCED');
+  };
+
+  return (
+    <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-[110] p-4 pointer-events-auto select-none">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 30 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="bg-zinc-950 border border-pink-500/30 p-10 rounded-[3rem] w-full max-w-2xl flex flex-col shadow-[0_0_80px_rgba(236,72,153,0.15)] relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/5 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="flex justify-between items-start mb-8 z-10">
+          <div>
+            <div className="text-[10px] text-pink-500 font-bold uppercase tracking-[0.4em] mb-1">Time Limited Objectives</div>
+            <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase flex items-center gap-2 font-sans">
+              <Calendar size={28} className="text-pink-500 animate-pulse" />
+              Daily Missions
+            </h2>
+            <div className="h-1 w-32 bg-pink-500 mt-2 rounded-full" />
+          </div>
+          <button onClick={onClose} className="p-3 hover:bg-white/10 rounded-2xl transition-all">
+            <X size={24} className="text-white/40" />
+          </button>
+        </div>
+
+        {/* Action Header */}
+        <div className="flex justify-between items-center mb-6 px-4 py-3 bg-pink-950/20 border border-pink-500/10 rounded-2xl">
+          <div className="text-[10px] text-zinc-400 font-bold uppercase">
+            RESET IN: <span className="text-pink-400 animate-pulse">14h 32m 05s</span>
+          </div>
+          <button 
+            onClick={handleProgressAll}
+            className="text-[9px] font-black uppercase tracking-wider text-pink-400 hover:text-white hover:bg-pink-500/20 px-3 py-1.5 border border-pink-500/30 rounded-lg transition-all"
+          >
+            ⚡ LOG TRAINING VALUE
+          </button>
+        </div>
+
+        {/* Missions Grid */}
+        <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar max-h-[45vh] z-10">
+          {missions.map((mission: any) => {
+            const isCompleted = mission.progress >= mission.requirement;
+            return (
+              <div 
+                key={mission.id}
+                className={`p-5 rounded-2xl border transition-all ${
+                  mission.isClaimed 
+                    ? 'border-white/5 bg-white/5 opacity-50' 
+                    : isCompleted 
+                      ? 'border-pink-500/50 bg-pink-500/10 shadow-[0_0_15px_rgba(236,72,153,0.15)]' 
+                      : 'border-white/10 bg-white/5 hover:border-white/20'
+                }`}
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h4 className="text-lg font-black text-white uppercase italic tracking-tight">{mission.title}</h4>
+                    <p className="text-[10px] text-white/50 uppercase font-medium mt-0.5">{mission.description}</p>
+                  </div>
+                  <div className="text-right flex items-center gap-3">
+                    <span className="text-[9px] font-black text-pink-400 bg-pink-500/10 px-2 py-1 rounded border border-pink-500/20">
+                      +{mission.rewardCoins} CR
+                    </span>
+                    <span className="text-[9px] font-black text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded border border-cyan-500/20">
+                      +{mission.rewardXp} XP
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 h-2 bg-black/40 rounded-full overflow-hidden border border-white/5 relative">
+                    <div 
+                      className={`h-full transition-all duration-500 ${isCompleted ? 'bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)]' : 'bg-pink-400/80'}`} 
+                      style={{ width: `${(mission.progress / mission.requirement) * 100}%` }} 
+                    />
+                  </div>
+                  <div className="text-[10px] font-black text-white/40 uppercase whitespace-nowrap min-w-[60px] text-right font-mono">
+                    {mission.progress} / {mission.requirement}
+                  </div>
+                </div>
+
+                {isCompleted && !mission.isClaimed && (
+                  <button 
+                    onClick={() => handleClaim(mission.id)}
+                    className="w-full mt-4 py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-black font-black uppercase text-xs tracking-widest rounded-xl hover:from-white hover:to-white hover:text-black transition-all shadow-[0_5px_20px_rgba(236,72,153,0.3)]"
+                  >
+                    Claim Reward
+                  </button>
+                )}
+                
+                {mission.isClaimed && (
+                  <div className="w-full mt-4 py-2 bg-white/5 text-white/30 font-black uppercase text-[9px] tracking-widest rounded-xl text-center border border-white/5">
+                    Completed & Transferred
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-6 text-center text-[9px] text-zinc-500 uppercase tracking-widest border-t border-white/5 pt-4">
+          All reward transfers are immediate and reflect in your operator profile index.
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 const QuestModal = ({ onClose }: { onClose: () => void }) => {
   const quests = useGameStore(state => state.quests);
   const claimQuestReward = useGameStore(state => state.claimQuestReward);
@@ -2696,6 +3034,7 @@ export default function App() {
   const [showOfflineCabinet, setShowOfflineCabinet] = useState(false);
   const [showWebXRPanel, setShowWebXRPanel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showAnimationStudio, setShowAnimationStudio] = useState(false);
   const [instantCopyProgress, setInstantCopyProgress] = useState(0);
   const [isInstantCopying, setIsInstantCopying] = useState(false);
 
@@ -2713,6 +3052,7 @@ export default function App() {
       setShowTutorial(false);
       setShowMRCameras(false);
       setShowWebXRPanel(false);
+      setShowAnimationStudio(false);
       
       // Also close any store modals
       const modals = useGameStore.getState().modals;
@@ -2727,6 +3067,28 @@ export default function App() {
   }, []);
   const [arenaTab, setArenaTab] = useState<'standard' | 'community'>('standard');
   const [arenaSearch, setArenaSearch] = useState('');
+
+  const [showDailyMissions, setShowDailyMissions] = useState(false);
+  const [timeLeftMs, setTimeLeftMs] = useState(0);
+
+  const playerState = useGameStore(state => state.playerState);
+  const playerDisabledUntil = useGameStore(state => state.playerDisabledUntil);
+  const killerName = useGameStore(state => state.killerName);
+  const lastDamageAngle = useGameStore(state => state.lastDamageAngle);
+  const lastDamageAngleTime = useGameStore(state => state.lastDamageAngleTime);
+
+  // Trigger continuous timer ticking for the Death Cam and Respawn Sequence
+  useEffect(() => {
+    if (playerState === 'disabled') {
+      const interval = setInterval(() => {
+        const remaining = Math.max(0, playerDisabledUntil - Date.now());
+        setTimeLeftMs(remaining);
+      }, 100);
+      return () => clearInterval(interval);
+    } else {
+      setTimeLeftMs(0);
+    }
+  }, [playerState, playerDisabledUntil]);
 
   // States for Global Rankings in Lobby
   const [activeLobbySection, setActiveLobbySection] = useState<'operators' | 'rankings'>('operators');
@@ -3306,6 +3668,24 @@ export default function App() {
               <span className="text-[10px] uppercase tracking-widest hidden sm:inline">OFFLINE CABINET</span>
             </button>
 
+            <button 
+              onClick={() => setShowDailyMissions(true)}
+              className="p-3 rounded-xl border border-white/10 bg-black/40 text-white hover:border-pink-500 hover:text-pink-400 transition-all flex items-center gap-2 font-bold shadow-[0_0_15px_rgba(236,72,153,0.1)]"
+              title="Open Daily Missions"
+            >
+              <Calendar size={20} className="text-pink-500 animate-pulse" />
+              <span className="text-[10px] uppercase tracking-widest hidden sm:inline">DAILY MISSIONS</span>
+            </button>
+
+            <button 
+              onClick={() => setShowAnimationStudio(true)}
+              className="p-3 rounded-xl border border-white/10 bg-black/40 text-white hover:border-purple-500 hover:text-purple-400 transition-all flex items-center gap-2 font-bold shadow-[0_0_15px_rgba(167,139,250,0.1)]"
+              title="Open AI Animation Studio"
+            >
+              <Wand2 size={20} className="text-purple-500 animate-pulse" />
+              <span className="text-[10px] uppercase tracking-widest hidden sm:inline">ANIMATION STUDIO</span>
+            </button>
+
             {!isChatOpen && (
               <div className="bg-black/60 px-3 py-1 rounded-lg border border-white/10 text-[10px] font-black text-white/40 uppercase tracking-widest hidden md:block">
                 Press Enter to Chat
@@ -3359,6 +3739,7 @@ export default function App() {
         {modals.update && <BiggestUpdateModal onClose={() => setModal('update', false)} />}
         {showExperimental && <ExperimentalFeatures onClose={() => setShowExperimental(false)} />}
         {showQuests && <QuestModal onClose={() => setShowQuests(false)} />}
+        {showDailyMissions && <DailyMissionsModal onClose={() => setShowDailyMissions(false)} />}
         {isMapOpen && <TacticalMap onClose={() => setMapOpen(false)} />}
          {showScanner && <ThreeDScanner onClose={() => setShowScanner(false)} />}
         {showDossier && <DossierModal onClose={() => setShowDossier(false)} />}
@@ -3367,6 +3748,7 @@ export default function App() {
         {showCharacterFolder && <CharacterFolderModal onClose={() => setShowCharacterFolder(false)} />}
         {showOfflineCabinet && <OfflineGamesCabinet onClose={() => setShowOfflineCabinet(false)} />}
         {showTutorial && <TutorialOverlay onClose={() => setShowTutorial(false)} />}
+        {showAnimationStudio && <AIAnimationStudio onClose={() => setShowAnimationStudio(false)} />}
         {gameState === 'server_browser' && <ServerBrowser onClose={() => setGameState('lobby')} />}
 
         {/* 3D LiDAR World Copier Laser Scanning Screen Overlay */}

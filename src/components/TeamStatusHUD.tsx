@@ -163,9 +163,18 @@ export function TeamStatusHUD() {
             >
               {/* Member name and status pill */}
               <div className="flex items-center justify-between">
-                <span className={`text-[10px] font-black uppercase tracking-wider ${isDown ? 'text-red-400' : 'text-white'}`}>
-                  {member.name}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDown ? 'text-red-400' : 'text-white'}`}>
+                    {member.name}
+                  </span>
+                  {!isDown && (
+                    <span className={`text-[10px] font-black font-mono px-1.5 py-0.25 rounded bg-black/30 border border-white/5 ${
+                      isCritical ? 'text-amber-400 animate-pulse' : 'text-emerald-400'
+                    }`}>
+                      {member.health}%
+                    </span>
+                  )}
+                </div>
                 
                 {/* Status Pill */}
                 <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-widest font-mono ${
@@ -177,27 +186,29 @@ export function TeamStatusHUD() {
                         ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                         : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                 }`}>
-                  {member.status}
+                  {isCritical ? 'CRITICAL' : member.status}
                 </span>
               </div>
 
               {/* Health progress bar */}
               <div className="flex items-center gap-2">
-                <Heart className={`w-3 h-3 flex-shrink-0 ${isDown ? 'text-red-500' : isCritical ? 'text-amber-500' : 'text-emerald-400'}`} />
+                <Heart className={`w-3 h-3 flex-shrink-0 ${isDown ? 'text-red-500' : isCritical ? 'text-amber-500 animate-pulse' : 'text-emerald-400'}`} />
                 <div className="relative w-full h-2 bg-white/10 rounded-full overflow-hidden">
                   <div 
-                    className={`h-full transition-all duration-500 rounded-full ${
+                    className={`h-full transition-all duration-300 rounded-full ${
                       isDown 
                         ? 'bg-red-600' 
                         : isCritical 
-                          ? 'bg-gradient-to-r from-amber-500 to-red-500' 
-                          : 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                          ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' 
+                          : 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
                     }`}
                     style={{ width: `${member.health}%` }}
                   />
                 </div>
-                <span className="text-[10px] font-mono text-white/70 w-8 text-right">
-                  {isDown ? '0' : member.health}%
+                <span className={`text-[10px] font-mono font-black w-8 text-right ${
+                  isDown ? 'text-red-500' : isCritical ? 'text-amber-400' : 'text-white/70'
+                }`}>
+                  {isDown ? '0%' : `${member.health}%`}
                 </span>
               </div>
 

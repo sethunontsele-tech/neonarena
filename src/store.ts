@@ -392,6 +392,9 @@ interface GameStore {
   deaths: number;
   playerState: EntityState;
   playerDisabledUntil: number;
+  killerName: string;
+  lastDamageAngle: number | null;
+  lastDamageAngleTime: number;
   enemies: EnemyData[];
   lasers: LaserData[];
   particles: ParticleData[];
@@ -858,7 +861,7 @@ interface GameStore {
   setBotPower: (power: number) => void;
   unlockTrophy: (id: string) => void;
   regenerateHealth: (amount: number) => void;
-  takeDamage: (amount: number, isGlitchAttacker?: boolean) => void;
+  takeDamage: (amount: number, isGlitchAttacker?: boolean, attackerName?: string, attackerAngle?: number) => void;
   
   setPlayerPosition: (pos: [number, number, number]) => void;
   switchWeapon: (index: number) => void;
@@ -1041,6 +1044,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   deaths: 0,
   playerState: 'active',
   playerDisabledUntil: 0,
+  killerName: '',
+  lastDamageAngle: null,
+  lastDamageAngleTime: 0,
   enemies: [],
   lasers: [],
   particles: [],
@@ -2164,10 +2170,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
   }),
 
   hitPlayer: (isGlitchAttacker?: boolean) => {
-    get().takeDamage(20, isGlitchAttacker);
+    // Pick a random killer name and damage angle for simulation
+    const names = ['COBALT-SQUAD-01', 'VORTEX-SQUAD-02', 'APEX-SQUAD-03', 'GLITCH-STALKER', 'SENTRY-DRONE'];
+    const randomName = names[Math.floor(Math.random() * names.length)];
+    const randomAngle = Math.random() * 360;
+    get().takeDamage(20, isGlitchAttacker, randomName, randomAngle);
   },
 
-  takeDamage: (amount, isGlitchAttacker?: boolean) => set((state) => {
+  takeDamage: (amount, isGlitchAttacker?: boolean, attackerName?: string, attackerAngle?: number) => set((state) => {
     if (state.playerState === 'disabled' || state.gameState !== 'playing' || state.activeStreakPower === 'GOD MODE') return state;
     
     let newIsGlitch = state.isGlitch;
@@ -2195,12 +2205,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
       setTimeout(() => set({ bloodSplatter: false }), 400);
     }
 
+    const finalAttackerName = attackerName || (Math.random() > 0.5 ? 'COBALT-SQUAD-01' : 'APEX-SQUAD-03');
+    // Default random angle if not provided
+    const finalAttackerAngle = attackerAngle !== undefined ? attackerAngle : (Math.random() * 360);
+
     return {
       health: newHealth,
       isGlitch: newIsGlitch,
       infectionLevel: newInfectionLevel,
       playerState: isDead ? 'disabled' : 'active',
-      playerDisabledUntil: isDead ? Date.now() + 3000 : 0,
+      playerDisabledUntil: isDead ? Date.now() + 8000 : 0, // 8 seconds: 5s death cam + 3s countdown
+      killerName: isDead ? finalAttackerName : state.killerName,
+      lastDamageAngle: amount > 0 ? finalAttackerAngle : state.lastDamageAngle,
+      lastDamageAngleTime: amount > 0 ? Date.now() : state.lastDamageAngleTime,
       deaths: isDead ? state.deaths + 1 : state.deaths,
       score: Math.max(0, state.score - 10),
       lastDamageTime: Date.now(),
