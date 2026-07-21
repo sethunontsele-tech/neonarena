@@ -265,6 +265,34 @@ export function MegaModsStudio({ onClose, onMinecraftImportClick }: { onClose: (
             version: '1.21.0'
           }
         ]
+      },
+      {
+        name: 'apps',
+        path: '/apps/',
+        color: 'cyan',
+        icon: 'cpu',
+        isPinned: true,
+        isFavorite: true,
+        files: [
+          {
+            name: 'neon_arena_map_viewer.js',
+            type: 'mod',
+            content: `// Neon Arena Map Viewer App\nexport function onLoad() {\n  console.log("Rendering real-time 3D tactical wireframe Map...");\n}`,
+            sizeMB: 1.4,
+            version: '2.0.0',
+            author: 'NeonMaster',
+            enabled: true
+          },
+          {
+            name: 'scientific_gravity_calculator.js',
+            type: 'mod',
+            content: `// Science Physics App\nexport function calculateEscapeVelocity(mass, radius) {\n  const G = 6.6743e-11;\n  return Math.sqrt((2 * G * mass) / radius);\n}`,
+            sizeMB: 0.8,
+            version: '1.0.5',
+            author: 'InfinityAcademy',
+            enabled: true
+          }
+        ]
       }
     ];
 
@@ -591,6 +619,56 @@ export function MegaModsStudio({ onClose, onMinecraftImportClick }: { onClose: (
     playSuccess();
   };
 
+  const handleMp4Upload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    if (!selectedFolder) return;
+    
+    const newFiles: VirtualFile[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const contentUrl = URL.createObjectURL(file);
+      newFiles.push({
+        name: file.name,
+        type: 'video',
+        content: contentUrl,
+        sizeMB: parseFloat((file.size / (1024 * 1024)).toFixed(2))
+      });
+    }
+
+    const updated = folders.map(f => f.path === selectedFolder.path ? { ...f, files: [...f.files, ...newFiles] } : f);
+    saveFoldersToStorage(updated);
+    playSuccess();
+  };
+
+  const handleFolderUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    if (!selectedFolder) return;
+    
+    const newFiles: VirtualFile[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      let type: 'video' | 'audio' | 'image' | 'text' = 'text';
+      if (['mp4', 'webm', 'mov', 'avi'].includes(ext || '')) type = 'video';
+      else if (['mp3', 'wav', 'ogg'].includes(ext || '')) type = 'audio';
+      else if (['png', 'jpg', 'jpeg', 'gif', 'svg'].includes(ext || '')) type = 'image';
+
+      const contentUrl = URL.createObjectURL(file);
+      newFiles.push({
+        name: file.name,
+        type,
+        content: contentUrl,
+        sizeMB: parseFloat((file.size / (1024 * 1024)).toFixed(2))
+      });
+    }
+
+    const updated = folders.map(f => f.path === selectedFolder.path ? { ...f, files: [...f.files, ...newFiles] } : f);
+    saveFoldersToStorage(updated);
+    playSuccess();
+  };
+
   // Android 16 OS Loader Simulator States
   const [androidBootState, setAndroidBootState] = useState<'offline' | 'booting' | 'online' | 'app'>('offline');
   const [androidLogs, setAndroidLogs] = useState<string[]>([]);
@@ -882,6 +960,31 @@ export function MegaModsStudio({ onClose, onMinecraftImportClick }: { onClose: (
                   >
                     + Add File
                   </button>
+
+                  <label className="text-[8px] font-black border border-rose-500/30 hover:border-rose-400 px-2 py-1 rounded bg-rose-950/20 text-rose-400 hover:text-white uppercase cursor-pointer flex items-center gap-1">
+                    <Film size={10} />
+                    + MP4 File(s)
+                    <input 
+                      type="file" 
+                      multiple 
+                      accept="video/mp4" 
+                      onChange={handleMp4Upload} 
+                      className="hidden" 
+                    />
+                  </label>
+
+                  <label className="text-[8px] font-black border border-cyan-500/30 hover:border-cyan-400 px-2 py-1 rounded bg-cyan-950/20 text-cyan-400 hover:text-white uppercase cursor-pointer flex items-center gap-1">
+                    <FolderPlus size={10} />
+                    + MP4 Folder
+                    <input 
+                      type="file" 
+                      multiple 
+                      {...{ webkitdirectory: "", directory: "" }} 
+                      onChange={handleFolderUpload} 
+                      className="hidden" 
+                    />
+                  </label>
+
                   {clipboardFile && (
                     <button 
                       onClick={pasteFile}

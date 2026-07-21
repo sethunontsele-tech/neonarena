@@ -3,11 +3,13 @@ import {
   Sparkles, Bot, Dna, Compass, Award, CheckCircle2, Camera,
   HelpCircle, Volume2, Gamepad2, Laptop, Monitor, Smartphone, 
   Tv, Eye, ChevronRight, Search, Trophy, Users, ShieldAlert, Zap, Layers,
-  BookOpen, Video
+  BookOpen, Video, Calculator
 } from 'lucide-react';
 import { useEduStore, ControlPlatformType, ActiveDimensionType } from './eduStore';
+import { useGameStore } from '../../store';
 import { NeonUniverse } from './NeonUniverse';
 import { SoftwareEncyclopedia } from './SoftwareEncyclopedia';
+import { AdvancedCalculator } from './AdvancedCalculator';
 
 const vrAppsCatalog = [
   {
@@ -175,6 +177,7 @@ export function EduOverlay() {
   const [activeTab, setActiveTab] = useState<'missions' | 'badges' | 'vrApps' | 'multiplayer' | 'settings'>('missions');
   const [showNeonHub, setShowNeonHub] = useState(false);
   const [showEncyclopedia, setShowEncyclopedia] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
 
   const getPlatformIcon = (platform: ControlPlatformType) => {
     switch (platform) {
@@ -238,6 +241,16 @@ export function EduOverlay() {
 
         {/* Current Active Dimension Panel */}
         <div className="flex items-center gap-5 bg-zinc-950/90 border border-white/10 px-5 py-3.5 rounded-3xl backdrop-blur-xl">
+          {activeDimension === 'math' && (
+            <button
+              onClick={() => setShowCalculator(true)}
+              className="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500 hover:text-black border border-amber-500/30 text-amber-400 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0 animate-pulse"
+            >
+              <Calculator className="w-3.5 h-3.5" />
+              SOLVE VECTOR
+            </button>
+          )}
+          {activeDimension === 'math' && <div className="h-7 w-[1px] bg-white/10" />}
           <div className="text-right">
             <span className="text-[8px] font-black text-zinc-500 tracking-[0.2em] uppercase">ACTIVE META-WORLD</span>
             <h4 className="text-xs font-black text-white uppercase italic tracking-wider mt-0.5">
@@ -548,6 +561,99 @@ export function EduOverlay() {
                     </button>
                   </div>
                 </div>
+
+                {/* Science Lab / Educational Physics Settings */}
+                <div className="p-3 bg-zinc-900/60 border border-white/5 rounded-2xl space-y-3">
+                  <span className="text-[8px] font-black text-cyan-400 uppercase tracking-wider block">🔬 Educational Physics Lab</span>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold text-zinc-300 uppercase">Enable Science Mode</span>
+                    <button 
+                      onClick={() => useGameStore.getState().setScienceMode(!useGameStore.getState().scienceMode)}
+                      className={`w-9 h-5 rounded-full transition-all relative border p-0.5 cursor-pointer ${
+                        useGameStore.getState().scienceMode ? 'bg-cyan-500 border-cyan-400' : 'bg-zinc-800 border-zinc-700'
+                      }`}
+                    >
+                      <div className={`w-3.5 h-3.5 rounded-full bg-white transition-all transform ${
+                        useGameStore.getState().scienceMode ? 'translate-x-4' : 'translate-x-0'
+                      }`} />
+                    </button>
+                  </div>
+
+                  {useGameStore.getState().scienceMode && (
+                    <div className="space-y-3.5 pt-2 border-t border-white/5">
+                      {/* Presets */}
+                      <div className="space-y-1.5">
+                        <span className="text-[7px] font-black text-zinc-500 uppercase tracking-wider block">Cosmic Gravity Fields</span>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {[
+                            { name: 'Earth', g: 9.81 },
+                            { name: 'Moon', g: 1.62 },
+                            { name: 'Mars', g: 3.71 },
+                            { name: 'Jupiter', g: 24.79 },
+                            { name: 'Zero-G', g: 0.0 },
+                            { name: 'Inverted', g: -9.81 }
+                          ].map((p) => (
+                            <button
+                              key={p.name}
+                              type="button"
+                              onClick={() => useGameStore.getState().setScienceGravity(p.g)}
+                              className={`py-1 rounded-lg border text-[8px] font-black uppercase tracking-wider cursor-pointer transition-all ${
+                                Math.abs(useGameStore.getState().scienceGravity - p.g) < 0.05
+                                  ? 'bg-cyan-500 text-black border-cyan-400'
+                                  : 'bg-white/5 border-white/5 text-zinc-400 hover:text-white'
+                              }`}
+                            >
+                              {p.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Gravity Slider */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[8px] font-black text-zinc-400 uppercase">
+                          <span>Gravity Constant</span>
+                          <span className="text-cyan-400 font-mono">{useGameStore.getState().scienceGravity.toFixed(2)} m/s²</span>
+                        </div>
+                        <input 
+                          type="range" min="-30" max="30" step="0.1" 
+                          value={useGameStore.getState().scienceGravity}
+                          onChange={(e) => useGameStore.getState().setScienceGravity(parseFloat(e.target.value))}
+                          className="w-full accent-cyan-400"
+                        />
+                      </div>
+
+                      {/* Friction Slider */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[8px] font-black text-zinc-400 uppercase">
+                          <span>Friction coefficient</span>
+                          <span className="text-cyan-400 font-mono">{useGameStore.getState().scienceFriction.toFixed(2)} μ</span>
+                        </div>
+                        <input 
+                          type="range" min="0.01" max="1.0" step="0.01" 
+                          value={useGameStore.getState().scienceFriction}
+                          onChange={(e) => useGameStore.getState().setScienceFriction(parseFloat(e.target.value))}
+                          className="w-full accent-cyan-400"
+                        />
+                      </div>
+
+                      {/* Air Damping Slider */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[8px] font-black text-zinc-400 uppercase">
+                          <span>Atmospheric Drag</span>
+                          <span className="text-cyan-400 font-mono">{useGameStore.getState().scienceAirResistance.toFixed(2)} c_d</span>
+                        </div>
+                        <input 
+                          type="range" min="0.0" max="0.5" step="0.01" 
+                          value={useGameStore.getState().scienceAirResistance}
+                          onChange={(e) => useGameStore.getState().setScienceAirResistance(parseFloat(e.target.value))}
+                          className="w-full accent-cyan-400"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -620,6 +726,14 @@ export function EduOverlay() {
         {/* Dynamic Teleport Shortcuts */}
         <div className="flex gap-2.5">
           <button 
+            onClick={() => setShowCalculator(true)}
+            className="px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer bg-gradient-to-r from-amber-500 to-yellow-500 text-zinc-950 shadow-[0_0_20px_rgba(245,158,11,0.4)] hover:scale-105 active:scale-95 flex items-center gap-1.5"
+            title="Open Advanced Scientific & Graphing Calculator"
+          >
+            <Calculator className="w-3.5 h-3.5" />
+            🧮 ADVANCED CALCULATOR
+          </button>
+          <button 
             onClick={() => {
               setCreatorStudioActive(true);
             }}
@@ -674,6 +788,10 @@ export function EduOverlay() {
 
       {showEncyclopedia && (
         <SoftwareEncyclopedia onClose={() => setShowEncyclopedia(false)} />
+      )}
+
+      {showCalculator && (
+        <AdvancedCalculator onClose={() => setShowCalculator(false)} />
       )}
     </div>
   );

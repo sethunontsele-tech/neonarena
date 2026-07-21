@@ -5414,6 +5414,98 @@ export default function App() {
                         <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${useGameStore.getState().autoRotation ? 'left-7' : 'left-1'}`} />
                       </button>
                     </div>
+
+                    <div className="pt-6 border-t border-white/10 mt-4 space-y-4">
+                      <div className="flex justify-between items-center bg-cyan-500/10 p-4 rounded-2xl border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+                        <div>
+                          <div className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <span>🔬 SCIENCE LAB MODE</span>
+                            <span className="text-[8px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full font-black animate-pulse">SANDBOX</span>
+                          </div>
+                          <div className="text-[9px] text-zinc-400 mt-1 max-w-sm">Tweak fundamental constants and physical forces in real-time.</div>
+                        </div>
+                        <button 
+                          onClick={() => useGameStore.getState().setScienceMode(!useGameStore.getState().scienceMode)}
+                          className={`w-12 h-6 rounded-full transition-all relative border p-0.5 cursor-pointer ${useGameStore.getState().scienceMode ? 'bg-cyan-500 border-cyan-400' : 'bg-white/10 border-white/5'}`}
+                        >
+                          <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${useGameStore.getState().scienceMode ? 'left-7' : 'left-1'}`} />
+                        </button>
+                      </div>
+
+                      {useGameStore.getState().scienceMode && (
+                        <div className="bg-black/40 border border-cyan-500/10 p-4 rounded-2xl space-y-4">
+                          {/* Gravity presets */}
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-cyan-400/60 uppercase tracking-widest block">Cosmic Gravity Presets</label>
+                            <div className="grid grid-cols-3 gap-2">
+                              {[
+                                { name: 'Earth', g: 9.81 },
+                                { name: 'Moon', g: 1.62 },
+                                { name: 'Mars', g: 3.71 },
+                                { name: 'Jupiter', g: 24.79 },
+                                { name: 'Zero-G', g: 0.0 },
+                                { name: 'Inverted', g: -9.81 },
+                              ].map(p => (
+                                <button
+                                  key={p.name}
+                                  type="button"
+                                  onClick={() => useGameStore.getState().setScienceGravity(p.g)}
+                                  className={`py-1.5 px-2 rounded-xl border font-black uppercase text-[8px] tracking-wider transition-all cursor-pointer ${
+                                    Math.abs(useGameStore.getState().scienceGravity - p.g) < 0.05
+                                      ? 'bg-cyan-500 text-black border-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                                      : 'bg-white/5 text-cyan-300/60 border-white/5 hover:border-cyan-500/30'
+                                  }`}
+                                >
+                                  {p.name}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Science Gravity Slider */}
+                          <div>
+                            <div className="flex justify-between text-[10px] font-black text-zinc-400 uppercase mb-1">
+                              <span>Custom Gravity Acceleration</span>
+                              <span className="text-cyan-400 font-mono">{useGameStore.getState().scienceGravity.toFixed(2)} m/s²</span>
+                            </div>
+                            <input 
+                              type="range" min="-30" max="30" step="0.1" 
+                              value={useGameStore.getState().scienceGravity}
+                              onChange={(e) => useGameStore.getState().setScienceGravity(parseFloat(e.target.value))}
+                              className="w-full accent-cyan-400"
+                            />
+                          </div>
+
+                          {/* Friction Slider */}
+                          <div>
+                            <div className="flex justify-between text-[10px] font-black text-zinc-400 uppercase mb-1">
+                              <span>Surface Friction (Ice ↔ High-Grip)</span>
+                              <span className="text-cyan-400 font-mono">{useGameStore.getState().scienceFriction.toFixed(2)} μ</span>
+                            </div>
+                            <input 
+                              type="range" min="0.01" max="1.0" step="0.01" 
+                              value={useGameStore.getState().scienceFriction}
+                              onChange={(e) => useGameStore.getState().setScienceFriction(parseFloat(e.target.value))}
+                              className="w-full accent-cyan-400"
+                            />
+                          </div>
+
+                          {/* Air Resistance Slider */}
+                          <div>
+                            <div className="flex justify-between text-[10px] font-black text-zinc-400 uppercase mb-1">
+                              <span>Air Density / Vacuum Drag</span>
+                              <span className="text-cyan-400 font-mono">{useGameStore.getState().scienceAirResistance.toFixed(2)} c_d</span>
+                            </div>
+                            <input 
+                              type="range" min="0.0" max="0.5" step="0.01" 
+                              value={useGameStore.getState().scienceAirResistance}
+                              onChange={(e) => useGameStore.getState().setScienceAirResistance(parseFloat(e.target.value))}
+                              className="w-full accent-cyan-400"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </section>
 

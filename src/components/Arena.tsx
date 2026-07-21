@@ -862,7 +862,7 @@ export function Arena() {
 
       {/* Floor */}
       {selectedMap !== 'void' && selectedMap !== 'open_world' && (
-        <RigidBody type="fixed" name="floor" friction={0}>
+        <RigidBody type="fixed" name="floor" friction={useGameStore.getState().scienceMode ? useGameStore.getState().scienceFriction : 0}>
           <mesh position={[0, -0.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             {arenaState === 'cube' ? (
               <boxGeometry args={[1000, 1000, 0.1]} />

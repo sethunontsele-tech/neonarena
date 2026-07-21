@@ -517,6 +517,13 @@ interface GameStore {
   resolutionScale: number;
   showFps: boolean;
   
+  // Science Mode Properties
+  scienceMode: boolean;
+  scienceGravity: number;
+  scienceFriction: number;
+  scienceElasticity: number;
+  scienceAirResistance: number;
+  
   // Dimensions & FaceCam
   currentDimension: DimensionType;
   setDimension: (dim: DimensionType) => void;
@@ -925,6 +932,13 @@ interface GameStore {
   setBotStrategy: (strategy: 'aggressive' | 'defensive' | 'balanced' | 'tactical') => void;
   updateSettings: (settings: any) => void;
   
+  // Science Mode Setters
+  setScienceMode: (enabled: boolean) => void;
+  setScienceGravity: (gravity: number) => void;
+  setScienceFriction: (friction: number) => void;
+  setScienceElasticity: (elasticity: number) => void;
+  setScienceAirResistance: (airResistance: number) => void;
+  
   castSpell: () => void;
   setSelectedSpell: (spell: SpellType) => void;
   
@@ -1198,6 +1212,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   graphicsQuality: 'high',
   resolutionScale: 1,
   showFps: true,
+  
+  // Science Mode Initial State
+  scienceMode: false,
+  scienceGravity: 9.81,
+  scienceFriction: 0.1,
+  scienceElasticity: 0.5,
+  scienceAirResistance: 0.05,
 
   // Dimension & FaceCam Initial State
   currentDimension: 'core',
@@ -2971,6 +2992,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setBotAccuracy: (botAccuracy) => set({ botAccuracy }),
   setBotReactionTime: (botReactionTime) => set({ botReactionTime }),
   setBotStrategy: (botStrategy) => set({ botStrategy }),
+  
+  // Science Mode Actions
+  setScienceMode: (scienceMode) => set({ scienceMode }),
+  setScienceGravity: (scienceGravity) => set({ scienceGravity }),
+  setScienceFriction: (scienceFriction) => set({ scienceFriction }),
+  setScienceElasticity: (scienceElasticity) => set({ scienceElasticity }),
+  setScienceAirResistance: (scienceAirResistance) => set({ scienceAirResistance }),
   
   setLanguage: (language) => set({ language }),
   setMobileControlsLayout: (mobileControlsLayout) => set({ mobileControlsLayout }),

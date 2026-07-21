@@ -180,7 +180,7 @@ export function Game() {
         )}
         <Sky />
         
-        <Physics gravity={[0, -20, 0]}>
+        <Physics gravity={[0, useGameStore.getState().scienceMode ? -useGameStore.getState().scienceGravity * 2 : -20, 0]}>
           <Suspense fallback={<LoadingPlaceholder />}>
             <GameLoop />
             <Arena />

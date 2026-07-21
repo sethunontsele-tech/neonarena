@@ -640,8 +640,12 @@ export function Player() {
     const currentVel = new THREE.Vector3(velocity.x, 0, velocity.z);
     
     // Controller A Alpha: Higher air control and momentum preservation
-    const airControl = isGrounded.current ? 1.0 : 0.4;
-    const accelSpeed = isGrounded.current ? movementWeight : 0.15;
+    const isScienceMode = useGameStore.getState().scienceMode;
+    const scienceFriction = useGameStore.getState().scienceFriction;
+    const scienceAirResistance = useGameStore.getState().scienceAirResistance;
+    
+    const airControl = isGrounded.current ? 1.0 : (isScienceMode ? Math.max(0.01, 1.0 - scienceAirResistance * 2) : 0.4);
+    const accelSpeed = isGrounded.current ? (isScienceMode ? Math.max(0.01, scienceFriction) : movementWeight) : 0.15;
     
     currentVel.lerp(targetVelocity, accelSpeed * airControl);
 
@@ -712,7 +716,9 @@ export function Player() {
       jumpCount.current = 0;
     }
 
-    const gravityValue = dimStats.gravity * moddedGravityMultiplier;
+    const gravityValue = useGameStore.getState().scienceMode 
+      ? -useGameStore.getState().scienceGravity 
+      : (dimStats.gravity * moddedGravityMultiplier);
     
     // Jump / Double Jump
     let jumpVel = velocity.y;
