@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
+import { AppsFolderStudio } from './AppsFolderStudio';
 import { 
   motion, AnimatePresence 
 } from 'motion/react';
@@ -639,6 +640,7 @@ export function MegaModsStudio({ onClose, onMinecraftImportClick }: { onClose: (
   };
 
   // App Loader Sandbox Execution Modal State
+  const [showAppsFolderStudio, setShowAppsFolderStudio] = useState(false);
   const [appLoaderState, setAppLoaderState] = useState<{ isOpen: boolean; appName: string; logs: string[]; running: boolean }>({
     isOpen: false,
     appName: '',
@@ -1180,8 +1182,14 @@ export function MegaModsStudio({ onClose, onMinecraftImportClick }: { onClose: (
                     </span>
 
                     <div className="flex gap-1.5">
-                      <label className="text-[8px] font-black bg-cyan-500 hover:bg-cyan-400 text-black px-2 py-1 rounded uppercase flex items-center gap-1 cursor-pointer transition-all">
-                        <Archive size={10} /> + Load .ZIP / .APP
+                      <button
+                        onClick={() => setShowAppsFolderStudio(true)}
+                        className="text-[8px] font-black bg-gradient-to-r from-cyan-500 to-emerald-400 text-black px-2.5 py-1 rounded uppercase flex items-center gap-1 cursor-pointer transition-all shadow-md hover:brightness-110"
+                      >
+                        <Zap size={10} /> Launch Apps Studio Hub
+                      </button>
+                      <label className="text-[8px] font-black bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500 hover:text-black text-cyan-300 px-2 py-1 rounded uppercase flex items-center gap-1 cursor-pointer transition-all">
+                        <Archive size={10} /> + .ZIP / .APP
                         <input 
                           type="file" 
                           multiple 
@@ -1191,7 +1199,7 @@ export function MegaModsStudio({ onClose, onMinecraftImportClick }: { onClose: (
                         />
                       </label>
                       <label className="text-[8px] font-black bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 px-2 py-1 rounded uppercase flex items-center gap-1 cursor-pointer transition-all">
-                        <FolderPlus size={10} /> + Load App Folder
+                        <FolderPlus size={10} /> + App Folder
                         <input 
                           type="file" 
                           multiple 
@@ -1877,6 +1885,11 @@ export function MegaModsStudio({ onClose, onMinecraftImportClick }: { onClose: (
             </div>
           </div>
         </div>
+      )}
+
+      {/* APPS FOLDER STUDIO OVERLAY HUB */}
+      {showAppsFolderStudio && (
+        <AppsFolderStudio onClose={() => setShowAppsFolderStudio(false)} />
       )}
 
     </div>

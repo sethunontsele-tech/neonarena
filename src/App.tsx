@@ -33,6 +33,7 @@ import { ThreeDScanner } from './components/ThreeDScanner';
 import { DossierModal } from './components/DossierModal';
 import { WeatherOverlay } from './components/WeatherOverlay';
 import { WorldAndModdingStudio } from './components/WorldAndModdingStudio';
+import { AppsFolderStudio } from './components/AppsFolderStudio';
 import { MixedRealityCameras } from './components/MixedRealityCameras';
 import { MVPAnnouncementOverlay } from './components/MVPAnnouncementOverlay';
 import { MapVotingPanel } from './components/MapVotingPanel';
@@ -3029,6 +3030,7 @@ export default function App() {
   const [showScanner, setShowScanner] = useState(false);
   const [showDossier, setShowDossier] = useState(false);
   const [showModStudio, setShowModStudio] = useState(false);
+  const [showAppsStudio, setShowAppsStudio] = useState(false);
   const [showMRCameras, setShowMRCameras] = useState(false);
   const [showCharacterFolder, setShowCharacterFolder] = useState(false);
   const [showOfflineCabinet, setShowOfflineCabinet] = useState(false);
@@ -3744,6 +3746,7 @@ export default function App() {
          {showScanner && <ThreeDScanner onClose={() => setShowScanner(false)} />}
         {showDossier && <DossierModal onClose={() => setShowDossier(false)} />}
         {showModStudio && <WorldAndModdingStudio onClose={() => setShowModStudio(false)} />}
+        {showAppsStudio && <AppsFolderStudio onClose={() => setShowAppsStudio(false)} />}
         {showMRCameras && <MixedRealityCameras onClose={() => setShowMRCameras(false)} />}
         {showCharacterFolder && <CharacterFolderModal onClose={() => setShowCharacterFolder(false)} />}
         {showOfflineCabinet && <OfflineGamesCabinet onClose={() => setShowOfflineCabinet(false)} />}
@@ -4044,6 +4047,13 @@ export default function App() {
                 >
                   <Globe size={14} className="group-hover:rotate-12 transition-all" />
                   <span className="text-[10px] font-black uppercase tracking-widest">Servers</span>
+                </button>
+                <button
+                  onClick={() => setShowAppsStudio(true)}
+                  className="flex items-center gap-2 bg-gradient-to-r from-teal-500/10 to-emerald-500/10 border border-teal-500/30 px-4 py-2 rounded-xl text-teal-300 hover:bg-teal-500 hover:text-black transition-all group cursor-pointer shadow-[0_0_15px_rgba(20,184,166,0.15)]"
+                >
+                  <FolderOpen size={14} className="group-hover:rotate-12 transition-all text-teal-400" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Apps Folder</span>
                 </button>
                 <button
                   onClick={() => setShowModStudio(true)}
