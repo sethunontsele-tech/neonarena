@@ -39,6 +39,9 @@ import { MVPAnnouncementOverlay } from './components/MVPAnnouncementOverlay';
 import { MapVotingPanel } from './components/MapVotingPanel';
 import { WebXRHUD } from './components/WebXRHUD';
 import { AIAnimationStudio } from './components/AIAnimationStudio';
+import { DailyRewardModal } from './components/DailyRewardModal';
+import { KillFeed } from './components/KillFeed';
+import { UILayoutModal } from './components/UILayoutModal';
 import { ARENA_MAPS } from './data/arenaMaps';
 import { useGameStore, WEAPONS, SPELLS, SpellType, DIMENSIONS, DimensionType, WeaponType, MapType } from './store';
 import { useShallow } from 'zustand/react/shallow';
@@ -52,7 +55,7 @@ import { CharacterFolderModal } from './components/CharacterFolderModal';
 import { OfflineGamesCabinet } from './components/OfflineGamesCabinet';
 import { LandscapeOverlay, AndroidBackButtonListener, CrashProtectionBoundary, PauseMenuOverlay, TutorialOverlay, AchievementsPanel, DailyRewardsPanel, SaveLoadManagerUI } from './components/AndroidSuite';
 import { getAbilitiesForWeapon } from './data/abilities';
-import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, UserPlus, UserCheck, UserX, Terminal as TerminalIcon, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone, FolderOpen, Gamepad2 } from 'lucide-react';
+import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, Sliders, LayoutGrid, UserPlus, UserCheck, UserX, Terminal as TerminalIcon, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone, FolderOpen, Gamepad2, Gift } from 'lucide-react';
 import { auth, signInWithGoogle, logout, searchUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriends, getFriendRequests, createClan, getClan, joinClan, leaveClan, getTopClans, getUserProfile, ClanData, saveLoadoutPreset, getLoadoutPreset, getLeaderboard } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -1320,6 +1323,81 @@ function HUD() {
   const [isCommandOpen, setCommandOpen] = useState(false);
   const [bloodSplatterEffect, setBloodSplatterEffect] = useState(false);
 
+  // Customizable Keybinds & Quick Buy State
+  const [keybinds, setKeybinds] = useState<{
+    reload: string;
+    jump: string;
+    ability1: string;
+    ability2: string;
+    ability3: string;
+  }>(() => {
+    const saved = localStorage.getItem('neon_arena_keybinds');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return {
+      reload: 'r',
+      jump: ' ',
+      ability1: 'q',
+      ability2: 'f',
+      ability3: 'x'
+    };
+  });
+  const [showKeybindsModal, setShowKeybindsModal] = useState(false);
+  const [showUILayoutModal, setShowUILayoutModal] = useState(false);
+  const [activeRebindKey, setActiveRebindKey] = useState<string | null>(null);
+  const [showQuickBuy, setShowQuickBuy] = useState(false);
+
+  const handleQuickBuy = (type: 'health' | 'full_health' | 'ammo' | 'shield') => {
+    const storeState = useGameStore.getState();
+    const currentCoins = storeState.coins || 500;
+
+    if (type === 'health') {
+      if (currentCoins < 50) {
+        storeState.addEvent('❌ NEED 50 CREDITS FOR HEALTH PACK');
+        soundService.playSFX('ui_click');
+        return;
+      }
+      useGameStore.setState({ 
+        coins: currentCoins - 50,
+        health: Math.min(100, (storeState.health || 100) + 50)
+      });
+      storeState.addEvent('🩹 QUICK BOUGHT HEALTH PACK (+50 HP)');
+      soundService.playSFX('achievement');
+    } else if (type === 'full_health') {
+      if (currentCoins < 90) {
+        storeState.addEvent('❌ NEED 90 CREDITS FOR FULL OVERCHARGE');
+        soundService.playSFX('ui_click');
+        return;
+      }
+      useGameStore.setState({ 
+        coins: currentCoins - 90,
+        health: 100
+      });
+      storeState.addEvent('⚡ QUICK BOUGHT FULL OVERCHARGE (100 HP)');
+      soundService.playSFX('achievement');
+    } else if (type === 'ammo') {
+      if (currentCoins < 40) {
+        storeState.addEvent('❌ NEED 40 CREDITS FOR AMMO RESUPPLY');
+        soundService.playSFX('ui_click');
+        return;
+      }
+      useGameStore.setState({ coins: currentCoins - 40 });
+      reload();
+      storeState.addEvent('📦 QUICK BOUGHT AMMO RESUPPLY BOX');
+      soundService.playSFX('achievement');
+    } else if (type === 'shield') {
+      if (currentCoins < 60) {
+        storeState.addEvent('❌ NEED 60 CREDITS FOR KINETIC SHIELD');
+        soundService.playSFX('ui_click');
+        return;
+      }
+      useGameStore.setState({ coins: currentCoins - 60 });
+      storeState.addEvent('🛡️ QUICK BOUGHT KINETIC SHIELD PACK');
+      soundService.playSFX('achievement');
+    }
+  };
+
 
   const isOwner = user?.email === 'sethu.nontsele@gmail.com';
   const isAdminUser = isOwner || useGameStore.getState().persistentStats?.isAdmin;
@@ -1327,6 +1405,45 @@ function HUD() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (activeRebindKey) {
+        e.preventDefault();
+        const keyName = e.key === ' ' ? 'Space' : e.key;
+        const updated = { ...keybinds, [activeRebindKey]: keyName };
+        setKeybinds(updated);
+        localStorage.setItem('neon_arena_keybinds', JSON.stringify(updated));
+        setActiveRebindKey(null);
+        soundService.playSFX('achievement');
+        return;
+      }
+
+      const keyVal = e.key.toLowerCase();
+
+      // Custom Reload keybind listener
+      if ((keyVal === keybinds.reload.toLowerCase() || e.key === keybinds.reload) && !isChatOpen && !isCommandOpen) {
+        useGameStore.setState({ isInspecting: false });
+        reload();
+      }
+
+      // Custom Jump keybind listener
+      if ((keyVal === keybinds.jump.toLowerCase() || e.key === keybinds.jump || (keybinds.jump === 'Space' && e.key === ' ')) && !isChatOpen && !isCommandOpen) {
+        useGameStore.getState().addEvent('⚡ JUMP ENGAGED');
+      }
+
+      // Custom Ability Slot 1 keybind listener
+      if ((keyVal === keybinds.ability1.toLowerCase() || e.key === keybinds.ability1) && !isChatOpen && !isCommandOpen) {
+        useGameStore.getState().castSpell();
+      }
+
+      // Custom Ability Slot 2 keybind listener
+      if ((keyVal === keybinds.ability2.toLowerCase() || e.key === keybinds.ability2) && !isChatOpen && !isCommandOpen) {
+        useGameStore.getState().toggleFlashlight();
+      }
+
+      // Custom Ability Slot 3 keybind listener
+      if ((keyVal === keybinds.ability3.toLowerCase() || e.key === keybinds.ability3) && !isChatOpen && !isCommandOpen) {
+        useGameStore.getState().setBuildMode(!useGameStore.getState().isBuildMode);
+      }
 
       if (e.key === '`') {
         e.preventDefault();
@@ -1368,9 +1485,6 @@ function HUD() {
         if (!isChatOpen && !isCommandOpen) {
           toggleThirdPerson();
         }
-      }
-      if ((e.key === 'q' || e.key === 'Q') && !isChatOpen && !isCommandOpen) {
-        useGameStore.getState().castSpell();
       }
       if (e.key === 'Tab') {
         e.preventDefault();
@@ -1420,7 +1534,8 @@ function HUD() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isChatOpen]);
+  }, [isChatOpen, activeRebindKey, keybinds]);
+
 
   const leaderboard = useMemo(() => {
     const players = [
@@ -1479,7 +1594,16 @@ function HUD() {
   const currentWeapon = WEAPONS[hotbar[currentWeaponIndex]];
 
   return (
-    <>
+    <div className={`fixed inset-0 pointer-events-none z-[35] transition-all duration-300 ${
+      health < 25 ? 'heat-flash ring-8 ring-red-600/50' : ''
+    }`}>
+      {health < 25 && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-red-600/90 text-white font-black px-5 py-1.5 rounded-full text-xs tracking-widest uppercase shadow-[0_0_25px_rgba(239,68,68,0.9)] animate-pulse flex items-center gap-2 border border-red-400 z-[100] pointer-events-auto">
+          <AlertCircle size={14} className="animate-bounce" />
+          <span>CRITICAL HEALTH WARNING ({health}%)</span>
+        </div>
+      )}
+
       {/* Cutscene Overlay */}
       <AnimatePresence>
         {useGameStore(state => state.isCutsceneActive) && (
@@ -1742,11 +1866,17 @@ function HUD() {
             <div className="flex flex-col gap-2">
               {/* Health Bar */}
               <div className="flex flex-col gap-1">
-                <div className="flex justify-between items-center w-48">
+                <div className="flex justify-between items-center w-52">
                   <div className="text-[10px] text-emerald-400 font-bold tracking-widest uppercase">HEALTH: {health}%</div>
-                  <div className="text-[8px] text-white/40 font-bold tracking-widest uppercase">{playerClass}</div>
+                  <button 
+                    onClick={() => handleQuickBuy('health')} 
+                    className="text-[9px] font-black text-black bg-emerald-400 px-2 py-0.5 rounded hover:bg-white uppercase tracking-wider transition-all pointer-events-auto flex items-center gap-1 shadow-[0_0_8px_rgba(52,211,153,0.5)] cursor-pointer"
+                    title="Buy Emergency Health Pack (+50 HP) for 50 CR"
+                  >
+                    +50 HP (50 CR)
+                  </button>
                 </div>
-                <div className="w-48 h-2 bg-black/50 border border-white/10 rounded overflow-hidden">
+                <div className="w-52 h-2 bg-black/50 border border-white/10 rounded overflow-hidden">
                   <div 
                     className={`h-full transition-all duration-300 ${health > 50 ? 'bg-emerald-500' : health > 20 ? 'bg-amber-500' : 'bg-red-500'}`}
                     style={{ width: `${health}%` }}
@@ -1878,6 +2008,34 @@ function HUD() {
       
       {/* HUD Right - Time, Leave, Events */}
       <div className="absolute top-4 right-4 flex flex-col items-end gap-2 pointer-events-auto">
+        {/* Quick Buy, UI Layout & Keybinds Control Panel */}
+        <div className="flex items-center gap-2 mb-1">
+          <button
+            onClick={() => setShowQuickBuy(!showQuickBuy)}
+            className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-black font-black text-[10px] uppercase tracking-wider rounded-xl hover:from-white hover:to-white transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.5)] animate-pulse cursor-pointer"
+            title="Open Quick Buy Combat Supplies Menu"
+          >
+            <Zap size={12} />
+            <span>QUICK BUY</span>
+          </button>
+
+          <button
+            onClick={() => setShowUILayoutModal(true)}
+            className="p-1.5 bg-black/60 border border-white/20 text-white hover:border-cyan-400 hover:text-cyan-400 rounded-xl transition-all cursor-pointer flex items-center justify-center"
+            title="Customize HUD Layout & Crosshair"
+          >
+            <Sliders size={14} />
+          </button>
+          
+          <button
+            onClick={() => setShowKeybindsModal(true)}
+            className="p-1.5 bg-black/60 border border-white/20 text-white hover:border-amber-400 hover:text-amber-400 rounded-xl transition-all cursor-pointer flex items-center justify-center"
+            title="Custom Keybinds Settings"
+          >
+            <Settings size={14} />
+          </button>
+        </div>
+
         <div className="bg-black/60 border border-white/10 px-3 py-1 rounded-lg text-amber-400 font-mono text-lg mb-1">
           {gameMode === 'infection' 
             ? `${Math.floor(infectionMatchTimer / 60)}:${(Math.floor(infectionMatchTimer) % 60).toString().padStart(2, '0')}`
@@ -1916,8 +2074,17 @@ function HUD() {
               </span>
               <span className="text-amber-400/40 text-sm font-bold">/ {currentWeapon.maxAmmo}</span>
             </div>
+            
+            <button 
+              onClick={() => handleQuickBuy('ammo')} 
+              className="mt-1 text-[9px] font-black text-black bg-amber-400 px-2 py-0.5 rounded hover:bg-white uppercase tracking-wider transition-all pointer-events-auto flex items-center gap-1 shadow-[0_0_8px_rgba(245,158,11,0.5)] cursor-pointer"
+              title="Quick Buy Ammo Resupply for 40 CR"
+            >
+              REFILL AMMO (40 CR)
+            </button>
+
             {currentAmmo[currentWeapon.id] === 0 && !isReloading && (
-              <div className="text-[8px] text-red-500 font-black uppercase tracking-tighter animate-bounce mt-1">Press R to Reload</div>
+              <div className="text-[8px] text-red-500 font-black uppercase tracking-tighter animate-bounce mt-1">Press [{keybinds.reload.toUpperCase()}] to Reload</div>
             )}
             {isReloading && (
               <div className="w-full mt-2">
@@ -2055,6 +2222,10 @@ function HUD() {
           PLAYERS ONLINE: {playerCount} / 60
         </div>
       </div>
+
+      {/* Animated Kill Feed & Layout Customization Modal */}
+      <KillFeed />
+      <UILayoutModal isOpen={showUILayoutModal} onClose={() => setShowUILayoutModal(false)} />
 
       {/* Crosshair */}
       {gameState === 'playing' && playerState === 'active' && !isInventoryOpen && <TeleportHUD />}
@@ -2609,7 +2780,206 @@ function HUD() {
           </motion.div>
         </div>
       )}
-    </>
+
+      {/* Quick Buy Popover */}
+      <AnimatePresence>
+        {showQuickBuy && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            className="absolute top-16 right-4 z-[95] bg-zinc-950/95 border-2 border-emerald-500/50 p-5 rounded-3xl backdrop-blur-2xl shadow-[0_0_50px_rgba(16,185,129,0.3)] w-80 text-white pointer-events-auto"
+          >
+            <div className="flex justify-between items-center mb-4 border-b border-emerald-500/20 pb-2">
+              <div className="flex items-center gap-2 font-black text-emerald-400 text-sm italic uppercase">
+                <Zap size={16} /> Quick Combat Supplies
+              </div>
+              <button onClick={() => setShowQuickBuy(false)} className="text-zinc-400 hover:text-white cursor-pointer">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="text-[10px] text-zinc-400 uppercase font-mono mb-3 flex justify-between">
+              <span>BALANCE:</span>
+              <span className="text-amber-400 font-bold">{useGameStore.getState().coins || 500} CREDITS</span>
+            </div>
+
+            <div className="space-y-2.5">
+              <div className="bg-white/5 border border-white/10 p-3 rounded-2xl flex items-center justify-between hover:border-emerald-500/40 transition-all">
+                <div>
+                  <div className="text-xs font-black text-emerald-400 uppercase flex items-center gap-1.5">
+                    <Heart size={12} /> Health Injector
+                  </div>
+                  <div className="text-[9px] text-zinc-400 uppercase">+50 HP Emergency Healing</div>
+                </div>
+                <button
+                  onClick={() => handleQuickBuy('health')}
+                  className="px-3 py-1.5 bg-emerald-500 text-black font-black text-[10px] uppercase tracking-wider rounded-lg hover:bg-white transition-all shadow-[0_0_10px_rgba(16,185,129,0.4)] cursor-pointer"
+                >
+                  50 CR
+                </button>
+              </div>
+
+              <div className="bg-white/5 border border-white/10 p-3 rounded-2xl flex items-center justify-between hover:border-emerald-500/40 transition-all">
+                <div>
+                  <div className="text-xs font-black text-emerald-400 uppercase flex items-center gap-1.5">
+                    <Shield size={12} /> Full Overcharge
+                  </div>
+                  <div className="text-[9px] text-zinc-400 uppercase">100 HP & Full Shield</div>
+                </div>
+                <button
+                  onClick={() => handleQuickBuy('full_health')}
+                  className="px-3 py-1.5 bg-emerald-500 text-black font-black text-[10px] uppercase tracking-wider rounded-lg hover:bg-white transition-all shadow-[0_0_10px_rgba(16,185,129,0.4)] cursor-pointer"
+                >
+                  90 CR
+                </button>
+              </div>
+
+              <div className="bg-white/5 border border-white/10 p-3 rounded-2xl flex items-center justify-between hover:border-amber-500/40 transition-all">
+                <div>
+                  <div className="text-xs font-black text-amber-400 uppercase flex items-center gap-1.5">
+                    <Zap size={12} /> Ammo Resupply Box
+                  </div>
+                  <div className="text-[9px] text-zinc-400 uppercase">Full Reload All Weapons</div>
+                </div>
+                <button
+                  onClick={() => handleQuickBuy('ammo')}
+                  className="px-3 py-1.5 bg-amber-400 text-black font-black text-[10px] uppercase tracking-wider rounded-lg hover:bg-white transition-all shadow-[0_0_10px_rgba(245,158,11,0.4)] cursor-pointer"
+                >
+                  40 CR
+                </button>
+              </div>
+
+              <div className="bg-white/5 border border-white/10 p-3 rounded-2xl flex items-center justify-between hover:border-blue-500/40 transition-all">
+                <div>
+                  <div className="text-xs font-black text-blue-400 uppercase flex items-center gap-1.5">
+                    <Sparkles size={12} /> Kinetic Shield
+                  </div>
+                  <div className="text-[9px] text-zinc-400 uppercase">+50 Temporary Barrier</div>
+                </div>
+                <button
+                  onClick={() => handleQuickBuy('shield')}
+                  className="px-3 py-1.5 bg-blue-500 text-white font-black text-[10px] uppercase tracking-wider rounded-lg hover:bg-white hover:text-black transition-all shadow-[0_0_10px_rgba(59,130,246,0.4)] cursor-pointer"
+                >
+                  60 CR
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Keybinds Settings Modal */}
+      <AnimatePresence>
+        {showKeybindsModal && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[110] pointer-events-auto p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-zinc-950 border border-amber-500/40 p-6 rounded-3xl w-full max-w-md shadow-[0_0_50px_rgba(245,158,11,0.2)] text-white"
+            >
+              <div className="flex justify-between items-center mb-6 border-b border-amber-500/20 pb-3">
+                <div className="flex items-center gap-2 text-amber-400 font-black text-lg italic uppercase">
+                  <Settings size={20} /> Customizable Keybinds
+                </div>
+                <button onClick={() => { setShowKeybindsModal(false); setActiveRebindKey(null); }} className="text-zinc-400 hover:text-white cursor-pointer">
+                  <X size={20} />
+                </button>
+              </div>
+
+              {activeRebindKey && (
+                <div className="mb-4 p-3 bg-amber-500/20 border border-amber-500/50 rounded-xl text-center text-amber-400 text-xs font-black uppercase animate-pulse">
+                  Press any key on keyboard to bind [{activeRebindKey.toUpperCase()}]...
+                </div>
+              )}
+
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between items-center p-3 bg-white/5 border border-white/10 rounded-xl">
+                  <span className="text-xs font-black uppercase text-zinc-300">Reload Weapon</span>
+                  <button
+                    onClick={() => setActiveRebindKey('reload')}
+                    className={`px-4 py-1.5 font-mono font-black text-xs uppercase rounded-lg border transition-all cursor-pointer ${
+                      activeRebindKey === 'reload' ? 'bg-amber-400 text-black border-amber-400 animate-pulse' : 'bg-black/60 border-amber-500/40 text-amber-400 hover:border-amber-400'
+                    }`}
+                  >
+                    [ {keybinds.reload.toUpperCase()} ]
+                  </button>
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-white/5 border border-white/10 rounded-xl">
+                  <span className="text-xs font-black uppercase text-zinc-300">Jump Action</span>
+                  <button
+                    onClick={() => setActiveRebindKey('jump')}
+                    className={`px-4 py-1.5 font-mono font-black text-xs uppercase rounded-lg border transition-all cursor-pointer ${
+                      activeRebindKey === 'jump' ? 'bg-amber-400 text-black border-amber-400 animate-pulse' : 'bg-black/60 border-amber-500/40 text-amber-400 hover:border-amber-400'
+                    }`}
+                  >
+                    [ {keybinds.jump === ' ' ? 'SPACE' : keybinds.jump.toUpperCase()} ]
+                  </button>
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-white/5 border border-white/10 rounded-xl">
+                  <span className="text-xs font-black uppercase text-zinc-300">Ability Slot 1 (Cast Spell)</span>
+                  <button
+                    onClick={() => setActiveRebindKey('ability1')}
+                    className={`px-4 py-1.5 font-mono font-black text-xs uppercase rounded-lg border transition-all cursor-pointer ${
+                      activeRebindKey === 'ability1' ? 'bg-amber-400 text-black border-amber-400 animate-pulse' : 'bg-black/60 border-amber-500/40 text-amber-400 hover:border-amber-400'
+                    }`}
+                  >
+                    [ {keybinds.ability1.toUpperCase()} ]
+                  </button>
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-white/5 border border-white/10 rounded-xl">
+                  <span className="text-xs font-black uppercase text-zinc-300">Ability Slot 2 (Tactical Light)</span>
+                  <button
+                    onClick={() => setActiveRebindKey('ability2')}
+                    className={`px-4 py-1.5 font-mono font-black text-xs uppercase rounded-lg border transition-all cursor-pointer ${
+                      activeRebindKey === 'ability2' ? 'bg-amber-400 text-black border-amber-400 animate-pulse' : 'bg-black/60 border-amber-500/40 text-amber-400 hover:border-amber-400'
+                    }`}
+                  >
+                    [ {keybinds.ability2.toUpperCase()} ]
+                  </button>
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-white/5 border border-white/10 rounded-xl">
+                  <span className="text-xs font-black uppercase text-zinc-300">Ability Slot 3 (Build Mode)</span>
+                  <button
+                    onClick={() => setActiveRebindKey('ability3')}
+                    className={`px-4 py-1.5 font-mono font-black text-xs uppercase rounded-lg border transition-all cursor-pointer ${
+                      activeRebindKey === 'ability3' ? 'bg-amber-400 text-black border-amber-400 animate-pulse' : 'bg-black/60 border-amber-500/40 text-amber-400 hover:border-amber-400'
+                    }`}
+                  >
+                    [ {keybinds.ability3.toUpperCase()} ]
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    const defaults = { reload: 'r', jump: ' ', ability1: 'q', ability2: 'f', ability3: 'x' };
+                    setKeybinds(defaults);
+                    localStorage.setItem('neon_arena_keybinds', JSON.stringify(defaults));
+                    setActiveRebindKey(null);
+                  }}
+                  className="flex-1 py-2.5 bg-white/10 hover:bg-white/20 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                >
+                  Reset Defaults
+                </button>
+                <button
+                  onClick={() => { setShowKeybindsModal(false); setActiveRebindKey(null); }}
+                  className="flex-1 py-2.5 bg-amber-400 hover:bg-white text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.4)]"
+                >
+                  Save & Exit
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -3025,6 +3395,7 @@ export default function App() {
   const [lobbyTab, setLobbyTab] = useState<'play' | 'settings' | 'replays' | 'lore' | 'spells'>('play');
   const [showExperimental, setShowExperimental] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
+  const [showDailyRewards, setShowDailyRewards] = useState(false);
   const isMapOpen = useGameStore(state => state.isMapOpen);
   const setMapOpen = useGameStore(state => state.setMapOpen);
   const [showScanner, setShowScanner] = useState(false);
@@ -3044,6 +3415,7 @@ export default function App() {
     (window as any).closeAllActivePopups = () => {
       setShowExperimental(false);
       setShowQuests(false);
+      setShowDailyRewards(false);
       setMapOpen(false);
       setShowScanner(false);
       setShowDossier(false);
@@ -3741,6 +4113,7 @@ export default function App() {
         {modals.update && <BiggestUpdateModal onClose={() => setModal('update', false)} />}
         {showExperimental && <ExperimentalFeatures onClose={() => setShowExperimental(false)} />}
         {showQuests && <QuestModal onClose={() => setShowQuests(false)} />}
+        <DailyRewardModal isOpen={showDailyRewards} onClose={() => setShowDailyRewards(false)} />
         {showDailyMissions && <DailyMissionsModal onClose={() => setShowDailyMissions(false)} />}
         {isMapOpen && <TacticalMap onClose={() => setMapOpen(false)} />}
          {showScanner && <ThreeDScanner onClose={() => setShowScanner(false)} />}
@@ -3999,6 +4372,14 @@ export default function App() {
                 </div>
               </div>
               <div className="text-right flex items-center gap-6">
+                <button
+                  onClick={() => { setShowDailyRewards(true); soundService.playSFX('ui_click'); }}
+                  className="flex items-center gap-2 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border border-amber-400/50 px-4 py-2 rounded-xl text-amber-300 hover:bg-amber-400 hover:text-black transition-all group shadow-[0_0_15px_rgba(245,158,11,0.25)] relative cursor-pointer"
+                >
+                  <Gift size={14} className="group-hover:rotate-12 transition-all text-amber-400 group-hover:text-black animate-bounce" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Daily Check-In</span>
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping absolute -top-1 -right-1" />
+                </button>
                 <button
                   onClick={() => setDonateModalOpen(true)}
                   className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-white/40 hover:text-red-400 hover:border-red-400/50 transition-all group"

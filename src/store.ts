@@ -9,6 +9,8 @@ import { io, Socket } from 'socket.io-client';
 import { User } from 'firebase/auth';
 import { PlayerStats, updateGameStats, getPlayerStats, Trophy, saveUserProfile, RankType, recordMatch, getMatchHistory, MatchRecord, UserProfile } from './firebase';
 import { ARENA_MAPS } from './data/arenaMaps';
+import { UILayoutConfig, loadUILayoutConfig } from './utils/uiLayoutManager';
+import { KillFeedEvent } from './components/KillFeed';
 
 export type { UserProfile };
 
@@ -516,6 +518,16 @@ interface GameStore {
   graphicsQuality: 'low' | 'medium' | 'high' | 'ultra';
   resolutionScale: number;
   showFps: boolean;
+  
+  // Custom UI Layout & Screen Shake
+  uiLayoutConfig: UILayoutConfig;
+  setUILayoutConfig: (config: Partial<UILayoutConfig>) => void;
+  screenShakeIntensity: number;
+  triggerScreenShake: (intensity: number) => void;
+  triggerExplosionShake: (explosionPos: [number, number, number], maxRadius?: number, power?: number) => void;
+  killFeed: KillFeedEvent[];
+  addKillFeedEvent: (event: Omit<KillFeedEvent, 'id' | 'timestamp'>) => void;
+  removeKillFeedEvent: (id: string) => void;
   
   // Science Mode Properties
   scienceMode: boolean;
@@ -1044,6 +1056,9 @@ const INITIAL_ENEMIES: EnemyData[] = [
 export const useGameStore = create<GameStore>((set, get) => ({
   gameState: 'splash',
   pings: [],
+  uiLayoutConfig: loadUILayoutConfig(),
+  screenShakeIntensity: 0,
+  killFeed: [],
   isPlayerMoving: false,
   lastFireTime: 0,
   isInspecting: false,
@@ -2221,14 +2236,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
       soundService.callout('Announcer', 'You were eliminated!');
     }
     
-    // Trigger visual blood splatter
+    // Trigger visual blood splatter & Screen Shake
     if (amount > 0) {
       setTimeout(() => set({ bloodSplatter: false }), 400);
+      get().triggerScreenShake(Math.min(1.0, amount / 22));
     }
 
     const finalAttackerName = attackerName || (Math.random() > 0.5 ? 'COBALT-SQUAD-01' : 'APEX-SQUAD-03');
     // Default random angle if not provided
     const finalAttackerAngle = attackerAngle !== undefined ? attackerAngle : (Math.random() * 360);
+
+    if (isDead) {
+      get().addKillFeedEvent({
+        killer: finalAttackerName,
+        victim: state.gamertag || 'You',
+        weapon: 'Plasma Rifle',
+        isHeadshot: Math.random() < 0.2
+      });
+    }
 
     return {
       health: newHealth,
@@ -3334,6 +3359,45 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }));
     }, 5000);
   },
+
+  // UI Layout & Customization
+  setUILayoutConfig: (config) => set(state => ({
+    uiLayoutConfig: { ...state.uiLayoutConfig, ...config }
+  })),
+
+  // Screen Shake Engine
+  triggerScreenShake: (intensity) => set(state => ({
+    screenShakeIntensity: Math.min(1.0, Math.max(state.screenShakeIntensity, intensity))
+  })),
+
+  triggerExplosionShake: (explosionPos, maxRadius = 40, power = 1.0) => {
+    const { playerPosition } = get();
+    const dx = explosionPos[0] - playerPosition[0];
+    const dy = explosionPos[1] - playerPosition[1];
+    const dz = explosionPos[2] - playerPosition[2];
+    const dist = Math.hypot(dx, dy, dz);
+
+    if (dist < maxRadius) {
+      const scaledIntensity = (1.0 - dist / maxRadius) * power;
+      get().triggerScreenShake(scaledIntensity);
+    }
+  },
+
+  // Animated Kill Feed
+  addKillFeedEvent: (event) => set(state => {
+    const newEvent: KillFeedEvent = {
+      ...event,
+      id: Math.random().toString(36).substr(2, 9),
+      timestamp: Date.now()
+    };
+    return {
+      killFeed: [...state.killFeed.slice(-15), newEvent]
+    };
+  }),
+
+  removeKillFeedEvent: (id) => set(state => ({
+    killFeed: state.killFeed.filter(item => item.id !== id)
+  })),
 
   // Map Voting action implementations
   generateMapVotingOptions: () => {

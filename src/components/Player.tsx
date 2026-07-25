@@ -299,8 +299,9 @@ export function Player() {
         endPos = [hitPoint.x, hitPoint.y, hitPoint.z];
         
         if (currentWeapon.isExplosive) {
-          // RPG Explosion logic
+          // RPG Explosion logic & Screen Shake
           addParticles(endPos, '#ff4400');
+          useGameStore.getState().triggerExplosionShake(endPos, 50, 1.0);
         }
 
         const collider = hit.collider;
@@ -858,8 +859,19 @@ export function Player() {
       camera.updateProjectionMatrix();
     }
 
-    if (cameraShake > 0 && health < 50) {
-      const shake = (1 - health / 50) * cameraShake * 0.05;
+    // Dynamic Screen Shake Engine
+    const screenShakeIntensity = useGameStore.getState().screenShakeIntensity;
+    if (screenShakeIntensity > 0) {
+      const shakeFactor = screenShakeIntensity * (cameraShake || 1.0) * 0.22;
+      camera.position.x += (Math.random() - 0.5) * shakeFactor;
+      camera.position.y += (Math.random() - 0.5) * shakeFactor;
+      camera.rotation.z += (Math.random() - 0.5) * shakeFactor * 0.15;
+
+      // Decay screen shake over time
+      const newShake = Math.max(0, screenShakeIntensity - delta * 2.5);
+      useGameStore.setState({ screenShakeIntensity: newShake });
+    } else if (cameraShake > 0 && health < 40) {
+      const shake = (1 - health / 40) * cameraShake * 0.04;
       camera.position.x += (Math.random() - 0.5) * shake;
       camera.position.y += (Math.random() - 0.5) * shake;
     }

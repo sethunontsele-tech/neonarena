@@ -1,3 +1,8 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+*/
+
 import React, { useEffect, useState } from 'react';
 import { useGameStore } from '../store';
 
@@ -5,7 +10,8 @@ export function DynamicCrosshair() {
   const isPlayerMoving = useGameStore(state => state.isPlayerMoving);
   const lastFireTime = useGameStore(state => state.lastFireTime);
   const playerState = useGameStore(state => state.playerState);
-  
+  const uiLayoutConfig = useGameStore(state => state.uiLayoutConfig);
+
   const [bloom, setBloom] = useState(0);
 
   useEffect(() => {
@@ -24,52 +30,107 @@ export function DynamicCrosshair() {
     };
   }, [lastFireTime]);
 
+  if (!uiLayoutConfig.showCrosshair) return null;
+
+  // Configuration parameters
+  const { 
+    crosshairStyle, 
+    crosshairColor, 
+    crosshairScale, 
+    crosshairGap, 
+    crosshairThickness, 
+    crosshairOpacity 
+  } = uiLayoutConfig;
+
   // Base spread + movement spread + fire bloom spread
   const spreadMultiplier = 1.0 + (isPlayerMoving ? 0.6 : 0) + (bloom * 1.5);
-  // Color code based on status
-  const colorClass = playerState === 'disabled' ? 'bg-red-500' : 'bg-amber-400';
-  const borderColorClass = playerState === 'disabled' ? 'border-red-500' : 'border-amber-400';
+  const dynamicGap = crosshairGap * (crosshairStyle === 'dynamic' ? spreadMultiplier : 1.0);
 
-  const gap = spreadMultiplier * 10; // in pixels
+  const activeColor = playerState === 'disabled' ? '#ef4444' : crosshairColor;
 
   return (
-    <div className="relative w-24 h-24 flex items-center justify-center">
-      {/* Center dot */}
-      <div className={`w-1 h-1 rounded-full ${colorClass} shadow-[0_0_6px_rgba(245,158,11,0.8)]`} />
-
-      {/* Top Tick */}
+    <div 
+      className="relative w-24 h-24 flex items-center justify-center pointer-events-none select-none transition-all duration-75"
+      style={{
+        transform: `scale(${crosshairScale})`,
+        opacity: crosshairOpacity
+      }}
+    >
+      {/* Center Dot */}
       <div 
-        className={`absolute w-0.5 h-2.5 ${colorClass} transition-all duration-75`} 
-        style={{ transform: `translateY(-${gap}px)` }} 
-      />
-      {/* Bottom Tick */}
-      <div 
-        className={`absolute w-0.5 h-2.5 ${colorClass} transition-all duration-75`} 
-        style={{ transform: `translateY(${gap}px)` }} 
-      />
-      {/* Left Tick */}
-      <div 
-        className={`absolute w-2.5 h-0.5 ${colorClass} transition-all duration-75`} 
-        style={{ transform: `translateX(-${gap}px)` }} 
-      />
-      {/* Right Tick */}
-      <div 
-        className={`absolute w-2.5 h-0.5 ${colorClass} transition-all duration-75`} 
-        style={{ transform: `translateX(${gap}px)` }} 
-      />
-
-      {/* Outer Tactical Circle */}
-      <div 
-        className={`absolute rounded-full border border-dashed opacity-40 transition-all duration-75 ${borderColorClass}`}
+        className="rounded-full shadow-lg"
         style={{ 
-          width: `${gap * 3.2}px`, 
-          height: `${gap * 3.2}px`,
+          backgroundColor: activeColor,
+          width: `${Math.max(2, crosshairThickness + 1)}px`,
+          height: `${Math.max(2, crosshairThickness + 1)}px`,
+          boxShadow: `0 0 8px ${activeColor}`
         }} 
       />
 
-      {/* Accuracy percentage / recoil feedback text (subtle mono font) */}
-      <div className="absolute top-9 text-[7px] font-mono opacity-50 select-none pointer-events-none uppercase tracking-widest text-center whitespace-nowrap text-amber-400">
-        {isPlayerMoving ? 'UNSTABLE ACC' : 'STEADY'}
+      {crosshairStyle !== 'dot' && (
+        <>
+          {/* Top Tick */}
+          <div 
+            className="absolute shadow transition-all duration-75" 
+            style={{ 
+              backgroundColor: activeColor,
+              width: `${crosshairThickness}px`,
+              height: '10px',
+              transform: `translateY(-${dynamicGap + 5}px)` 
+            }} 
+          />
+          {/* Bottom Tick */}
+          <div 
+            className="absolute shadow transition-all duration-75" 
+            style={{ 
+              backgroundColor: activeColor,
+              width: `${crosshairThickness}px`,
+              height: '10px',
+              transform: `translateY(${dynamicGap + 5}px)` 
+            }} 
+          />
+          {/* Left Tick */}
+          <div 
+            className="absolute shadow transition-all duration-75" 
+            style={{ 
+              backgroundColor: activeColor,
+              height: `${crosshairThickness}px`,
+              width: '10px',
+              transform: `translateX(-${dynamicGap + 5}px)` 
+            }} 
+          />
+          {/* Right Tick */}
+          <div 
+            className="absolute shadow transition-all duration-75" 
+            style={{ 
+              backgroundColor: activeColor,
+              height: `${crosshairThickness}px`,
+              width: '10px',
+              transform: `translateX(${dynamicGap + 5}px)` 
+            }} 
+          />
+        </>
+      )}
+
+      {/* Circle / Ring Overlay */}
+      {(crosshairStyle === 'circle' || crosshairStyle === 'ring' || crosshairStyle === 'dynamic') && (
+        <div 
+          className="absolute rounded-full border border-dashed opacity-50 transition-all duration-75"
+          style={{ 
+            borderColor: activeColor,
+            borderWidth: `${crosshairThickness}px`,
+            width: `${dynamicGap * 2.8}px`, 
+            height: `${dynamicGap * 2.8}px`,
+          }} 
+        />
+      )}
+
+      {/* Accuracy status text */}
+      <div 
+        className="absolute top-10 text-[7px] font-mono opacity-60 select-none uppercase tracking-widest text-center whitespace-nowrap"
+        style={{ color: activeColor }}
+      >
+        {isPlayerMoving ? 'UNSTABLE' : 'STEADY'}
       </div>
     </div>
   );
