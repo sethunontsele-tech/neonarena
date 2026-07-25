@@ -17,8 +17,9 @@ import { soundService } from '../services/soundService';
 
 export interface LoadedApp {
   id: string;
-  name: string;
-  path: string;
+  name: string; // Entity Folder Container Name (e.g. Tactical_Radar_HUD)
+  folderPath: string; // Full container path e.g. /NeonArena/Apps/Neon_Apps/Tactical_Radar_HUD/
+  path: string; // Primary executable or manifest path inside folder
   sizeMB: number;
   extension: string;
   category: 'productivity' | 'development' | 'games' | 'utilities' | 'ai' | 'media' | 'other';
@@ -32,6 +33,7 @@ export interface LoadedApp {
   contentPreview?: string;
   dependencies?: string[];
   tags?: string[];
+  subFiles: string[]; // List of files contained inside this entity folder
 }
 
 export interface SavedFolder {
@@ -300,91 +302,108 @@ const DEFAULT_SAVED_FOLDERS: SavedFolder[] = [
     apps: [
       {
         id: 'app-1',
-        name: 'tactical_radar_hud_package.zip',
-        path: '/NeonArena/Apps/Neon_Apps/tactical_radar_hud_package.zip',
+        name: 'Tactical_Radar_HUD',
+        folderPath: '/NeonArena/Apps/Neon_Apps/Tactical_Radar_HUD/',
+        path: '/NeonArena/Apps/Neon_Apps/Tactical_Radar_HUD/Code/tactical_radar_hud_package.zip',
         sizeMB: 3.2,
         extension: 'zip',
         category: 'utilities',
-        typeLabel: 'ZIP ARCHIVE',
+        typeLabel: 'ENTITY FOLDER',
         version: '1.2.0',
         author: 'TacticalTech',
-        description: '3D Wireframe Arena Map & Tactical HUD Overlay Package',
+        description: '3D Wireframe Arena Map & Tactical HUD Overlay Entity Folder Container',
         isFavorite: true,
         dateAdded: new Date().toLocaleDateString(),
         dependencies: ['ui_theme_neon'],
-        tags: ['hud', 'radar', 'zip'],
-        contentPreview: `{\n  "archive": "tactical_radar_hud_package.zip",\n  "entries": ["manifest.json", "index.js", "styles.css"],\n  "status": "Valid ZIP Archive"\n}`
+        tags: ['hud', 'radar', 'zip', 'folder_entity'],
+        subFiles: ['Code/tactical_radar_hud_package.zip', 'Config/manifest.json', 'Data/radar_coords.dat', 'Assets/styles.css', 'entity_manifest.json'],
+        contentPreview: `{\n  "entity_id": "Tactical_Radar_HUD",\n  "structure": "FOLDER_PER_ENTITY",\n  "folder_path": "/NeonArena/Apps/Neon_Apps/Tactical_Radar_HUD/",\n  "contained_files": [\n    "Code/tactical_radar_hud_package.zip",\n    "Config/manifest.json",\n    "Data/radar_coords.dat",\n    "Assets/styles.css",\n    "entity_manifest.json"\n  ]\n}`
       },
       {
         id: 'app-2',
-        name: 'scientific_gravity_calculator.js',
-        path: '/NeonArena/Apps/Mini_Apps/scientific_gravity_calculator.js',
+        name: 'Scientific_Gravity_Calculator',
+        folderPath: '/NeonArena/Apps/Mini_Apps/Scientific_Gravity_Calculator/',
+        path: '/NeonArena/Apps/Mini_Apps/Scientific_Gravity_Calculator/Code/scientific_gravity_calculator.js',
         sizeMB: 0.8,
         extension: 'js',
         category: 'development',
-        typeLabel: 'JS APP',
+        typeLabel: 'ENTITY FOLDER',
         version: '1.0.5',
         author: 'InfinityAcademy',
-        description: 'Real-time orbital mechanics & escape velocity solver',
+        description: 'Real-time orbital mechanics & escape velocity solver Entity Folder Container',
         isFavorite: false,
         dateAdded: new Date().toLocaleDateString(),
+        tags: ['calculator', 'physics', 'folder_entity'],
+        subFiles: ['Code/scientific_gravity_calculator.js', 'Config/calculator_settings.json', 'Data/constants.json', 'entity_manifest.json'],
         contentPreview: `export function calculateEscapeVelocity(mass, radius) {\n  const G = 6.6743e-11;\n  return Math.sqrt((2 * G * mass) / radius);\n}`
       },
       {
         id: 'app-3',
-        name: 'neon_arena_3d_viewer.apk',
-        path: '/NeonArena/Apps/Tools/neon_arena_3d_viewer.apk',
+        name: 'Neon_Arena_3D_Viewer',
+        folderPath: '/NeonArena/Apps/Tools/Neon_Arena_3D_Viewer/',
+        path: '/NeonArena/Apps/Tools/Neon_Arena_3D_Viewer/Code/neon_arena_3d_viewer.apk',
         sizeMB: 12.4,
         extension: 'apk',
         category: 'games',
-        typeLabel: 'ANDROID APK',
+        typeLabel: 'ENTITY FOLDER',
         version: '3.1.0',
         author: 'NeonMaster',
-        description: 'Native Android 16 standalone WebGL 3D Arena Client',
+        description: 'Native Android 16 standalone WebGL 3D Arena Client Entity Folder Container',
         isFavorite: true,
-        dateAdded: new Date().toLocaleDateString()
+        dateAdded: new Date().toLocaleDateString(),
+        subFiles: ['Code/neon_arena_3d_viewer.apk', 'Config/client_config.json', 'Data/shaders.bin', 'Assets/textures/', 'entity_manifest.json'],
+        contentPreview: `{\n  "entity_id": "Neon_Arena_3D_Viewer",\n  "structure": "FOLDER_PER_ENTITY",\n  "contained_files": ["Code/neon_arena_3d_viewer.apk", "Config/client_config.json", "Data/shaders.bin", "entity_manifest.json"]\n}`
       },
       {
         id: 'app-4',
-        name: 'ai_neural_bot_weights.onnx',
-        path: '/NeonArena/Systems/AI/ai_neural_bot_weights.onnx',
+        name: 'AI_Neural_Bot_Weights',
+        folderPath: '/NeonArena/Systems/AI/AI_Neural_Bot_Weights/',
+        path: '/NeonArena/Systems/AI/AI_Neural_Bot_Weights/Data/ai_neural_bot_weights.onnx',
         sizeMB: 6.1,
         extension: 'onnx',
         category: 'ai',
-        typeLabel: 'AI MODEL',
+        typeLabel: 'ENTITY FOLDER',
         version: '0.9.4',
         author: 'DeepMind',
-        description: 'Reinforcement learning neural weights for bot AI tactics',
+        description: 'Reinforcement learning neural weights Entity Folder Container',
         isFavorite: false,
-        dateAdded: new Date().toLocaleDateString()
+        dateAdded: new Date().toLocaleDateString(),
+        subFiles: ['Data/ai_neural_bot_weights.onnx', 'Config/model_hyperparams.json', 'Code/inference_engine.js', 'entity_manifest.json'],
+        contentPreview: `{\n  "entity_id": "AI_Neural_Bot_Weights",\n  "structure": "FOLDER_PER_ENTITY",\n  "contained_files": ["Data/ai_neural_bot_weights.onnx", "Config/model_hyperparams.json", "Code/inference_engine.js", "entity_manifest.json"]\n}`
       },
       {
         id: 'app-5',
-        name: 'arena_stats_spreadsheet.xlsx',
-        path: '/NeonArena/Data/JSON/arena_stats_spreadsheet.xlsx',
+        name: 'Arena_Stats_Spreadsheet',
+        folderPath: '/NeonArena/Data/JSON/Arena_Stats_Spreadsheet/',
+        path: '/NeonArena/Data/JSON/Arena_Stats_Spreadsheet/Data/arena_stats_spreadsheet.xlsx',
         sizeMB: 1.1,
         extension: 'xlsx',
         category: 'productivity',
-        typeLabel: 'DOCUMENT',
+        typeLabel: 'ENTITY FOLDER',
         version: '2026.1',
         author: 'ArenaAdmin',
-        description: 'Player match telemetry, k/d ratios, and leaderboard sheet',
+        description: 'Player match telemetry and leaderboard sheet Entity Folder Container',
         isFavorite: false,
-        dateAdded: new Date().toLocaleDateString()
+        dateAdded: new Date().toLocaleDateString(),
+        subFiles: ['Data/arena_stats_spreadsheet.xlsx', 'Config/schema.json', 'Code/parser.js', 'entity_manifest.json'],
+        contentPreview: `{\n  "entity_id": "Arena_Stats_Spreadsheet",\n  "structure": "FOLDER_PER_ENTITY",\n  "contained_files": ["Data/arena_stats_spreadsheet.xlsx", "Config/schema.json", "entity_manifest.json"]\n}`
       },
       {
         id: 'app-6',
-        name: 'cyberpunk_ambient_audio.mp4',
-        path: '/NeonArena/Assets/Music/cyberpunk_ambient_audio.mp4',
+        name: 'Cyberpunk_Ambient_Audio',
+        folderPath: '/NeonArena/Assets/Music/Cyberpunk_Ambient_Audio/',
+        path: '/NeonArena/Assets/Music/Cyberpunk_Ambient_Audio/Assets/cyberpunk_ambient_audio.mp4',
         sizeMB: 1.2,
         extension: 'mp4',
         category: 'media',
-        typeLabel: 'VIDEO',
+        typeLabel: 'ENTITY FOLDER',
         version: '1.0.0',
         author: 'Mixkit',
-        description: 'Neon synthwave video background loop',
+        description: 'Neon synthwave video background loop Entity Folder Container',
         isFavorite: false,
-        dateAdded: new Date().toLocaleDateString()
+        dateAdded: new Date().toLocaleDateString(),
+        subFiles: ['Assets/cyberpunk_ambient_audio.mp4', 'Config/audio_preset.json', 'Data/spectrum.dat', 'entity_manifest.json'],
+        contentPreview: `{\n  "entity_id": "Cyberpunk_Ambient_Audio",\n  "structure": "FOLDER_PER_ENTITY",\n  "contained_files": ["Assets/cyberpunk_ambient_audio.mp4", "Config/audio_preset.json", "entity_manifest.json"]\n}`
       }
     ]
   }
@@ -585,18 +604,31 @@ export function AppsFolderStudio({ onClose }: { onClose?: () => void }) {
           version = versionMatch[1];
         }
 
+        const baseName = file.name.replace(/\.[^/.]+$/, "");
+        const entityFolderName = baseName.charAt(0).toUpperCase() + baseName.slice(1).replace(/[^a-zA-Z0-9_]/g, '_') + "_Folder";
+        const folderContainerPath = `/NeonArena/Apps/${rootFolderName}/${entityFolderName}/`;
+
         parsedApps.push({
           id: `app-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-          name: file.name,
-          path: file.webkitRelativePath || `/NeonArena/Apps/${rootFolderName}/${file.name}`,
+          name: entityFolderName,
+          folderPath: folderContainerPath,
+          path: file.webkitRelativePath ? `${folderContainerPath}${file.name}` : `${folderContainerPath}Code/${file.name}`,
           sizeMB,
           extension: ext,
           category,
-          typeLabel,
+          typeLabel: 'ENTITY FOLDER',
           version,
           author: 'Local Device',
           dateAdded: new Date().toLocaleDateString(),
-          rawFile: file
+          rawFile: file,
+          description: `Folder-per-entity container encapsulating ${file.name} with manifest and data structures`,
+          subFiles: [
+            `Code/${file.name}`,
+            `Config/config.json`,
+            `Data/metadata.json`,
+            `entity_manifest.json`
+          ],
+          contentPreview: `{\n  "entity_id": "${entityFolderName}",\n  "type": "FOLDER_PER_ENTITY_CONTAINER",\n  "folder_path": "${folderContainerPath}",\n  "contained_files": [\n    "Code/${file.name}",\n    "Config/config.json",\n    "Data/metadata.json",\n    "entity_manifest.json"\n  ]\n}`
         });
       }
 
@@ -1181,22 +1213,37 @@ export function AppsFolderStudio({ onClose }: { onClose?: () => void }) {
                         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                         <div>
-                          <div className="flex justify-between items-start mb-2.5">
-                            <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 group-hover:bg-cyan-500/10 group-hover:border-cyan-500/30 transition-all">
-                              {getAppIcon(app)}
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 group-hover:bg-cyan-500 group-hover:text-black transition-all flex items-center gap-1.5">
+                              <Folder size={16} />
+                              <span className="text-[9px] font-mono font-bold">FOLDER</span>
                             </div>
 
-                            <span className="text-[8px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300">
-                              {app.typeLabel}
+                            <span className="text-[8px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 flex items-center gap-1">
+                              <Box size={9} /> FOLDER ENTITY
                             </span>
                           </div>
 
-                          <h3 className="text-xs font-black text-white truncate group-hover:text-cyan-300 transition-colors">
-                            {app.name}
+                          <h3 className="text-xs font-black text-white truncate group-hover:text-cyan-300 transition-colors font-mono">
+                            /{app.name}/
                           </h3>
-                          <p className="text-[9px] font-mono text-zinc-500 truncate mt-0.5">
-                            {app.path}
+                          <p className="text-[9px] font-mono text-cyan-400/80 truncate mt-0.5">
+                            {app.folderPath || app.path}
                           </p>
+
+                          {/* Nested Subfiles Preview */}
+                          <div className="mt-2 p-2 bg-black/60 border border-white/5 rounded-xl space-y-1">
+                            <span className="text-[8px] font-mono font-bold text-zinc-400 uppercase block">
+                              Contained Entity Files ({app.subFiles?.length || 4}):
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {(app.subFiles || ['Code/', 'Config/', 'Data/', 'entity_manifest.json']).slice(0, 4).map((f, fi) => (
+                                <span key={fi} className="text-[7.5px] font-mono bg-white/5 border border-white/10 text-cyan-300 px-1.5 py-0.5 rounded">
+                                  {f}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
                           
                           {app.description && (
                             <p className="text-[9px] text-zinc-400 mt-2 line-clamp-2 leading-snug">
@@ -1238,21 +1285,28 @@ export function AppsFolderStudio({ onClose }: { onClose?: () => void }) {
                         className="bg-zinc-950/80 border border-white/10 hover:border-cyan-500/50 p-3 rounded-2xl flex items-center justify-between gap-4 group transition-all"
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <div className="p-2 rounded-xl bg-white/5 shrink-0">
-                            {getAppIcon(app)}
+                          <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shrink-0 flex items-center justify-center">
+                            <Folder size={18} />
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
-                              <h3 className="text-xs font-black text-white truncate group-hover:text-cyan-300">
-                                {app.name}
+                              <h3 className="text-xs font-black text-white truncate font-mono group-hover:text-cyan-300">
+                                /{app.name}/
                               </h3>
-                              <span className="text-[8px] font-mono px-2 py-0.2 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 shrink-0">
-                                {app.typeLabel}
+                              <span className="text-[8px] font-mono px-2 py-0.2 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 shrink-0 font-bold">
+                                FOLDER ENTITY
                               </span>
                             </div>
-                            <span className="text-[9px] font-mono text-zinc-500 truncate block">
-                              {app.path}
+                            <span className="text-[9px] font-mono text-cyan-400/80 truncate block">
+                              {app.folderPath || app.path}
                             </span>
+                            <div className="flex gap-1 mt-1">
+                              {(app.subFiles || ['Code/', 'Config/', 'Data/', 'entity_manifest.json']).map((sf, sfi) => (
+                                <span key={sfi} className="text-[7.5px] font-mono text-zinc-400 bg-black px-1.5 py-0.2 rounded border border-white/5">
+                                  {sf}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         </div>
 
