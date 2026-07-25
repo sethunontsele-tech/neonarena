@@ -4053,7 +4053,7 @@ export default function App() {
                   className="flex items-center gap-2 bg-gradient-to-r from-teal-500/10 to-emerald-500/10 border border-teal-500/30 px-4 py-2 rounded-xl text-teal-300 hover:bg-teal-500 hover:text-black transition-all group cursor-pointer shadow-[0_0_15px_rgba(20,184,166,0.15)]"
                 >
                   <FolderOpen size={14} className="group-hover:rotate-12 transition-all text-teal-400" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Apps Folder</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">All Folders Studio</span>
                 </button>
                 <button
                   onClick={() => setShowModStudio(true)}

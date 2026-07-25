@@ -1186,7 +1186,7 @@ export function MegaModsStudio({ onClose, onMinecraftImportClick }: { onClose: (
                         onClick={() => setShowAppsFolderStudio(true)}
                         className="text-[8px] font-black bg-gradient-to-r from-cyan-500 to-emerald-400 text-black px-2.5 py-1 rounded uppercase flex items-center gap-1 cursor-pointer transition-all shadow-md hover:brightness-110"
                       >
-                        <Zap size={10} /> Launch Apps Studio Hub
+                        <Zap size={10} /> Launch All Folders Studio
                       </button>
                       <label className="text-[8px] font-black bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500 hover:text-black text-cyan-300 px-2 py-1 rounded uppercase flex items-center gap-1 cursor-pointer transition-all">
                         <Archive size={10} /> + .ZIP / .APP
