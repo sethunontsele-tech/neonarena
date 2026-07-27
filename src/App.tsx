@@ -42,6 +42,8 @@ import { AIAnimationStudio } from './components/AIAnimationStudio';
 import { DailyRewardModal } from './components/DailyRewardModal';
 import { KillFeed } from './components/KillFeed';
 import { UILayoutModal } from './components/UILayoutModal';
+import { PokerTable } from './poker/PokerTable';
+import { UniverseOS } from './universe/UniverseOS';
 import { ARENA_MAPS } from './data/arenaMaps';
 import { useGameStore, WEAPONS, SPELLS, SpellType, DIMENSIONS, DimensionType, WeaponType, MapType } from './store';
 import { useShallow } from 'zustand/react/shallow';
@@ -1345,6 +1347,8 @@ function HUD() {
   });
   const [showKeybindsModal, setShowKeybindsModal] = useState(false);
   const [showUILayoutModal, setShowUILayoutModal] = useState(false);
+  const [showPokerTable, setShowPokerTable] = useState(false);
+  const [showUniverseOS, setShowUniverseOS] = useState(false);
   const [activeRebindKey, setActiveRebindKey] = useState<string | null>(null);
   const [showQuickBuy, setShowQuickBuy] = useState(false);
 
@@ -2011,6 +2015,24 @@ function HUD() {
         {/* Quick Buy, UI Layout & Keybinds Control Panel */}
         <div className="flex items-center gap-2 mb-1">
           <button
+            onClick={() => setShowUniverseOS(true)}
+            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-black text-[10px] uppercase tracking-wider rounded-xl hover:from-white hover:to-white transition-all flex items-center gap-1 shadow-[0_0_15px_rgba(245,158,11,0.5)] cursor-pointer"
+            title="Open Neon Arena 200 Features Universe OS"
+          >
+            <Cpu size={12} />
+            <span>UNIVERSE OS</span>
+          </button>
+
+          <button
+            onClick={() => setShowPokerTable(true)}
+            className="px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 text-black font-black text-[10px] uppercase tracking-wider rounded-xl hover:from-white hover:to-white transition-all flex items-center gap-1 shadow-[0_0_15px_rgba(6,182,212,0.5)] cursor-pointer"
+            title="Play High-Stakes Cyberpunk Poker"
+          >
+            <Coins size={12} />
+            <span>POKER</span>
+          </button>
+
+          <button
             onClick={() => setShowQuickBuy(!showQuickBuy)}
             className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-black font-black text-[10px] uppercase tracking-wider rounded-xl hover:from-white hover:to-white transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.5)] animate-pulse cursor-pointer"
             title="Open Quick Buy Combat Supplies Menu"
@@ -2226,6 +2248,16 @@ function HUD() {
       {/* Animated Kill Feed & Layout Customization Modal */}
       <KillFeed />
       <UILayoutModal isOpen={showUILayoutModal} onClose={() => setShowUILayoutModal(false)} />
+      {showPokerTable && <PokerTable onClose={() => setShowPokerTable(false)} />}
+      {showUniverseOS && (
+        <UniverseOS 
+          onClose={() => setShowUniverseOS(false)} 
+          onLaunchPoker={() => {
+            setShowUniverseOS(false);
+            setShowPokerTable(true);
+          }} 
+        />
+      )}
 
       {/* Crosshair */}
       {gameState === 'playing' && playerState === 'active' && !isInventoryOpen && <TeleportHUD />}
