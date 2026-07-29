@@ -10,6 +10,9 @@ import { useGameStore } from '../../store';
 import { NeonUniverse } from './NeonUniverse';
 import { SoftwareEncyclopedia } from './SoftwareEncyclopedia';
 import { AdvancedCalculator } from './AdvancedCalculator';
+import { EducationExpansionHub } from './EducationExpansionHub';
+import { FloatingAITutor } from './FloatingAITutor';
+import { GameConceptsHub } from './GameConceptsHub';
 
 const vrAppsCatalog = [
   {
@@ -178,6 +181,8 @@ export function EduOverlay() {
   const [showNeonHub, setShowNeonHub] = useState(false);
   const [showEncyclopedia, setShowEncyclopedia] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
+  const [showEduExpansion, setShowEduExpansion] = useState(false);
+  const [showGameConcepts, setShowGameConcepts] = useState(false);
 
   const getPlatformIcon = (platform: ControlPlatformType) => {
     switch (platform) {
@@ -726,6 +731,22 @@ export function EduOverlay() {
         {/* Dynamic Teleport Shortcuts */}
         <div className="flex gap-2.5">
           <button 
+            onClick={() => setShowGameConcepts(true)}
+            className="px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500 text-black shadow-[0_0_20px_rgba(52,211,153,0.4)] hover:scale-105 active:scale-95 flex items-center gap-1.5"
+            title="Explore 500 Game Concepts Matrix (Nova & Echo Series)"
+          >
+            <Gamepad2 className="w-3.5 h-3.5 animate-pulse" />
+            🎮 500 GAME CONCEPTS
+          </button>
+          <button 
+            onClick={() => setShowEduExpansion(true)}
+            className="px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer bg-gradient-to-r from-cyan-400 via-indigo-500 to-fuchsia-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:scale-105 active:scale-95 flex items-center gap-1.5"
+            title="Open Ultimate Education Expansion Matrix & Academies"
+          >
+            <BookOpen className="w-3.5 h-3.5 animate-bounce" />
+            🎓 ACADEMY MATRIX
+          </button>
+          <button 
             onClick={() => setShowCalculator(true)}
             className="px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer bg-gradient-to-r from-amber-500 to-yellow-500 text-zinc-950 shadow-[0_0_20px_rgba(245,158,11,0.4)] hover:scale-105 active:scale-95 flex items-center gap-1.5"
             title="Open Advanced Scientific & Graphing Calculator"
@@ -793,6 +814,17 @@ export function EduOverlay() {
       {showCalculator && (
         <AdvancedCalculator onClose={() => setShowCalculator(false)} />
       )}
+
+      {showEduExpansion && (
+        <EducationExpansionHub onClose={() => setShowEduExpansion(false)} />
+      )}
+
+      {showGameConcepts && (
+        <GameConceptsHub onClose={() => setShowGameConcepts(false)} />
+      )}
+
+      {/* Persistent Floating AI Tutor */}
+      <FloatingAITutor />
     </div>
   );
 }

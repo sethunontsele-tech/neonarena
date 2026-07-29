@@ -947,6 +947,91 @@ async function startServer() {
     });
   });
 
+  // ====================================================================
+  // INFINITY ACADEMY & A.U.R.A - AI TEACHER & BEDTIME STORY API
+  // ====================================================================
+  app.post('/api/academy/ai-teacher', async (req, res) => {
+    try {
+      const { prompt, subject = 'General Science', gradeLevel = 'Grade 8', language = 'English' } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ success: false, error: 'Prompt is required' });
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        // High quality fallback responses if key isn't provided yet
+        const fallbacks: Record<string, string> = {
+          default: `Welcome to Infinity Academy! As A.U.R.A, your AI Companion, I am here to explain **${subject}** for **${gradeLevel}** (${language}).\n\nTo explore: ${prompt}\n\n1. **Core Concept**: Every question is a doorway to cosmic understanding.\n2. **Fun Analogy**: Imagine atoms like miniature solar systems with orbiting electrons!\n3. **Quick Quiz**: Can you identify the primary force governing this phenomenon?`
+        };
+        return res.json({
+          success: true,
+          reply: fallbacks.default,
+          source: 'local_fallback'
+        });
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      const systemInstruction = `You are A.U.R.A (Autonomous Universal Research Assistant), an encouraging, brilliant AI floating teacher companion in Neon Arena's Infinity Academy. Teach the student at level ${gradeLevel} in subject ${subject} using language ${language}. Keep explanations engaging, interactive, clear, and mathematically accurate. Include a fun fact or quick check question at the end!`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+          systemInstruction,
+          temperature: 0.7,
+        }
+      });
+
+      return res.json({
+        success: true,
+        reply: response.text || 'A.U.R.A is analyzing the data streams... try asking again!',
+        source: 'gemini'
+      });
+    } catch (error: any) {
+      console.error('AI Teacher API error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.post('/api/academy/ai-story', async (req, res) => {
+    try {
+      const { theme = 'Space Exploration', ageGroup = 'Preschool (Ages 3-5)', lengthMinutes = 10, language = 'English' } = req.body;
+      const apiKey = process.env.GEMINI_API_KEY;
+
+      if (!apiKey) {
+        // Detailed fallback bedtime story
+        const fallbackStory = `🌌 **The Little Cyber Star's Bedtime Flight** 🌌\n\nOnce upon a time in the glowing Neon Cosmos, a small star named Pip was learning how to shine. Pip's light was soft and blue, like a gentle nightlight over the quiet city of AURA.\n\n"Time for bed, little star," whispered the friendly Nebula Cloud, wrapping Pip in a blanket of warm stardust.\n\nPip took three slow, deep breaths... *breathe in glowing cyan light... hold... and breathe out soft purple mist*.\n\nAs Pip drifted past floating rings of Saturn, the sleepy space turtles sang a calm lullaby. Every galaxy was peacefully winding down for the night, sparkling softly under the dark velvet sky.\n\n"Goodnight Neon Arena. Goodnight brave explorer. Rest well for tomorrow's grand adventures." 🌠`;
+        return res.json({
+          success: true,
+          story: fallbackStory,
+          audioGuide: 'Calm space lullaby synth frequency',
+          source: 'local_fallback'
+        });
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      const systemInstruction = `You are A.U.R.A Bedtime Storyteller mode. Create a deeply relaxing, soothing, educational bedtime story for age group ${ageGroup} themed around ${theme} in language ${language}. Length should feel like a ${lengthMinutes}-minute story. Include gentle breathing pauses (e.g., [breathe in slowly... breathe out...]) and cozy visual imagery to help the listener drift off to sleep.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: `Generate a soothing bedtime story about ${theme} for ${ageGroup}.`,
+        config: {
+          systemInstruction,
+          temperature: 0.8,
+        }
+      });
+
+      return res.json({
+        success: true,
+        story: response.text || 'Rest your eyes as A.U.R.A hums a calming cosmic lullaby...',
+        source: 'gemini'
+      });
+    } catch (error: any) {
+      console.error('AI Bedtime Story API error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Enable JSON request body parsing with high limits for uploading ZIP archives (456MB)
   app.use(express.json({ limit: '456mb' }));
   app.use(express.urlencoded({ limit: '456mb', extended: true }));
