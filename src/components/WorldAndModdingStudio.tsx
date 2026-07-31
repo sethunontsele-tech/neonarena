@@ -10,6 +10,7 @@ import { soundService } from '../services/soundService';
 import { BlenderZipUpload } from './BlenderZipUpload';
 import { MegaModsStudio } from './MegaModsStudio';
 import { MinecraftImporter } from './MinecraftImporter';
+import { NeonArenaModStudio } from './NeonArenaModStudio';
 
 // Define structures
 interface VirtualFile {
@@ -231,7 +232,7 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
   const setMap = useGameStore(state => state.setMap);
 
   // Loaded custom worlds state
-  const [activeTab, setActiveTab] = useState<'compiler' | 'mega_mods' | 'minecraft_importer'>('mega_mods');
+  const [activeTab, setActiveTab] = useState<'compiler' | 'mega_mods' | 'minecraft_importer' | 'neon_mod_studio'>('neon_mod_studio');
   const [worlds, setWorlds] = useState<VirtualWorld[]>([]);
   const [activeWorldId, setActiveWorldId] = useState<string>('');
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
@@ -806,13 +807,26 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
         </div>
 
         {/* HIGH-FIDELITY TAB SWITCHER */}
-        <div className="flex gap-2 bg-white/5 p-1 rounded-2xl border border-white/5">
+        <div className="flex gap-2 bg-white/5 p-1 rounded-2xl border border-white/5 overflow-x-auto custom-scrollbar">
+          <button
+            onClick={() => {
+              try { soundService.playSFX('ui_click'); } catch(e){}
+              setActiveTab('neon_mod_studio');
+            }}
+            className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'neon_mod_studio'
+                ? 'bg-gradient-to-r from-amber-400 via-cyan-400 to-fuchsia-500 text-black shadow-[0_0_20px_rgba(251,191,36,0.4)]'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            ⚡ Mod Studio App (Complete Suite)
+          </button>
           <button
             onClick={() => {
               try { soundService.playSFX('ui_click'); } catch(e){}
               setActiveTab('mega_mods');
             }}
-            className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'mega_mods'
                 ? 'bg-gradient-to-r from-fuchsia-500 to-cyan-500 text-black shadow-[0_0_20px_rgba(217,70,239,0.3)]'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'
@@ -825,7 +839,7 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
               try { soundService.playSFX('ui_click'); } catch(e){}
               setActiveTab('minecraft_importer');
             }}
-            className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'minecraft_importer'
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-black shadow-[0_0_20px_rgba(16,185,129,0.3)]'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'
@@ -838,7 +852,7 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
               try { soundService.playSFX('ui_click'); } catch(e){}
               setActiveTab('compiler');
             }}
-            className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'compiler'
                 ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-black shadow-[0_0_20px_rgba(6,182,212,0.3)]'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'
@@ -856,7 +870,11 @@ export function WorldAndModdingStudio({ onClose }: WorldAndModdingStudioProps) {
         </button>
       </div>
 
-      {activeTab === 'mega_mods' ? (
+      {activeTab === 'neon_mod_studio' ? (
+        <div className="flex-1 overflow-hidden rounded-3xl relative">
+          <NeonArenaModStudio onClose={onClose} />
+        </div>
+      ) : activeTab === 'mega_mods' ? (
         <MegaModsStudio onClose={onClose} onMinecraftImportClick={() => setActiveTab('minecraft_importer')} />
       ) : activeTab === 'minecraft_importer' ? (
         <MinecraftImporter />
