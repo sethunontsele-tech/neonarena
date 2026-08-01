@@ -61,11 +61,42 @@ interface NeonArenaModStudioProps {
   onClose: () => void;
 }
 
+export interface NamoModule {
+  id: string;
+  name: string;
+  version: string;
+  status: 'LOADED' | 'UNLOADED' | 'HOT_SWAPPING' | 'HOT_SWAPPED' | 'DISABLED' | 'ERROR';
+  folder: string;
+  dependencies: string[];
+  lastAction: string;
+  folderContents: {
+    code: string[];
+    models: string[];
+    textures: string[];
+    materials: string[];
+    audio: string[];
+    music: string[];
+    sfx: string[];
+    ui: string[];
+    fonts: string[];
+    icons: string[];
+    animations: string[];
+    vfx: string[];
+    shaders: string[];
+    config: string[];
+    localization: string[];
+    documentation: string[];
+    tests: string[];
+    manifest: string[];
+  };
+}
+
 export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
   // Tab State
   const [activeTab, setActiveTab] = useState<
     | 'home'
     | 'projects'
+    | 'namo'
     | 'world'
     | 'npcs'
     | 'dungeons'
@@ -76,7 +107,7 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
     | 'testing'
     | 'export'
     | 'settings'
-  >('home');
+  >('namo');
 
   // Active Selected Target Platform
   const [selectedPlatform, setSelectedPlatform] = useState<'windows' | 'android' | 'linux' | 'macOS'>('windows');
@@ -209,6 +240,165 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
     { id: 'err_1', severity: 'info', message: 'Mod metadata structure validated against Neon Arena v3.2 schema.', file: 'mod.json' },
     { id: 'err_2', severity: 'warning', message: 'Texture resolution 4096x4096 exceeds mobile default (2048 recommended for Android).', file: 'CyberTitan_Diffuse_4K.png' }
   ]);
+
+  // Hot-Swappable NAMO Architecture Modules State
+  const [namoModules, setNamoModules] = useState<NamoModule[]>([
+    {
+      id: 'feat_portal_gun',
+      name: 'Portal Wall Builder & Teleporter',
+      version: '1.4.2',
+      status: 'LOADED',
+      folder: '/features/feat_portal_gun/',
+      dependencies: ['feat_spatial_physics', 'feat_vfx_core'],
+      lastAction: 'Registered to NamoRegistry cleanly at runtime',
+      folderContents: {
+        code: ['portal_gun.namo', 'portal_phys.cs', 'quantum_tunnel.cpp'],
+        models: ['portal_gun.gltf', 'portal_ring.fbx'],
+        textures: ['portal_emission.png', 'quantum_albedo.dds'],
+        materials: ['mat_portal_cyan.mat', 'mat_portal_orange.mat'],
+        audio: ['portal_ambient.ogg'],
+        music: ['portal_theme.wav'],
+        sfx: ['portal_shoot.wav', 'portal_enter.wav'],
+        ui: ['portal_hud.json', 'crosshair.svg'],
+        fonts: ['Orbitron-Bold.ttf'],
+        icons: ['icon_portal_gun.png'],
+        animations: ['anim_reload.anim', 'anim_equip.anim'],
+        vfx: ['vfx_swirl.particle', 'vfx_beam.particle'],
+        shaders: ['shader_portal_refract.hlsl'],
+        config: ['config.json', 'physics.yaml'],
+        localization: ['en-US.json', 'ja-JP.json'],
+        documentation: ['README.md', 'APIs.md'],
+        tests: ['test_portal_teleport.namotest'],
+        manifest: ['manifest.json', 'feature.namo']
+      }
+    },
+    {
+      id: 'feat_weather_machine',
+      name: 'Dynamic Weather Disasters & Storms',
+      version: '2.1.0',
+      status: 'LOADED',
+      folder: '/features/feat_weather_machine/',
+      dependencies: ['feat_environment_core'],
+      lastAction: 'Loaded without restart',
+      folderContents: {
+        code: ['weather_system.namo', 'storm_simulation.cpp'],
+        models: ['lightning_rod.gltf', 'cloud_mesh.fbx'],
+        textures: ['rain_normal.dds', 'cloud_noise.png'],
+        materials: ['mat_volumetric_clouds.mat'],
+        audio: ['wind_loop.ogg'],
+        music: ['storm_rising.wav'],
+        sfx: ['thunder_heavy.wav', 'rain_heavy.wav'],
+        ui: ['weather_widget.json'],
+        fonts: ['Exo2-Regular.ttf'],
+        icons: ['icon_storm.png'],
+        animations: ['anim_lightning.anim'],
+        vfx: ['vfx_rain_particles.particle', 'vfx_tornado.particle'],
+        shaders: ['shader_rain_ripples.hlsl'],
+        config: ['weather_presets.json'],
+        localization: ['en-US.json'],
+        documentation: ['WEATHER_GUIDE.md'],
+        tests: ['test_rain_collision.namotest'],
+        manifest: ['manifest.json', 'feature.namo']
+      }
+    },
+    {
+      id: 'feat_gravity_control',
+      name: 'Gravity Manipulation & Zero-G',
+      version: '1.0.0',
+      status: 'LOADED',
+      folder: '/features/feat_gravity_control/',
+      dependencies: [],
+      lastAction: 'Validated against v3.5 schema',
+      folderContents: {
+        code: ['gravity_ctrl.namo', 'vector_field.cs'],
+        models: ['gravity_disruptor.gltf'],
+        textures: ['grav_grid.dds'],
+        materials: ['mat_anti_grav.mat'],
+        audio: ['grav_hum.ogg'],
+        music: [],
+        sfx: ['grav_flip.wav'],
+        ui: ['grav_hud.json'],
+        fonts: [],
+        icons: ['icon_gravity.png'],
+        animations: ['anim_float.anim'],
+        vfx: ['vfx_grav_pulse.particle'],
+        shaders: ['shader_grav_distortion.hlsl'],
+        config: ['gravity.json'],
+        localization: ['en-US.json'],
+        documentation: ['PHYSICS.md'],
+        tests: ['test_zero_g.namotest'],
+        manifest: ['manifest.json', 'feature.namo']
+      }
+    },
+    {
+      id: 'feat_ai_dungeons',
+      name: 'AI Procedural Dungeon Generator',
+      version: '3.0.1',
+      status: 'HOT_SWAPPED',
+      folder: '/features/feat_ai_dungeons/',
+      dependencies: ['feat_dungeon_assets'],
+      lastAction: 'Hot-swapped v3.0.0 -> v3.0.1 in 14ms',
+      folderContents: {
+        code: ['dungeon_gen.namo', 'room_solver.cs'],
+        models: ['dungeon_wall.gltf', 'chest_gold.fbx'],
+        textures: ['stone_brick_diff.dds'],
+        materials: ['mat_cobblestone.mat'],
+        audio: ['dungeon_echo.ogg'],
+        music: ['dungeon_synth.wav'],
+        sfx: ['door_gate_open.wav'],
+        ui: ['minimap.json'],
+        fonts: ['Cinzel-Bold.ttf'],
+        icons: ['icon_dungeon.png'],
+        animations: ['anim_trap_trigger.anim'],
+        vfx: ['vfx_torch_fire.particle'],
+        shaders: ['shader_fog_of_war.hlsl'],
+        config: ['dungeon_templates.json'],
+        localization: ['en-US.json', 'de-DE.json'],
+        documentation: ['PROC_GEN.md'],
+        tests: ['test_dungeon_solvability.namotest'],
+        manifest: ['manifest.json', 'feature.namo']
+      }
+    }
+  ]);
+
+  const [selectedNamoId, setSelectedNamoId] = useState<string>('feat_portal_gun');
+  const selectedNamo = useMemo(() => namoModules.find(m => m.id === selectedNamoId) || namoModules[0], [namoModules, selectedNamoId]);
+
+  const [namoLogs, setNamoLogs] = useState<string[]>([
+    '⚡ NamoRegistry System initialized with Zero-Hardcode Dynamic Proxy.',
+    '📦 Registered 4 hot-swappable NAMO feature modules into live runtime.',
+    '✅ Validation passed: All feature manifests match NamoSchema v3.5.'
+  ]);
+
+  const executeNamoApi = (moduleId: string, apiName: string) => {
+    soundService.playSFX('ui_click');
+    const timestamp = new Date().toLocaleTimeString();
+    
+    setNamoModules(prev => prev.map(m => {
+      if (m.id !== moduleId) return m;
+      let newStatus = m.status;
+      if (apiName === 'Initialize') newStatus = 'LOADED';
+      if (apiName === 'Load') newStatus = 'LOADED';
+      if (apiName === 'Unload') newStatus = 'UNLOADED';
+      if (apiName === 'Reload') newStatus = 'HOT_SWAPPED';
+      if (apiName === 'Enable') newStatus = 'LOADED';
+      if (apiName === 'Disable') newStatus = 'DISABLED';
+      if (apiName === 'Validate') newStatus = 'LOADED';
+      if (apiName === 'Register') newStatus = 'LOADED';
+      if (apiName === 'Unregister') newStatus = 'UNLOADED';
+
+      return {
+        ...m,
+        status: newStatus,
+        lastAction: `API Executed: ${apiName}() at ${timestamp}`
+      };
+    }));
+
+    setNamoLogs(prev => [
+      `[${timestamp}] API [${apiName}()] called on module "${moduleId}" -> Executed successfully without reloading host application.`,
+      ...prev
+    ]);
+  };
 
   // Automatic Autosave timer simulation
   useEffect(() => {
@@ -425,6 +615,7 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
       {/* Navigation Sub-Header (12 Required Studio Tabs) */}
       <nav className="bg-zinc-950 border-b border-white/10 px-4 py-2 flex items-center gap-1 overflow-x-auto custom-scrollbar">
         {[
+          { id: 'namo', label: '⚡ NAMO Hot-Swap Architecture', icon: Workflow, color: 'text-amber-400' },
           { id: 'home', label: 'Home', icon: Globe, color: 'text-cyan-400' },
           { id: 'projects', label: 'Projects', icon: Folder, color: 'text-amber-400' },
           { id: 'world', label: 'World', icon: Grid, color: 'text-emerald-400' },
@@ -462,6 +653,278 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
 
       {/* Main Studio Workspace Area */}
       <main className="flex-1 overflow-y-auto bg-zinc-950 p-6 custom-scrollbar">
+        {/* ================= TAB 0: NAMO HOT-SWAP ARCHITECTURE ================= */}
+        {activeTab === 'namo' && (
+          <div className="space-y-6 max-w-7xl mx-auto">
+            {/* Header Banner */}
+            <div className="bg-gradient-to-r from-amber-950/60 via-zinc-900 to-cyan-950/60 border border-amber-500/30 rounded-3xl p-6 relative overflow-hidden shadow-[0_0_50px_rgba(245,158,11,0.15)]">
+              <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                  <span className="text-[10px] font-black tracking-[0.4em] text-amber-400 uppercase bg-amber-950 border border-amber-500/40 px-3 py-1 rounded-full flex items-center gap-1.5 w-fit">
+                    <Workflow size={12} /> MODULAR HOT-SWAP ARCHITECTURE ENGINE (.NAMO)
+                  </span>
+                  <h1 className="text-3xl font-black italic tracking-tighter text-white uppercase mt-3">
+                    HOT-SWAPPABLE FEATURE REGISTRY & APIs
+                  </h1>
+                  <p className="text-white/60 text-xs mt-1 max-w-2xl">
+                    Every system, asset, and feature is packaged inside its own folder with standardized Code (.namo), Models, Textures, Materials, Audio, SFX, UI, Fonts, VFX, Shaders, Config, Localization, Tests, and Manifest files. Zero hardcoded references — runtime hot-swappable via NamoRegistry.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      soundService.playSFX('ui_click');
+                      executeNamoApi(selectedNamo.id, 'Reload');
+                    }}
+                    className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-cyan-500 text-black font-black uppercase text-xs rounded-xl hover:bg-white transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] flex items-center gap-2 cursor-pointer"
+                  >
+                    <RefreshCw size={14} className="animate-spin" /> HOT-SWAP ALL MODULES
+                  </button>
+                  <button
+                    onClick={() => {
+                      soundService.playSFX('ui_click');
+                      const newId = `feat_custom_${Date.now()}`;
+                      const newMod: NamoModule = {
+                        id: newId,
+                        name: 'Custom User Feature Module',
+                        version: '1.0.0',
+                        status: 'LOADED',
+                        folder: `/features/${newId}/`,
+                        dependencies: [],
+                        lastAction: 'Created new NAMO feature folder',
+                        folderContents: {
+                          code: ['custom_feature.namo'],
+                          models: ['mesh.gltf'],
+                          textures: ['diffuse.png'],
+                          materials: ['material.mat'],
+                          audio: [],
+                          music: [],
+                          sfx: ['sfx.wav'],
+                          ui: ['ui.json'],
+                          fonts: [],
+                          icons: ['icon.png'],
+                          animations: [],
+                          vfx: ['vfx.particle'],
+                          shaders: ['shader.hlsl'],
+                          config: ['config.json'],
+                          localization: ['en-US.json'],
+                          documentation: ['README.md'],
+                          tests: ['test.namotest'],
+                          manifest: ['manifest.json', 'feature.namo']
+                        }
+                      };
+                      setNamoModules(prev => [newMod, ...prev]);
+                      setSelectedNamoId(newId);
+                      setNamoLogs(prev => [`⚡ Created new feature folder "${newId}" with complete 18-spec asset directory.`, ...prev]);
+                    }}
+                    className="px-4 py-2.5 bg-zinc-800 text-white border border-white/20 hover:bg-white/10 font-black uppercase text-xs rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <Plus size={14} /> NEW FEATURE FOLDER
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Grid: Left Module Selector & Specs | Right Hot-Swap API Control */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Left Column: Modules List & Standard Folder Schema (5 Cols) */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4">
+                  <div className="text-xs font-black uppercase text-white/50 tracking-wider mb-3 flex items-center justify-between">
+                    <span>ACTIVE NAMO FEATURE REGISTRY ({namoModules.length})</span>
+                    <span className="text-emerald-400 font-mono text-[10px]">Zero Hardcode Active</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {namoModules.map(mod => {
+                      const isSelected = mod.id === selectedNamoId;
+                      return (
+                        <button
+                          key={mod.id}
+                          onClick={() => {
+                            setSelectedNamoId(mod.id);
+                            soundService.playSFX('ui_click');
+                          }}
+                          className={`w-full p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                            isSelected
+                              ? 'bg-amber-500/10 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                              : 'bg-black/40 border-white/5 hover:border-white/20'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-xs font-black text-white flex items-center gap-2">
+                              <span>{mod.name}</span>
+                              <span className="text-[9px] font-mono text-cyan-400 bg-cyan-950 border border-cyan-500/30 px-1.5 py-0.5 rounded">
+                                v{mod.version}
+                              </span>
+                            </div>
+                            <div className="text-[10px] font-mono text-white/40 mt-1">
+                              {mod.folder}
+                            </div>
+                          </div>
+
+                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-md border ${
+                            mod.status === 'LOADED' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
+                            mod.status === 'HOT_SWAPPED' ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' :
+                            mod.status === 'DISABLED' ? 'bg-zinc-800 text-zinc-400 border-zinc-700' :
+                            'bg-red-500/20 text-red-300 border-red-500/30'
+                          }`}>
+                            {mod.status}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Selected Module Folder Contents Tree (18 Specifications) */}
+                <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <span className="text-xs font-black uppercase text-amber-400 flex items-center gap-1.5">
+                      <Folder size={14} /> FOLDER SPECIFICATION DIRECTORY
+                    </span>
+                    <span className="text-[10px] font-mono text-white/40">{selectedNamo.folder}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[10px] font-mono max-h-[320px] overflow-y-auto custom-scrollbar p-1">
+                    {[
+                      { key: 'code', label: 'Code (.namo)', items: selectedNamo.folderContents.code, color: 'text-cyan-300' },
+                      { key: 'models', label: 'Models', items: selectedNamo.folderContents.models, color: 'text-amber-300' },
+                      { key: 'textures', label: 'Textures', items: selectedNamo.folderContents.textures, color: 'text-emerald-300' },
+                      { key: 'materials', label: 'Materials', items: selectedNamo.folderContents.materials, color: 'text-pink-300' },
+                      { key: 'audio', label: 'Audio', items: selectedNamo.folderContents.audio, color: 'text-violet-300' },
+                      { key: 'music', label: 'Music', items: selectedNamo.folderContents.music, color: 'text-rose-300' },
+                      { key: 'sfx', label: 'SFX', items: selectedNamo.folderContents.sfx, color: 'text-yellow-300' },
+                      { key: 'ui', label: 'UI Layouts', items: selectedNamo.folderContents.ui, color: 'text-blue-300' },
+                      { key: 'fonts', label: 'Fonts', items: selectedNamo.folderContents.fonts, color: 'text-indigo-300' },
+                      { key: 'icons', label: 'Icons', items: selectedNamo.folderContents.icons, color: 'text-teal-300' },
+                      { key: 'animations', label: 'Animations', items: selectedNamo.folderContents.animations, color: 'text-fuchsia-300' },
+                      { key: 'vfx', label: 'VFX', items: selectedNamo.folderContents.vfx, color: 'text-purple-300' },
+                      { key: 'shaders', label: 'Shaders', items: selectedNamo.folderContents.shaders, color: 'text-red-300' },
+                      { key: 'config', label: 'Config', items: selectedNamo.folderContents.config, color: 'text-zinc-300' },
+                      { key: 'localization', label: 'Localization', items: selectedNamo.folderContents.localization, color: 'text-orange-300' },
+                      { key: 'documentation', label: 'Documentation', items: selectedNamo.folderContents.documentation, color: 'text-lime-300' },
+                      { key: 'tests', label: 'Tests', items: selectedNamo.folderContents.tests, color: 'text-cyan-400' },
+                      { key: 'manifest', label: 'Manifest', items: selectedNamo.folderContents.manifest, color: 'text-amber-400' }
+                    ].map(spec => (
+                      <div key={spec.key} className="bg-black/50 p-2 rounded-lg border border-white/5 space-y-1">
+                        <div className={`font-bold uppercase flex items-center justify-between ${spec.color}`}>
+                          <span>{spec.label}</span>
+                          <span className="text-white/40">({spec.items.length})</span>
+                        </div>
+                        {spec.items.length === 0 ? (
+                          <div className="text-white/20 italic">empty</div>
+                        ) : (
+                          spec.items.map((file, i) => (
+                            <div key={i} className="text-white/70 truncate flex items-center gap-1">
+                              <FileCode size={10} className="text-white/40 shrink-0" />
+                              <span className="truncate">{file}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Standardized APIs & Drag-Drop Replacement Hot-Swap Suite (7 Cols) */}
+              <div className="lg:col-span-7 space-y-4">
+                {/* Module Detail & API Panel */}
+                <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-5 space-y-5">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                    <div>
+                      <div className="text-xs font-mono text-amber-400 font-bold uppercase tracking-wider">SELECTED FEATURE MODULE</div>
+                      <h3 className="text-xl font-black text-white italic uppercase mt-0.5">{selectedNamo.name}</h3>
+                    </div>
+                    <div className="text-right font-mono">
+                      <div className="text-xs text-cyan-400 font-bold">MODULE ID: {selectedNamo.id}</div>
+                      <div className="text-[10px] text-white/40">STATUS: {selectedNamo.status}</div>
+                    </div>
+                  </div>
+
+                  {/* Standardized API Call Buttons Specification Grid */}
+                  <div>
+                    <div className="text-xs font-black uppercase text-white/60 mb-2 flex items-center gap-1.5">
+                      <Zap size={14} className="text-amber-400" /> STANDARDIZED LIFECYCLE APIs (13 METHODS)
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      {[
+                        'Initialize', 'Load', 'Unload', 'Reload', 'Enable', 'Disable', 'Validate',
+                        'Upgrade', 'Downgrade', 'Serialize', 'Deserialize', 'Register', 'Unregister'
+                      ].map(api => (
+                        <button
+                          key={api}
+                          onClick={() => executeNamoApi(selectedNamo.id, api)}
+                          className="px-3 py-2 bg-black/60 border border-cyan-500/30 hover:border-amber-400 hover:bg-amber-500/10 text-cyan-300 hover:text-amber-300 font-mono text-[10px] font-bold uppercase rounded-xl transition-all cursor-pointer flex items-center justify-between"
+                        >
+                          <span>{api}()</span>
+                          <Play size={10} className="opacity-40" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Drag-and-Drop Drop Zone Simulation */}
+                  <div className="border-2 border-dashed border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/10 rounded-2xl p-6 text-center space-y-2 transition-all cursor-pointer">
+                    <CloudUpload size={28} className="mx-auto text-amber-400 animate-bounce" />
+                    <div className="text-xs font-black uppercase text-white tracking-wider">
+                      DRAG & DROP FEATURE ARCHIVE (.NAMO / .ZIP)
+                    </div>
+                    <div className="text-[10px] text-white/50 max-w-md mx-auto">
+                      Drop replacement feature files to hot-swap textures, models, audio, or shaders live while the game is running without restarting.
+                    </div>
+                  </div>
+
+                  {/* Dependency & Rollback Checkers */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+                    <div className="bg-black/50 p-3.5 rounded-xl border border-white/5 space-y-1">
+                      <div className="text-white/40 uppercase text-[10px]">DEPENDENCIES ({selectedNamo.dependencies.length})</div>
+                      {selectedNamo.dependencies.length === 0 ? (
+                        <div className="text-emerald-400">None (Standalone Module)</div>
+                      ) : (
+                        selectedNamo.dependencies.map((dep, i) => (
+                          <div key={i} className="text-cyan-300 flex items-center gap-1">
+                            <CheckCircle size={12} className="text-emerald-400 shrink-0" />
+                            <span>{dep}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="bg-black/50 p-3.5 rounded-xl border border-white/5 space-y-1">
+                      <div className="text-white/40 uppercase text-[10px]">LAST RUNTIME ACTION</div>
+                      <div className="text-amber-300 truncate">{selectedNamo.lastAction}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hot-Swap System Telemetry & Live Logs */}
+                <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4 space-y-2 font-mono">
+                  <div className="text-xs font-black uppercase text-emerald-400 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5"><Terminal size={14} /> LIVE NAMO ENGINE LOGS</span>
+                    <button
+                      onClick={() => setNamoLogs([])}
+                      className="text-[10px] text-white/40 hover:text-white"
+                    >
+                      Clear
+                    </button>
+                  </div>
+
+                  <div className="bg-black/90 p-3 rounded-xl border border-white/5 text-[11px] text-white/70 space-y-1 max-h-[140px] overflow-y-auto custom-scrollbar">
+                    {namoLogs.map((log, i) => (
+                      <div key={i} className="leading-relaxed">
+                        {log}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ================= TAB 1: HOME ================= */}
         {activeTab === 'home' && (
           <div className="space-y-6 max-w-7xl mx-auto">
