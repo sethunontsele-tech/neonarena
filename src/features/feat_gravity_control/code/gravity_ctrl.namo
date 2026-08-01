@@ -1,0 +1,16 @@
+// NAMO Hot-Swappable Script: Gravity Control & Zero-G
+// Version: 1.0.0
+
+module feat_gravity_control {
+  export function Initialize() {
+    NamoLogger.Log("Initialized Zero-G Physics Module");
+  }
+
+  export function Load() {
+    NamoRegistry.RegisterComponent("feat_gravity_control");
+  }
+
+  export function Unload() {
+    NamoRegistry.UnregisterComponent("feat_gravity_control");
+  }
+}

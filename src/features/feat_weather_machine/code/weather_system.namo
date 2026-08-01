@@ -1,0 +1,16 @@
+// NAMO Hot-Swappable Script: Weather Machine & Dynamic Storms
+// Version: 2.1.0
+
+module feat_weather_machine {
+  export function Initialize() {
+    NamoLogger.Log("Initialized Weather Machine & Disaster System");
+  }
+
+  export function Load() {
+    NamoRegistry.RegisterComponent("feat_weather_machine");
+  }
+
+  export function Unload() {
+    NamoRegistry.UnregisterComponent("feat_weather_machine");
+  }
+}

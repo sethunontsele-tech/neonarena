@@ -1,0 +1,16 @@
+// NAMO Hot-Swappable Script: Dragon Flight Arena
+// Version: 2.2.0
+
+module game_dragon_arena {
+  export function Initialize() {
+    NamoLogger.Log("Initialized Dragon Flight Arena Game Module");
+  }
+
+  export function Load() {
+    NamoRegistry.RegisterComponent("game_dragon_arena");
+  }
+
+  export function Unload() {
+    NamoRegistry.UnregisterComponent("game_dragon_arena");
+  }
+}

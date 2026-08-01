@@ -1,0 +1,10 @@
+{
+  "id": "edu_chemistry_lab",
+  "name": "3D Molecular Chemistry Lab (Educational App)",
+  "version": "1.1.0",
+  "schemaVersion": "3.5",
+  "dependencies": ["feat_spatial_physics"],
+  "author": "Neon Arena Education",
+  "entryPoint": "code/edu_chemistry_lab.namo",
+  "hotSwappable": true
+}

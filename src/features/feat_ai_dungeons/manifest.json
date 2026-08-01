@@ -1,0 +1,10 @@
+{
+  "id": "feat_ai_dungeons",
+  "name": "AI Procedural Dungeon Generator",
+  "version": "3.0.1",
+  "schemaVersion": "3.5",
+  "dependencies": ["feat_dungeon_assets"],
+  "author": "Neon Arena AI",
+  "entryPoint": "code/dungeon_gen.namo",
+  "hotSwappable": true
+}

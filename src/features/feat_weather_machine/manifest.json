@@ -1,0 +1,10 @@
+{
+  "id": "feat_weather_machine",
+  "name": "Dynamic Weather Disasters & Storms",
+  "version": "2.1.0",
+  "schemaVersion": "3.5",
+  "dependencies": ["feat_environment_core"],
+  "author": "Neon Arena Engine",
+  "entryPoint": "code/weather_system.namo",
+  "hotSwappable": true
+}

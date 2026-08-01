@@ -1,0 +1,10 @@
+{
+  "id": "edu_human_anatomy",
+  "name": "Interactive 3D Human Anatomy (Educational App)",
+  "version": "1.5.0",
+  "schemaVersion": "3.5",
+  "dependencies": [],
+  "author": "Neon Arena Education",
+  "entryPoint": "code/edu_human_anatomy.namo",
+  "hotSwappable": true
+}

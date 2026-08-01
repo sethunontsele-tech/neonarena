@@ -1,0 +1,10 @@
+{
+  "id": "game_dragon_arena",
+  "name": "Dragon Flight Arena (Full Game App)",
+  "version": "2.2.0",
+  "schemaVersion": "3.5",
+  "dependencies": ["feat_spatial_physics", "feat_vfx_core"],
+  "author": "Neon Arena Game Studio",
+  "entryPoint": "code/game_dragon_arena.namo",
+  "hotSwappable": true
+}

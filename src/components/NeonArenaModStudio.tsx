@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { soundService } from '../services/soundService';
-import { buildModuleFolder } from '../utils/namoModuleManager';
+import { buildModuleFolder, generate400Modules } from '../utils/namoModuleManager';
 
 export interface NeonModProject {
   id: string;
@@ -242,8 +242,31 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
     { id: 'err_2', severity: 'warning', message: 'Texture resolution 4096x4096 exceeds mobile default (2048 recommended for Android).', file: 'CyberTitan_Diffuse_4K.png' }
   ]);
 
-  // Hot-Swappable NAMO Architecture Modules State
-  const [namoModules, setNamoModules] = useState<NamoModule[]>([
+  // Hot-Swappable NAMO Architecture Modules State (Preloaded 400 Modular Feature Folders)
+  const [namoModules, setNamoModules] = useState<NamoModule[]>(() => generate400Modules());
+  const [namoSearchQuery, setNamoSearchQuery] = useState('');
+  const [namoCategoryFilter, setNamoCategoryFilter] = useState<'all' | 'educational' | 'game' | 'simulation' | 'utility' | 'custom'>('all');
+
+  const filteredNamoModules = useMemo(() => {
+    return namoModules.filter(m => {
+      const matchesCat = 
+        namoCategoryFilter === 'all' ? true :
+        namoCategoryFilter === 'educational' ? m.id.startsWith('edu_') :
+        namoCategoryFilter === 'game' ? m.id.startsWith('game_') :
+        namoCategoryFilter === 'simulation' ? m.id.startsWith('sim_') :
+        namoCategoryFilter === 'utility' ? m.id.startsWith('util_') :
+        m.id.startsWith('feat_');
+
+      const matchesSearch = !namoSearchQuery || 
+        m.name.toLowerCase().includes(namoSearchQuery.toLowerCase()) ||
+        m.id.toLowerCase().includes(namoSearchQuery.toLowerCase()) ||
+        m.folder.toLowerCase().includes(namoSearchQuery.toLowerCase());
+
+      return matchesCat && matchesSearch;
+    });
+  }, [namoModules, namoCategoryFilter, namoSearchQuery]);
+
+  const [unusedLegacyModules] = useState<NamoModule[]>([
     {
       id: 'edu_quantum_physics',
       name: 'Quantum Physics Academy (Educational App)',
@@ -303,6 +326,64 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
       }
     },
     {
+      id: 'edu_human_anatomy',
+      name: 'Interactive 3D Human Anatomy (Educational App)',
+      version: '1.5.0',
+      status: 'LOADED',
+      folder: '/features/edu_human_anatomy/',
+      dependencies: [],
+      lastAction: 'Loaded organ cross-section models cleanly',
+      folderContents: {
+        code: ['human_anatomy.namo', 'skeletal_solver.cs'],
+        models: ['human_skeletal.gltf', 'cardiovascular_system.fbx'],
+        textures: ['muscle_fibers_diffuse.png'],
+        materials: ['mat_skeletal.mat', 'mat_organ_tissue.mat'],
+        audio: ['heartbeat_loop.ogg'],
+        music: ['anatomy_study.wav'],
+        sfx: ['pulse_beat.wav', 'layer_isolate.wav'],
+        ui: ['anatomy_hud.json', 'organ_selector.json'],
+        fonts: ['Inter-SemiBold.ttf'],
+        icons: ['icon_anatomy.png'],
+        animations: ['anim_cardiac_cycle.anim'],
+        vfx: ['vfx_blood_flow.particle'],
+        shaders: ['shader_xray_translucent.hlsl'],
+        config: ['anatomy_layers.json'],
+        localization: ['en-US.json', 'de-DE.json', 'es-ES.json'],
+        documentation: ['ANATOMY_CURRICULUM.md'],
+        tests: ['test_organ_isolation.namotest'],
+        manifest: ['manifest.json', 'feature.namo']
+      }
+    },
+    {
+      id: 'edu_chemistry_lab',
+      name: '3D Molecular Chemistry Lab (Educational App)',
+      version: '1.1.0',
+      status: 'LOADED',
+      folder: '/features/edu_chemistry_lab/',
+      dependencies: ['feat_spatial_physics'],
+      lastAction: 'Hot-swapped molecular bond configurations',
+      folderContents: {
+        code: ['chemistry_lab.namo', 'molecular_bonds.cs'],
+        models: ['beaker_glass.gltf', 'h2o_molecule.fbx'],
+        textures: ['liquid_normal.png'],
+        materials: ['mat_glass_refract.mat', 'mat_chemical_foam.mat'],
+        audio: ['bubbling_flask.ogg'],
+        music: ['chemistry_lab_synth.wav'],
+        sfx: ['reaction_fizz.wav', 'explosion_small.wav'],
+        ui: ['periodic_table_hud.json'],
+        fonts: ['RobotoMono-Bold.ttf'],
+        icons: ['icon_chemistry.png'],
+        animations: ['anim_molecular_vibration.anim'],
+        vfx: ['vfx_chemical_smoke.particle'],
+        shaders: ['shader_liquid_wobble.hlsl'],
+        config: ['periodic_elements.json'],
+        localization: ['en-US.json', 'ja-JP.json'],
+        documentation: ['CHEMISTRY_EXPERIMENTS.md'],
+        tests: ['test_reaction_balance.namotest'],
+        manifest: ['manifest.json', 'feature.namo']
+      }
+    },
+    {
       id: 'game_cyber_racing',
       name: 'Neon Cyber Racing (Full Game App)',
       version: '1.0.0',
@@ -328,6 +409,35 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
         localization: ['en-US.json'],
         documentation: ['GAME_RULES.md'],
         tests: ['test_lap_time.namotest'],
+        manifest: ['manifest.json', 'feature.namo']
+      }
+    },
+    {
+      id: 'game_dragon_arena',
+      name: 'Dragon Flight Arena (Full Game App)',
+      version: '2.2.0',
+      status: 'LOADED',
+      folder: '/features/game_dragon_arena/',
+      dependencies: ['feat_spatial_physics', 'feat_vfx_core'],
+      lastAction: 'Loaded dragon flight dynamics folder',
+      folderContents: {
+        code: ['dragon_arena.namo', 'flight_mechanics.cs'],
+        models: ['cyber_dragon.gltf', 'floating_island.fbx'],
+        textures: ['dragon_scales_diffuse.png'],
+        materials: ['mat_dragon_emissive.mat'],
+        audio: ['wing_flap.ogg'],
+        music: ['epic_dragon_battle.wav'],
+        sfx: ['fire_breath.wav', 'dragon_roar.wav'],
+        ui: ['flight_hud.json'],
+        fonts: ['Cinzel-Black.ttf'],
+        icons: ['icon_dragon.png'],
+        animations: ['anim_wing_beat.anim'],
+        vfx: ['vfx_plasma_fire.particle'],
+        shaders: ['shader_heat_haze.hlsl'],
+        config: ['dragon_stats.json'],
+        localization: ['en-US.json', 'ko-KR.json'],
+        documentation: ['DRAGON_MANUAL.md'],
+        tests: ['test_flight_maneuver.namotest'],
         manifest: ['manifest.json', 'feature.namo']
       }
     },
@@ -816,14 +926,54 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Left Column: Modules List & Standard Folder Schema (5 Cols) */}
               <div className="lg:col-span-5 space-y-4">
-                <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4">
-                  <div className="text-xs font-black uppercase text-white/50 tracking-wider mb-3 flex items-center justify-between">
-                    <span>ACTIVE NAMO FEATURE REGISTRY ({namoModules.length})</span>
+                <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4 space-y-3">
+                  <div className="text-xs font-black uppercase text-white/50 tracking-wider flex items-center justify-between">
+                    <span>ACTIVE NAMO REGISTRY ({filteredNamoModules.length} / {namoModules.length})</span>
                     <span className="text-emerald-400 font-mono text-[10px]">Zero Hardcode Active</span>
                   </div>
 
-                  <div className="space-y-2">
-                    {namoModules.map(mod => {
+                  {/* Search Input */}
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                    <input
+                      type="text"
+                      value={namoSearchQuery}
+                      onChange={e => setNamoSearchQuery(e.target.value)}
+                      placeholder="Search 400 feature folders by name, id, folder..."
+                      className="w-full bg-black/60 border border-white/10 focus:border-cyan-400/60 rounded-xl pl-9 pr-3 py-2 text-xs font-mono text-white outline-none transition-all placeholder:text-white/30"
+                    />
+                  </div>
+
+                  {/* Category Filter Pills */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
+                    {[
+                      { id: 'all', label: `ALL (${namoModules.length})` },
+                      { id: 'educational', label: `EDU (${namoModules.filter(m => m.id.startsWith('edu_')).length})` },
+                      { id: 'game', label: `GAMES (${namoModules.filter(m => m.id.startsWith('game_')).length})` },
+                      { id: 'simulation', label: `SIMS (${namoModules.filter(m => m.id.startsWith('sim_')).length})` },
+                      { id: 'utility', label: `UTILS (${namoModules.filter(m => m.id.startsWith('util_')).length})` },
+                      { id: 'custom', label: `FEATS (${namoModules.filter(m => m.id.startsWith('feat_')).length})` }
+                    ].map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          setNamoCategoryFilter(cat.id as any);
+                          soundService.playSFX('ui_click');
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all whitespace-nowrap cursor-pointer ${
+                          namoCategoryFilter === cat.id
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                            : 'bg-black/40 text-white/50 hover:text-white border border-white/5'
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* High Performance Scroll List */}
+                  <div className="space-y-2 max-h-[420px] overflow-y-auto custom-scrollbar pr-1">
+                    {filteredNamoModules.map(mod => {
                       const isSelected = mod.id === selectedNamoId;
                       return (
                         <button
@@ -832,7 +982,7 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
                             setSelectedNamoId(mod.id);
                             soundService.playSFX('ui_click');
                           }}
-                          className={`w-full p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                          className={`w-full p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                             isSelected
                               ? 'bg-amber-500/10 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
                               : 'bg-black/40 border-white/5 hover:border-white/20'
@@ -840,17 +990,17 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
                         >
                           <div>
                             <div className="text-xs font-black text-white flex items-center gap-2">
-                              <span>{mod.name}</span>
+                              <span className="truncate max-w-[200px]">{mod.name}</span>
                               <span className="text-[9px] font-mono text-cyan-400 bg-cyan-950 border border-cyan-500/30 px-1.5 py-0.5 rounded">
                                 v{mod.version}
                               </span>
                             </div>
-                            <div className="text-[10px] font-mono text-white/40 mt-1">
+                            <div className="text-[10px] font-mono text-white/40 mt-1 truncate max-w-[240px]">
                               {mod.folder}
                             </div>
                           </div>
 
-                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-md border ${
+                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-md border shrink-0 ${
                             mod.status === 'LOADED' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
                             mod.status === 'HOT_SWAPPED' ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' :
                             mod.status === 'DISABLED' ? 'bg-zinc-800 text-zinc-400 border-zinc-700' :

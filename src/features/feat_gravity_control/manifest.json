@@ -1,0 +1,10 @@
+{
+  "id": "feat_gravity_control",
+  "name": "Gravity Manipulation & Zero-G",
+  "version": "1.0.0",
+  "schemaVersion": "3.5",
+  "dependencies": [],
+  "author": "Neon Arena Physics",
+  "entryPoint": "code/gravity_ctrl.namo",
+  "hotSwappable": true
+}

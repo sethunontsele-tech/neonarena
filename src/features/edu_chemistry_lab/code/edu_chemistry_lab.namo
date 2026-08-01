@@ -1,0 +1,16 @@
+// NAMO Hot-Swappable Script: 3D Molecular Chemistry Lab
+// Version: 1.1.0
+
+module edu_chemistry_lab {
+  export function Initialize() {
+    NamoLogger.Log("Initialized 3D Chemistry Lab Educational Module");
+  }
+
+  export function Load() {
+    NamoRegistry.RegisterComponent("edu_chemistry_lab");
+  }
+
+  export function Unload() {
+    NamoRegistry.UnregisterComponent("edu_chemistry_lab");
+  }
+}

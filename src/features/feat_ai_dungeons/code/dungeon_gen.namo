@@ -1,0 +1,16 @@
+// NAMO Hot-Swappable Script: AI Procedural Dungeon Generator
+// Version: 3.0.1
+
+module feat_ai_dungeons {
+  export function Initialize() {
+    NamoLogger.Log("Initialized AI Procedural Dungeon Module");
+  }
+
+  export function Load() {
+    NamoRegistry.RegisterComponent("feat_ai_dungeons");
+  }
+
+  export function Unload() {
+    NamoRegistry.UnregisterComponent("feat_ai_dungeons");
+  }
+}
