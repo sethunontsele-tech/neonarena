@@ -1,0 +1,10 @@
+{
+  "id": "feat_portal_gun",
+  "name": "Portal Wall Builder & Teleporter",
+  "version": "1.4.2",
+  "schemaVersion": "3.5",
+  "dependencies": ["feat_spatial_physics", "feat_vfx_core"],
+  "author": "Neon Arena Modder",
+  "entryPoint": "code/feat_portal_gun.namo",
+  "hotSwappable": true
+}

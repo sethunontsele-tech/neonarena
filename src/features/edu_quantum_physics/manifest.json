@@ -1,0 +1,10 @@
+{
+  "id": "edu_quantum_physics",
+  "name": "Quantum Physics Academy (Educational App)",
+  "version": "1.2.0",
+  "schemaVersion": "3.5",
+  "dependencies": ["feat_spatial_physics"],
+  "author": "Neon Arena Education",
+  "entryPoint": "code/edu_quantum_physics.namo",
+  "hotSwappable": true
+}

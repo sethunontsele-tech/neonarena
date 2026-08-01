@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { soundService } from '../services/soundService';
+import { buildModuleFolder } from '../utils/namoModuleManager';
 
 export interface NeonModProject {
   id: string;
@@ -243,6 +244,93 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
 
   // Hot-Swappable NAMO Architecture Modules State
   const [namoModules, setNamoModules] = useState<NamoModule[]>([
+    {
+      id: 'edu_quantum_physics',
+      name: 'Quantum Physics Academy (Educational App)',
+      version: '1.2.0',
+      status: 'LOADED',
+      folder: '/features/edu_quantum_physics/',
+      dependencies: ['feat_spatial_physics'],
+      lastAction: 'Registered educational module folder to NamoRegistry',
+      folderContents: {
+        code: ['quantum_academy.namo', 'wave_function.cs'],
+        models: ['atom_core.gltf', 'electron_orbit.fbx'],
+        textures: ['schrodinger_grid.png'],
+        materials: ['mat_quantum_wave.mat'],
+        audio: ['particle_hum.ogg'],
+        music: ['ambient_lab.wav'],
+        sfx: ['quantum_jump.wav'],
+        ui: ['quiz_hud.json', 'formula_view.svg'],
+        fonts: ['RobotoMono-Regular.ttf'],
+        icons: ['icon_quantum.png'],
+        animations: ['anim_particle_spin.anim'],
+        vfx: ['vfx_photon_emitter.particle'],
+        shaders: ['shader_wave_collapse.hlsl'],
+        config: ['curriculum_config.json'],
+        localization: ['en-US.json', 'es-ES.json', 'ja-JP.json'],
+        documentation: ['LESSON_PLAN.md', 'README.md'],
+        tests: ['test_wave_collapse.namotest'],
+        manifest: ['manifest.json', 'feature.namo']
+      }
+    },
+    {
+      id: 'edu_solar_system',
+      name: 'Solar System Simulator (Educational App)',
+      version: '2.0.4',
+      status: 'LOADED',
+      folder: '/features/edu_solar_system/',
+      dependencies: ['feat_gravity_control'],
+      lastAction: 'Hot-swapped orbital vectors without restart',
+      folderContents: {
+        code: ['solar_sim.namo', 'kepler_orbits.cpp'],
+        models: ['sun_mesh.gltf', 'earth_globe.fbx', 'saturn_rings.fbx'],
+        textures: ['earth_albedo.dds', 'mars_topography.png'],
+        materials: ['mat_sun_corona.mat', 'mat_atmosphere.mat'],
+        audio: ['deep_space_hum.ogg'],
+        music: ['astronomy_theme.wav'],
+        sfx: ['planet_select.wav'],
+        ui: ['planet_hud.json'],
+        fonts: ['Exo2-Bold.ttf'],
+        icons: ['icon_solar.png'],
+        animations: ['anim_orbit_loop.anim'],
+        vfx: ['vfx_solar_flare.particle'],
+        shaders: ['shader_atmosphere_scattering.hlsl'],
+        config: ['planetary_masses.json'],
+        localization: ['en-US.json', 'fr-FR.json'],
+        documentation: ['ASTRONOMY_GUIDE.md'],
+        tests: ['test_orbit_period.namotest'],
+        manifest: ['manifest.json', 'feature.namo']
+      }
+    },
+    {
+      id: 'game_cyber_racing',
+      name: 'Neon Cyber Racing (Full Game App)',
+      version: '1.0.0',
+      status: 'LOADED',
+      folder: '/features/game_cyber_racing/',
+      dependencies: ['feat_vfx_core'],
+      lastAction: 'Game module folder initialized cleanly',
+      folderContents: {
+        code: ['cyber_racing.namo', 'vehicle_physics.cs'],
+        models: ['hover_car_x.gltf', 'neon_track_segment.fbx'],
+        textures: ['asphalt_neon_emissive.dds'],
+        materials: ['mat_neon_paint.mat'],
+        audio: ['engine_rev.ogg'],
+        music: ['synthwave_race.wav'],
+        sfx: ['turbo_boost.wav', 'drift_screech.wav'],
+        ui: ['speedometer_hud.json', 'leaderboard.json'],
+        fonts: ['Orbitron-Black.ttf'],
+        icons: ['icon_racing.png'],
+        animations: ['anim_boost_wings.anim'],
+        vfx: ['vfx_exhaust_flame.particle'],
+        shaders: ['shader_motion_blur.hlsl'],
+        config: ['car_tuning.json'],
+        localization: ['en-US.json'],
+        documentation: ['GAME_RULES.md'],
+        tests: ['test_lap_time.namotest'],
+        manifest: ['manifest.json', 'feature.namo']
+      }
+    },
     {
       id: 'feat_portal_gun',
       name: 'Portal Wall Builder & Teleporter',
@@ -684,41 +772,39 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
                   <button
                     onClick={() => {
                       soundService.playSFX('ui_click');
-                      const newId = `feat_custom_${Date.now()}`;
-                      const newMod: NamoModule = {
-                        id: newId,
-                        name: 'Custom User Feature Module',
-                        version: '1.0.0',
-                        status: 'LOADED',
-                        folder: `/features/${newId}/`,
-                        dependencies: [],
-                        lastAction: 'Created new NAMO feature folder',
-                        folderContents: {
-                          code: ['custom_feature.namo'],
-                          models: ['mesh.gltf'],
-                          textures: ['diffuse.png'],
-                          materials: ['material.mat'],
-                          audio: [],
-                          music: [],
-                          sfx: ['sfx.wav'],
-                          ui: ['ui.json'],
-                          fonts: [],
-                          icons: ['icon.png'],
-                          animations: [],
-                          vfx: ['vfx.particle'],
-                          shaders: ['shader.hlsl'],
-                          config: ['config.json'],
-                          localization: ['en-US.json'],
-                          documentation: ['README.md'],
-                          tests: ['test.namotest'],
-                          manifest: ['manifest.json', 'feature.namo']
-                        }
-                      };
-                      setNamoModules(prev => [newMod, ...prev]);
-                      setSelectedNamoId(newId);
-                      setNamoLogs(prev => [`⚡ Created new feature folder "${newId}" with complete 18-spec asset directory.`, ...prev]);
+                      const count = namoModules.filter(m => m.id.startsWith('edu_')).length + 1;
+                      const genResult = buildModuleFolder(`Interactive Educational App ${count}`, { categoryType: 'educational' });
+                      setNamoModules(prev => [genResult.module, ...prev]);
+                      setSelectedNamoId(genResult.module.id);
+                      setNamoLogs(prev => [`⚡ ${genResult.summary}`, ...prev]);
                     }}
-                    className="px-4 py-2.5 bg-zinc-800 text-white border border-white/20 hover:bg-white/10 font-black uppercase text-xs rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+                    className="px-3.5 py-2.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 font-black uppercase text-xs rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <Plus size={14} /> NEW EDUCATIONAL APP FOLDER
+                  </button>
+                  <button
+                    onClick={() => {
+                      soundService.playSFX('ui_click');
+                      const count = namoModules.filter(m => m.id.startsWith('game_')).length + 1;
+                      const genResult = buildModuleFolder(`Cyber Game Module ${count}`, { categoryType: 'game' });
+                      setNamoModules(prev => [genResult.module, ...prev]);
+                      setSelectedNamoId(genResult.module.id);
+                      setNamoLogs(prev => [`⚡ ${genResult.summary}`, ...prev]);
+                    }}
+                    className="px-3.5 py-2.5 bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30 font-black uppercase text-xs rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <Plus size={14} /> NEW GAME APP FOLDER
+                  </button>
+                  <button
+                    onClick={() => {
+                      soundService.playSFX('ui_click');
+                      const featureCount = namoModules.length + 1;
+                      const genResult = buildModuleFolder(`Custom Feature Module ${featureCount}`, { categoryType: 'custom' });
+                      setNamoModules(prev => [genResult.module, ...prev]);
+                      setSelectedNamoId(genResult.module.id);
+                      setNamoLogs(prev => [`⚡ ${genResult.summary}`, ...prev]);
+                    }}
+                    className="px-3.5 py-2.5 bg-zinc-800 text-white border border-white/20 hover:bg-white/10 font-black uppercase text-xs rounded-xl transition-all flex items-center gap-2 cursor-pointer"
                   >
                     <Plus size={14} /> NEW FEATURE FOLDER
                   </button>

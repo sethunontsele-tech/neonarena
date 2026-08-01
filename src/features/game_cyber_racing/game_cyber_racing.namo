@@ -1,0 +1,16 @@
+// NAMO Hot-Swappable Script: Neon Cyber Racing
+// Version: 1.0.0
+
+module game_cyber_racing {
+  export function Initialize() {
+    NamoLogger.Log("Initialized Neon Cyber Racing Game App");
+  }
+
+  export function Load() {
+    NamoRegistry.RegisterComponent("game_cyber_racing");
+  }
+
+  export function Unload() {
+    NamoRegistry.UnregisterComponent("game_cyber_racing");
+  }
+}

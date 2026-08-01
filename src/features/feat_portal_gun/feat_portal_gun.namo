@@ -1,0 +1,16 @@
+// NAMO Hot-Swappable Script: Portal Gun
+// Version: 1.4.2
+
+module feat_portal_gun {
+  export function Initialize() {
+    NamoLogger.Log("Initialized Portal Gun Feature Module");
+  }
+
+  export function Load() {
+    NamoRegistry.RegisterComponent("feat_portal_gun");
+  }
+
+  export function Unload() {
+    NamoRegistry.UnregisterComponent("feat_portal_gun");
+  }
+}

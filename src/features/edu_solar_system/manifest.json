@@ -1,0 +1,10 @@
+{
+  "id": "edu_solar_system",
+  "name": "Solar System Simulator (Educational App)",
+  "version": "2.0.4",
+  "schemaVersion": "3.5",
+  "dependencies": ["feat_gravity_control"],
+  "author": "Neon Arena Education",
+  "entryPoint": "code/edu_solar_system.namo",
+  "hotSwappable": true
+}

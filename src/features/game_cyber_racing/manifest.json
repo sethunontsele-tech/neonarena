@@ -1,0 +1,10 @@
+{
+  "id": "game_cyber_racing",
+  "name": "Neon Cyber Racing (Full Game App)",
+  "version": "1.0.0",
+  "schemaVersion": "3.5",
+  "dependencies": ["feat_vfx_core"],
+  "author": "Neon Arena Studios",
+  "entryPoint": "code/game_cyber_racing.namo",
+  "hotSwappable": true
+}
