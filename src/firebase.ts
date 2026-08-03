@@ -563,15 +563,4 @@ export function handleFirestoreError(error: any, operation: FirestoreErrorInfo['
   throw error;
 }
 
-// Connection test
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-    console.log("Firebase connection successful.");
-  } catch (error) {
-    if (error instanceof Error && (error.message.includes('the client is offline') || (error as any).code === 'unavailable')) {
-      console.error("Please check your Firebase configuration. The client is offline or backend unavailable.");
-    }
-  }
-}
-testConnection();
+

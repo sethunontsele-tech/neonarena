@@ -13,6 +13,7 @@ import {
 import { useGameStore } from '../store';
 import { soundService } from '../services/soundService';
 import { buildModuleFolder, generate400Modules } from '../utils/namoModuleManager';
+import { WorkspacePanel } from './WorkspacePanel';
 
 export interface NeonModProject {
   id: string;
@@ -104,6 +105,7 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
     | 'items'
     | 'vehicles'
     | 'ai'
+    | 'workspace'
     | 'assets'
     | 'testing'
     | 'export'
@@ -822,6 +824,7 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
           { id: 'items', label: 'Items & Skills', icon: Swords, color: 'text-yellow-400' },
           { id: 'vehicles', label: 'Vehicles', icon: Car, color: 'text-fuchsia-400' },
           { id: 'ai', label: 'AI Assistant', icon: Bot, color: 'text-cyan-400' },
+          { id: 'workspace', label: 'Google Workspace', icon: Cloud, color: 'text-indigo-400' },
           { id: 'assets', label: 'Assets & Shaders', icon: Layers, color: 'text-blue-400' },
           { id: 'testing', label: 'Testing & Logs', icon: Activity, color: 'text-emerald-400' },
           { id: 'export', label: 'Export & Compress', icon: FileArchive, color: 'text-pink-400' },
@@ -1829,6 +1832,13 @@ export function NeonArenaModStudio({ onClose }: NeonArenaModStudioProps) {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ================= TAB 9.5: WORKSPACE ================= */}
+        {activeTab === 'workspace' && (
+          <div className="max-w-7xl mx-auto">
+            <WorkspacePanel />
           </div>
         )}
 
