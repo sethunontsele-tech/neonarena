@@ -11,7 +11,15 @@ const ICE_SERVERS = {
 export function VoiceChat() {
   const socket = useGameStore(state => state.socket);
   const isMuted = useGameStore(state => state.isMuted);
+  
   const otherPlayers = useGameStore(state => state.otherPlayers);
+  const activeVoiceServer = useGameStore(state => state.activeVoiceServer);
+  const voiceServers = useGameStore(state => state.voiceServers);
+  
+  const targetPeers = activeVoiceServer 
+    ? (voiceServers[activeVoiceServer]?.participants || {}) 
+    : otherPlayers;
+
   
   const localStreamRef = useRef<MediaStream | null>(null);
   const peersRef = useRef<Record<string, RTCPeerConnection>>({});
@@ -91,7 +99,7 @@ export function VoiceChat() {
     socket.on('signal', handleSignal);
 
     // Create peers for existing players
-    Object.keys(otherPlayers).forEach(id => {
+    Object.keys(targetPeers).forEach(id => {
       if (!peersRef.current[id]) {
         const pc = createPeer(id, true);
       }
@@ -99,7 +107,7 @@ export function VoiceChat() {
 
     // Cleanup peers for players who left
     Object.keys(peersRef.current).forEach(id => {
-      if (!otherPlayers[id]) {
+      if (!targetPeers[id]) {
         peersRef.current[id].close();
         delete peersRef.current[id];
         if (audioElementsRef.current[id]) {
@@ -149,7 +157,7 @@ export function VoiceChat() {
       Object.values(audioElementsRef.current).forEach(el => el.remove());
       audioElementsRef.current = {};
     };
-  }, [socket, otherPlayers]);
+  }, [socket, activeVoiceServer, voiceServers, otherPlayers]);
 
   return null;
 }

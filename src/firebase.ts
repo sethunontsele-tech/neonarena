@@ -11,7 +11,44 @@ export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
 }, (firebaseConfig as any).firestoreDatabaseId);
 
+
 export const googleProvider = new GoogleAuthProvider();
+const classroomScopes = [
+  'https://www.googleapis.com/auth/classroom.addons.student',
+  'https://www.googleapis.com/auth/classroom.addons.teacher',
+  'https://www.googleapis.com/auth/classroom.announcements',
+  'https://www.googleapis.com/auth/classroom.announcements.readonly',
+  'https://www.googleapis.com/auth/classroom.courses',
+  'https://www.googleapis.com/auth/classroom.courses.readonly',
+  'https://www.googleapis.com/auth/classroom.coursework.me',
+  'https://www.googleapis.com/auth/classroom.coursework.me.readonly',
+  'https://www.googleapis.com/auth/classroom.coursework.students',
+  'https://www.googleapis.com/auth/classroom.coursework.students.readonly',
+  'https://www.googleapis.com/auth/classroom.courseworkmaterials',
+  'https://www.googleapis.com/auth/classroom.courseworkmaterials.readonly',
+  'https://www.googleapis.com/auth/classroom.guardianlinks.me.readonly',
+  'https://www.googleapis.com/auth/classroom.guardianlinks.students',
+  'https://www.googleapis.com/auth/classroom.guardianlinks.students.readonly',
+  'https://www.googleapis.com/auth/classroom.profile.emails',
+  'https://www.googleapis.com/auth/classroom.profile.photos',
+  'https://www.googleapis.com/auth/classroom.push-notifications',
+  'https://www.googleapis.com/auth/classroom.rosters',
+  'https://www.googleapis.com/auth/classroom.rosters.readonly',
+  'https://www.googleapis.com/auth/classroom.student-submissions.me.readonly',
+  'https://www.googleapis.com/auth/classroom.student-submissions.students.readonly',
+  'https://www.googleapis.com/auth/classroom.topics',
+  'https://www.googleapis.com/auth/classroom.topics.readonly'
+];
+classroomScopes.forEach(s => googleProvider.addScope(s));
+
+let cachedAccessToken = null;
+export const getAccessToken = () => cachedAccessToken;
+
+import { onAuthStateChanged } from "firebase/auth";
+onAuthStateChanged(auth, (user) => {
+  if (!user) cachedAccessToken = null;
+});
+
 
 export type RankType = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'master' | 'neon_elite';
 
@@ -415,6 +452,8 @@ export async function getLeaderboard(metric: string = "totalKills"): Promise<Use
 export async function signInWithGoogle() {
   try {
     const result = await signInWithPopup(auth, googleProvider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    if (credential && credential.accessToken) { cachedAccessToken = credential.accessToken; }
     const user = result.user;
     
     const profile = await getUserProfile(user.uid);
@@ -482,6 +521,7 @@ export async function signInWithGoogle() {
 
 export async function logout() {
   await signOut(auth);
+  cachedAccessToken = null;
 }
 
 export async function submitRecommendation(rec: Omit<UpdateRecommendation, 'id' | 'timestamp'>) {

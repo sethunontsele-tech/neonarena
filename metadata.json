@@ -1,6 +1,6 @@
 {
-  "name": "NeonArena-v.1",
-  "description": "An immersive, 3D interactive educational metaverse called Infinity Academy VR, featuring modular portals, deep scientific biological simulations, and a real-time Gemini AI Teacher companion.",
+  "name": "Neon Arena - V2.0.0",
+  "description": "An action-packed 3D neon shooter, sandbox metaverse, massive multi-biome Open World, BOARD fantasy strategy, and Freerun City - a massive vertical parkour expansion featuring physics-based movement, trick combos, multiplayer free-roam, level editor, replay studio, and community hub.",
   "requestFramePermissions": [
     "microphone",
     "geolocation",

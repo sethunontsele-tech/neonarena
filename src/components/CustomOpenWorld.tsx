@@ -2,10 +2,20 @@ import React, { useState, useEffect, Suspense, useMemo } from 'react';
 import { useLoader } from '@react-three/fiber';
 import { OBJLoader, MTLLoader } from 'three-stdlib';
 import { RigidBody } from '@react-three/rapier';
-import { Text, Center } from '@react-three/drei';
 import * as THREE from 'three';
 
-function CustomModel() {
+import { NeonOpenWorld } from './OpenWorld/NeonOpenWorld';
+import { OpenWorldVehiclesFleet, OpenWorldVehicleInstance } from './OpenWorld/OpenWorldVehicles';
+import { OpenWorldCreaturesManager } from './OpenWorld/OpenWorldCreatures';
+import { WorldEventsManager } from './OpenWorld/WorldEventsSystem';
+import { TheGreatFloodMode } from './OpenWorld/TheGreatFloodMode';
+import { MapCreatorRenderer } from './OpenWorld/MapCreatorStudio';
+import { TitanTransformationAvatar } from './OpenWorld/TitanTransformations';
+import { MEGA_VEHICLES } from './OpenWorld/configs';
+import { MegaVehicleType, TransformationId, PlacedMapObject } from './OpenWorld/types';
+import { useGameStore } from '../store';
+
+function CustomUploadedModel() {
   const [mtlExists, setMtlExists] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -30,18 +40,15 @@ function CustomModelWithMtl({ useMtl }: { useMtl: boolean }) {
 
   const clonedObj = useMemo(() => {
     const clone = obj.clone();
-    
-    // Ensure all children cast/receive shadows and have material values
     clone.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.castShadow = true;
         child.receiveShadow = true;
-        
         if (!child.material) {
           child.material = new THREE.MeshStandardMaterial({
-            color: '#888888',
-            roughness: 0.6,
-            metalness: 0.2
+            color: '#06b6d4',
+            roughness: 0.5,
+            metalness: 0.3
           });
         }
       }
@@ -50,112 +57,85 @@ function CustomModelWithMtl({ useMtl }: { useMtl: boolean }) {
   }, [obj]);
 
   return (
-    <RigidBody type="fixed" colliders="trimesh" name="custom-open-world">
+    <RigidBody type="fixed" colliders="trimesh" name="custom-uploaded-open-world">
       <primitive object={clonedObj} scale={1.0} position={[0, 0, 0]} />
     </RigidBody>
   );
 }
 
-export const CustomOpenWorld: React.FC = () => {
-  const [modelStatus, setModelStatus] = useState<'checking' | 'ready' | 'missing'>('checking');
+export interface CustomOpenWorldProps {
+  activeTransformation?: TransformationId | null;
+  onDeactivateTransformation?: () => void;
+  isFloodActive?: boolean;
+  spawnedVehicles?: Array<{ id: string; type: MegaVehicleType; pos: [number, number, number] }>;
+  placedObjects?: PlacedMapObject[];
+}
+
+export const CustomOpenWorld: React.FC<CustomOpenWorldProps> = ({
+  activeTransformation = null,
+  onDeactivateTransformation = () => {},
+  isFloodActive = false,
+  spawnedVehicles = [],
+  placedObjects = []
+}) => {
+  const [hasCustomFile, setHasCustomFile] = useState(false);
+  const playerPos = useGameStore(state => state.playerPosition);
 
   useEffect(() => {
     fetch('/open_world/open_world.obj', { method: 'HEAD' })
-      .then((res) => {
-        if (res.ok) {
-          setModelStatus('ready');
-        } else {
-          setModelStatus('missing');
-        }
-      })
-      .catch(() => {
-        setModelStatus('missing');
-      });
+      .then((res) => setHasCustomFile(res.ok))
+      .catch(() => setHasCustomFile(false));
   }, []);
 
-  if (modelStatus === 'checking') {
-    return (
-      <Center position={[0, 5, 0]}>
-        <Text color="#06b6d4" fontSize={0.8} font="monospace">
-          SCANNING FOR /open_world/open_world.obj...
-        </Text>
-      </Center>
-    );
-  }
-
-  if (modelStatus === 'missing') {
-    return (
-      <group position={[0, 0, 0]}>
-        {/* Help flat ground so players can move around */}
-        <RigidBody type="fixed" colliders="cuboid" name="open-world-fallback-floor">
-          <mesh position={[0, -0.5, 0]}>
-            <boxGeometry args={[100, 1, 100]} />
-            <meshStandardMaterial color="#09090b" roughness={0.85} metalness={0.15} />
-          </mesh>
-          <gridHelper args={[100, 50, '#22d3ee', '#18181b']} position={[0, 0.01, 0]} />
-        </RigidBody>
-
-        {/* Floating instruction screens */}
-        <group position={[0, 6, -15]}>
-          <Text
-            color="#f43f5e"
-            fontSize={1.5}
-            font="monospace"
-            anchorX="center"
-            anchorY="middle"
-            maxWidth={40}
-            textAlign="center"
-          >
-            OPEN WORLD SOURCE OFFLINE
-          </Text>
-          
-          <Text
-            position={[0, -1.8, 0]}
-            color="#f4f4f5"
-            fontSize={0.6}
-            font="monospace"
-            anchorX="center"
-            anchorY="middle"
-            maxWidth={32}
-            textAlign="center"
-          >
-            Drag or place your own "open_world.obj" and optional "open_world.mtl" inside the "/public/open_world/" folder.
-          </Text>
-
-          <Text
-            position={[0, -3.5, 0]}
-            color="#22d3ee"
-            fontSize={0.45}
-            font="monospace"
-            anchorX="center"
-            anchorY="middle"
-            maxWidth={35}
-            textAlign="center"
-          >
-            The engine automatically compiles real-time physics colliders over your custom 3D environment!
-          </Text>
-        </group>
-      </group>
-    );
-  }
-
   return (
-    <Suspense fallback={
-      <group position={[0, 0, 0]}>
-        <RigidBody type="fixed" colliders="cuboid">
-          <mesh position={[0, -0.5, 0]}>
-            <boxGeometry args={[100, 1, 100]} />
-            <meshStandardMaterial color="#09090b" wireframe />
-          </mesh>
-        </RigidBody>
-        <Center position={[0, 5, 0]}>
-          <Text color="#22d3ee" fontSize={0.8} font="monospace">
-            LOADING CUSTOM GEOMETRY...
-          </Text>
-        </Center>
-      </group>
-    }>
-      <CustomModel />
-    </Suspense>
+    <group name="master-open-world-container">
+      {/* 1. Procedural Massive Biome Open World */}
+      <NeonOpenWorld />
+
+      {/* 2. Full Fleet of Pre-Parked Vehicles Across All Biomes */}
+      <OpenWorldVehiclesFleet />
+
+      {/* 3. Dynamically Spawned Vehicles from HUD */}
+      {spawnedVehicles.map((v) => {
+        const config = MEGA_VEHICLES.find(cfg => cfg.id === v.type) || MEGA_VEHICLES[0];
+        return (
+          <OpenWorldVehicleInstance
+            key={v.id}
+            id={v.id}
+            config={config}
+            initialPosition={v.pos}
+          />
+        );
+      })}
+
+      {/* 4. Creatures, Wildlife & Mounts */}
+      <OpenWorldCreaturesManager />
+
+      {/* 5. Dynamic World Events (Airdrops, Food Rain, World Boss) */}
+      <WorldEventsManager />
+
+      {/* 6. The Great Flood Mode */}
+      <TheGreatFloodMode isActive={isFloodActive} />
+
+      {/* 7. Map Creator Placed Assets */}
+      <MapCreatorRenderer placedObjects={placedObjects} />
+
+      {/* 8. Titan & Anime Transformations Avatar */}
+      {activeTransformation && (
+        <TitanTransformationAvatar
+          activeForm={activeTransformation}
+          playerPos={playerPos}
+          playerRot={0}
+          onDeactivate={onDeactivateTransformation}
+        />
+      )}
+
+      {/* 9. Optional Custom User-Uploaded 3D Model If Available */}
+      {hasCustomFile && (
+        <Suspense fallback={null}>
+          <CustomUploadedModel />
+        </Suspense>
+      )}
+    </group>
   );
 };

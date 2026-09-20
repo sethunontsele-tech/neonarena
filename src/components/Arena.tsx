@@ -12,6 +12,9 @@ import { useGameStore, MapType, DIMENSIONS, DimensionType, BlockType } from '../
 import { CaptureZone } from './CaptureZone';
 import { soundService } from '../services/soundService';
 import { CustomOpenWorld } from './CustomOpenWorld';
+import { BackroomsWorld } from './Backrooms/BackroomsWorld';
+import { BackroomsPortal } from './Backrooms/BackroomsPortal';
+import { BackroomsLevelId } from './Backrooms/types';
 
 // Seeded PRNG for consistent multiplayer obstacle generation
 function mulberry32(a: number) {
@@ -838,7 +841,7 @@ export function Arena() {
 
   // Dimension Teleport Gallery near spawn
   const teleportBlocks = useMemo(() => {
-    const keys: DimensionType[] = ['core', 'void', 'solar', 'glitch', 'matrix', 'inferno', 'zenith', 'cyber', 'rusty', 'prism', 'edge', 'dimension_71'];
+    const keys: DimensionType[] = ['core', 'void', 'solar', 'glitch', 'matrix', 'inferno', 'zenith', 'cyber', 'rusty', 'prism', 'edge', 'dimension_71', 'backrooms'];
     return keys.map((key, i) => ({
       id: `teleport-${key}`,
       type: `teleport_${key}` as BlockType,
@@ -847,6 +850,42 @@ export function Arena() {
   }, []);
 
   const currentDimension = useGameStore(state => state.currentDimension);
+  const backroomsActive = useGameStore(state => state.backroomsActive);
+  const backroomsLevel = useGameStore(state => state.backroomsLevel);
+  const backroomsIsFlashlightOn = useGameStore(state => state.backroomsIsFlashlightOn);
+  const playerPosition = useGameStore(state => state.playerPosition);
+  const enterBackrooms = useGameStore(state => state.enterBackrooms);
+  const exitBackrooms = useGameStore(state => state.exitBackrooms);
+  const setBackroomsLevel = useGameStore(state => state.setBackroomsLevel);
+  const pickupBackroomsItem = useGameStore(state => state.pickupBackroomsItem);
+  const takeDamage = useGameStore(state => state.takeDamage);
+
+  const isBackroomsDimension = currentDimension === 'backrooms' || selectedMap === 'backrooms' || backroomsActive;
+
+  // If in the Backrooms dimension, render the infinite procedural liminal horror world
+  if (isBackroomsDimension) {
+    return (
+      <group name="backrooms_realm_container">
+        <color attach="background" args={["#0c0a06"]} />
+        <fog attach="fog" args={["#0c0a06", 2, 70]} />
+        <BackroomsWorld
+          levelId={backroomsLevel as BackroomsLevelId}
+          playerPos={playerPosition}
+          isPlayerSprinting={false}
+          isPlayerCrouching={false}
+          isFlashlightOn={backroomsIsFlashlightOn}
+          onLevelChange={(lvl) => setBackroomsLevel(lvl)}
+          onPickupItem={(item) => pickupBackroomsItem(item)}
+          onAttackPlayer={(dmg, attacker) => {
+            takeDamage(dmg);
+            useGameStore.getState().addEvent(`💥 ATTACKED BY ${attacker.toUpperCase()}! (-${dmg} HP)`);
+          }}
+          onExitBackrooms={exitBackrooms}
+        />
+      </group>
+    );
+  }
+
   const dimStats = DIMENSIONS[currentDimension] || DIMENSIONS.core || { visuals: { color: '#00ffff', fog: 0.01, ambient: '#0a0a0a' } };
 
   // Use the dimension's visuals but ensure they aren't totally black unless intended
@@ -858,7 +897,15 @@ export function Arena() {
       <fog attach="fog" args={[bgColor, 10, 800]} />
       
       {/* Custom Open World Mesh Loader */}
-      {selectedMap === 'open_world' && <CustomOpenWorld />}
+      {selectedMap === 'open_world' && (
+        <CustomOpenWorld
+          activeTransformation={useGameStore(state => state.openWorldTransformation)}
+          onDeactivateTransformation={() => useGameStore.getState().setOpenWorldTransformation(null)}
+          isFloodActive={useGameStore(state => state.openWorldIsFloodActive)}
+          spawnedVehicles={useGameStore(state => state.openWorldSpawnedVehicles)}
+          placedObjects={useGameStore(state => state.openWorldPlacedObjects)}
+        />
+      )}
 
       {/* Floor */}
       {selectedMap !== 'void' && selectedMap !== 'open_world' && (
@@ -893,25 +940,27 @@ export function Arena() {
       )}
 
       {/* Dimension Grids */}
-      <Grid
-        infiniteGrid
-        fadeDistance={600}
-        sectionColor={
-          currentDimension === 'dimension_71' ? "#ff0055" :
-          arenaState === 'cube' ? "#14f195" : 
-          arenaState === 'dimension459' ? "#ffffff" : 
-          "#ff00ff"
-        }
-        sectionSize={
-          arenaState === 'cube' ? 10 : 
-          arenaState === 'dimension459' ? 50 : 25
-        }
-        sectionThickness={2}
-        cellSize={5}
-        cellColor={arenaState === 'dimension459' ? "#ff0000" : "#050505"}
-        cellThickness={1}
-        position={[0, -0.49, 0]}
-      />
+      {selectedMap !== 'open_world' && (
+        <Grid
+          infiniteGrid
+          fadeDistance={600}
+          sectionColor={
+            currentDimension === 'dimension_71' ? "#ff0055" :
+            arenaState === 'cube' ? "#14f195" : 
+            arenaState === 'dimension459' ? "#ffffff" : 
+            "#ff00ff"
+          }
+          sectionSize={
+            arenaState === 'cube' ? 10 : 
+            arenaState === 'dimension459' ? 50 : 25
+          }
+          sectionThickness={2}
+          cellSize={5}
+          cellColor={arenaState === 'dimension459' ? "#ff0000" : "#050505"}
+          cellThickness={1}
+          position={[0, -0.49, 0]}
+        />
+      )}
 
       {/* Vehicles */}
       {Object.entries(vehicles).map(([id, data]) => (
@@ -1007,6 +1056,13 @@ export function Arena() {
 
       {/* Rocket to Space */}
       <Rocket />
+      
+      {/* Backrooms Anomaly No-Clip Portal Gateway */}
+      <BackroomsPortal
+        position={[0, 1.6, -45]}
+        playerPos={playerPosition}
+        onEnter={() => enterBackrooms(0)}
+      />
       
       {/* 71 NO MANSKY Dimension Aesthetics */}
       {currentDimension === 'dimension_71' && <Dimension71Atmosphere />}

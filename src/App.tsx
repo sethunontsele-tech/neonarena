@@ -25,7 +25,12 @@ import { FaceCam } from './components/FaceCam';
 import { WebRecorder } from './components/WebRecorder';
 import { FeaturesController } from './components/FeaturesController';
 import { Casino } from './components/Casino';
+import { ClassroomMode } from './components/ClassroomMode';
+import { VoiceServersModal } from './components/VoiceServersModal';
 import { BiggestUpdateModal } from './components/BiggestUpdateModal';
+import { BackroomsHUD } from './components/Backrooms/BackroomsHUD';
+import { BackroomsLevelId } from './components/Backrooms/types';
+import { OpenWorldHUD } from './components/OpenWorld/OpenWorldHUD';
 import { ExperimentalFeatures } from './components/ExperimentalFeatures';
 import { TacticalMap } from './components/TacticalMap';
 import { ServerBrowser } from './components/ServerBrowser';
@@ -52,12 +57,15 @@ import type { WeaponCategory } from './store';
 import { LORE_ENTRIES } from './lore';
 import { soundService } from './services/soundService';
 import { InfinityAcademyVR } from './components/InfinityAcademyVR';
+import { QuickAccessBar } from './components/QuickAccessBar';
 import { CustomCharacterFolder } from './components/CustomCharacterFolder';
 import { CharacterFolderModal } from './components/CharacterFolderModal';
 import { OfflineGamesCabinet } from './components/OfflineGamesCabinet';
 import { LandscapeOverlay, AndroidBackButtonListener, CrashProtectionBoundary, PauseMenuOverlay, TutorialOverlay, AchievementsPanel, DailyRewardsPanel, SaveLoadManagerUI } from './components/AndroidSuite';
 import { getAbilitiesForWeapon } from './data/abilities';
-import { Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, Sliders, LayoutGrid, UserPlus, UserCheck, UserX, Terminal as TerminalIcon, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone, FolderOpen, Gamepad2, Gift } from 'lucide-react';
+import { BoardMode } from './components/BoardMode/BoardMode';
+import { FreerunCity } from './components/FreerunCity/FreerunCity';
+import { Radio, Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, Sliders, LayoutGrid, UserPlus, UserCheck, UserX, Terminal as TerminalIcon, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone, FolderOpen, Gamepad2, Gift, GraduationCap, Crown } from 'lucide-react';
 import { auth, signInWithGoogle, logout, searchUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriends, getFriendRequests, createClan, getClan, joinClan, leaveClan, getTopClans, getUserProfile, ClanData, saveLoadoutPreset, getLoadoutPreset, getLeaderboard } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -3560,6 +3568,17 @@ export default function App() {
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [currentLoadingTip, setCurrentLoadingTip] = useState('');
   const selectedMap = useGameStore(state => state.selectedMap);
+  const currentDimension = useGameStore(state => state.currentDimension);
+  const backroomsActive = useGameStore(state => state.backroomsActive);
+  const backroomsLevel = useGameStore(state => state.backroomsLevel);
+  const backroomsSanity = useGameStore(state => state.backroomsSanity);
+  const backroomsBattery = useGameStore(state => state.backroomsBattery);
+  const backroomsIsFlashlightOn = useGameStore(state => state.backroomsIsFlashlightOn);
+  const backroomsInventory = useGameStore(state => state.backroomsInventory);
+  const backroomsKeys = useGameStore(state => state.backroomsKeys);
+  const toggleBackroomsFlashlight = useGameStore(state => state.toggleBackroomsFlashlight);
+  const useBackroomsItem = useGameStore(state => state.useBackroomsItem);
+  const exitBackrooms = useGameStore(state => state.exitBackrooms);
 
   useEffect(() => {
     if (gameState === 'playing' || gameState === 'open_world') {
@@ -3567,6 +3586,39 @@ export default function App() {
       setLoadingProgress(0);
       
       const tips: Record<string, string[]> = {
+        backrooms: [
+          "TIP: Keep your flashlight battery charged with battery packs found in lockers.",
+          "TIP: Drink Almond Water to recover sanity and stave off liminal hallucinations.",
+          "TIP: Smilers are repelled by direct eye contact. Do NOT turn your back and run.",
+          "TIP: Dullers hunt by sound—crouch to mute footsteps in industrial corridors.",
+          "TIP: Elevators require keycards to access deeper sub-levels."
+        ],
+        
+        neon_megacity: [
+          "TIP: Use Wall-Running to traverse the massive skyscrapers.",
+          "TIP: The Undercity holds rare energy weapons, but beware Phase Hunters.",
+          "TIP: 456MB UPDATE: Experiment with the new combo system for extra damage."
+        ],
+        cyber_factory: [
+          "TIP: Watch out for active machinery and conveyor belts.",
+          "TIP: Hack security terminals to turn the factory defenses against enemies.",
+          "TIP: 456MB UPDATE: Elite Titans patrol the deeper assembly lines."
+        ],
+        abandoned_arena: [
+          "TIP: This old arena is unstable. Expect random energy storms and layout changes.",
+          "TIP: Search for hidden switches to unlock forgotten laboratories.",
+          "TIP: 456MB UPDATE: Adaptive Arena AI learns from your combat style here."
+        ],
+        neon_wasteland: [
+          "TIP: The massive wasteland requires vehicles or high mobility skills to navigate.",
+          "TIP: 456MB UPDATE: Giant mechanical bosses spawn near the ruins.",
+          "TIP: Watch out for severe gravity anomalies!"
+        ],
+        sky_arena: [
+          "TIP: Falling is fatal. Master double jumps and grapples to stay alive.",
+          "TIP: Destroy the energy bridges to isolate Swarm Bots.",
+          "TIP: 456MB UPDATE: Experience massive vertical combat in this expansion."
+        ],
         minecraft: [
           "TIP: Spawn custom towers to gain high-ground advantage over enemies.",
           "TIP: Swapping to your Diamond Sword deals devastating melee damage.",
@@ -3749,10 +3801,10 @@ export default function App() {
 
   useEffect(() => {
     // Show HUGE UPDATE modal once
-    const seen = localStorage.getItem('seen_mega_update_v15');
+    const seen = localStorage.getItem('seen_mega_update_v20');
     if (!seen) {
       setModal('update', true);
-      localStorage.setItem('seen_mega_update_v15', 'true');
+      localStorage.setItem('seen_mega_update_v20', 'true');
     }
   }, [setModal]);
   const chatMessages = useGameStore(state => state.chatMessages);
@@ -3930,6 +3982,7 @@ export default function App() {
 
       {/* Mobile Controls */}
       {isMobile && gameState === 'playing' && <MobileControls />}
+      {gameState === 'playing' && (selectedMap === 'arena' || selectedMap === 'infinity_academy') && <QuickAccessBar />}
       
       {/* Trophy Notification */}
       <AnimatePresence>
@@ -4038,13 +4091,34 @@ export default function App() {
           <ActivePowerUpsHUD />
           <WorldEventHUD />
           <BillionFeaturesBanner />
-          {gameState === 'open_world' && (
-            <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full backdrop-blur-md">
-              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em] flex items-center gap-2">
-                <Globe size={14} className="animate-spin-slow" />
-                Open World Mode Alpha // No Restrictions
-              </span>
-            </div>
+
+          {/* Backrooms Liminal Horror Survival HUD */}
+          {(currentDimension === 'backrooms' || selectedMap === 'backrooms' || backroomsActive) && (
+            <BackroomsHUD
+              levelId={backroomsLevel as BackroomsLevelId}
+              sanity={backroomsSanity}
+              battery={backroomsBattery}
+              isFlashlightOn={backroomsIsFlashlightOn}
+              inventory={backroomsInventory}
+              keys={backroomsKeys}
+              activeEvent={null}
+              onToggleFlashlight={toggleBackroomsFlashlight}
+              onUseItem={useBackroomsItem}
+              onExitBackrooms={exitBackrooms}
+            />
+          )}
+
+          {/* Open World Mega Sandbox HUD */}
+          {(gameState === 'open_world' || selectedMap === 'open_world') && (
+            <OpenWorldHUD
+              onSpawnVehicle={(type) => useGameStore.getState().spawnOpenWorldVehicle(type)}
+              onActivateTransformation={(id) => useGameStore.getState().setOpenWorldTransformation(id)}
+              onDeactivateTransformation={() => useGameStore.getState().setOpenWorldTransformation(null)}
+              activeTransformation={useGameStore(state => state.openWorldTransformation)}
+              isFloodActive={useGameStore(state => state.openWorldIsFloodActive)}
+              onToggleFlood={() => useGameStore.getState().toggleOpenWorldFlood()}
+              onAddMapObject={(name, category) => useGameStore.getState().addOpenWorldMapObject(name, category)}
+            />
           )}
           {/* Chat & Character Folder Buttons */}
           <div className="absolute top-4 left-4 z-50 flex items-center gap-2 pointer-events-auto">
@@ -4143,6 +4217,8 @@ export default function App() {
         {modals.clans && <ClanModal onClose={() => setModal('clans', false)} />}
         {modals.vehicles && <VehicleMenu onClose={() => setModal('vehicles', false)} />}
         {modals.update && <BiggestUpdateModal onClose={() => setModal('update', false)} />}
+        {modals.voice && <VoiceServersModal onClose={() => setModal('voice', false)} />}
+        {modals.classroom && <ClassroomMode onClose={() => setModal('classroom', false)} />}
         {showExperimental && <ExperimentalFeatures onClose={() => setShowExperimental(false)} />}
         {showQuests && <QuestModal onClose={() => setShowQuests(false)} />}
         <DailyRewardModal isOpen={showDailyRewards} onClose={() => setShowDailyRewards(false)} />
@@ -4719,6 +4795,16 @@ export default function App() {
         </div>
       )}
 
+      {/* Real-time Living Fantasy Strategy BOARD Mode */}
+      {gameState === 'board_mode' && (
+        <BoardMode onBackToMainMenu={() => useGameStore.setState({ gameState: 'menu' })} />
+      )}
+
+      {/* Neon Arena Freerun City Parkour Mode */}
+      {gameState === 'freerun_city' && (
+        <FreerunCity onReturnToLobby={() => useGameStore.setState({ gameState: 'menu' })} />
+      )}
+
       {/* Menus */}
       {gameState === 'menu' && (
         <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-start z-10 pointer-events-auto overflow-y-auto py-12 custom-scrollbar">
@@ -4994,16 +5080,44 @@ export default function App() {
                 </button>
               ))}
               <button 
+                onClick={() => useGameStore.setState({ gameState: 'board_mode' })}
+                className="bg-amber-400/20 text-amber-300 border-2 border-amber-400/50 px-6 rounded-xl font-black uppercase tracking-widest hover:bg-amber-400 hover:text-black transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)] animate-pulse"
+              >
+                <Crown size={16} /> BOARD MODE
+              </button>
+
+              <button 
+                onClick={() => useGameStore.setState({ gameState: 'freerun_city' })}
+                className="bg-cyan-500/20 text-cyan-300 border-2 border-cyan-400/50 px-6 rounded-xl font-black uppercase tracking-widest hover:bg-cyan-500 hover:text-black transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.4)] animate-pulse"
+              >
+                <Zap size={16} /> FREERUN CITY
+              </button>
+
+              <button 
                 onClick={() => setModal('casino', true)}
                 className="bg-emerald-500/10 text-emerald-400 border-2 border-emerald-500/20 px-6 rounded-xl font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-black transition-all"
               >
                 CASINO
               </button>
+
+              <button 
+                onClick={() => setModal('classroom', true)}
+                className="bg-amber-500/10 text-amber-400 border-2 border-amber-500/20 px-6 rounded-xl font-black uppercase tracking-widest hover:bg-amber-500 hover:text-black transition-all flex items-center gap-2"
+              >
+                <GraduationCap size={16} /> EDUCATION
+              </button>
+              <button 
+                onClick={() => setModal('voice', true)}
+                className="bg-indigo-500/10 text-indigo-400 border-2 border-indigo-500/20 px-6 rounded-xl font-black uppercase tracking-widest hover:bg-indigo-500 hover:text-white transition-all flex items-center gap-2"
+              >
+                <Radio size={16} /> VOICE SERVERS
+              </button>
+
               <button 
                 onClick={() => setModal('update', true)}
-                className="bg-blue-500/10 text-blue-400 border-2 border-blue-500/20 px-6 rounded-xl font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all animate-pulse"
+                className="bg-emerald-500/10 text-emerald-400 border-2 border-emerald-500/20 px-6 rounded-xl font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-black transition-all animate-pulse"
               >
-                UPDATE V1.5
+                456MB UPDATE
               </button>
             </div>
 
@@ -5066,7 +5180,7 @@ export default function App() {
                       Ranked
                     </button>
                   </div>
-                  <div className="flex gap-4">
+                  <div className="flex flex-wrap justify-center gap-4">
                     <button
                       onClick={startGame}
                       className="group relative px-20 py-8 bg-amber-400 text-black text-4xl font-black rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_rgba(245,158,11,0.4)]"
@@ -5081,6 +5195,24 @@ export default function App() {
                       <div className="flex flex-col items-center">
                         <Globe size={24} className="mb-2 group-hover:rotate-12 transition-all" />
                         <span className="text-xl">OPEN WORLD</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => useGameStore.setState({ gameState: 'board_mode' })}
+                      className="group relative px-12 py-8 bg-gradient-to-br from-amber-500 via-amber-400 to-yellow-500 text-black text-2xl font-black rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_rgba(245,158,11,0.5)] border border-amber-300"
+                    >
+                      <div className="flex flex-col items-center">
+                        <Crown size={24} className="mb-2 group-hover:scale-110 transition-all text-black" />
+                        <span className="text-xl">BOARD MODE</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => useGameStore.setState({ gameState: 'freerun_city' })}
+                      className="group relative px-12 py-8 bg-gradient-to-br from-cyan-400 via-sky-400 to-blue-500 text-black text-2xl font-black rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_rgba(6,182,212,0.5)] border border-cyan-200"
+                    >
+                      <div className="flex flex-col items-center">
+                        <Zap size={24} className="mb-2 group-hover:scale-110 transition-all text-black" />
+                        <span className="text-xl">FREERUN CITY</span>
                       </div>
                     </button>
                   </div>

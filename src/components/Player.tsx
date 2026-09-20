@@ -550,6 +550,27 @@ export function Player() {
       }
     }
 
+    // Backrooms Dimension Sanity & Battery Drain Loop
+    const isBackrooms = currentDimension === 'backrooms' || useGameStore.getState().backroomsActive;
+    if (isBackrooms && gameState === 'playing' && playerState === 'active') {
+      const state = useGameStore.getState();
+      if (state.backroomsIsFlashlightOn) {
+        const nextBat = Math.max(0, state.backroomsBattery - delta * 1.5);
+        if (nextBat <= 0 && state.backroomsBattery > 0) {
+          state.toggleBackroomsFlashlight();
+          state.addEvent('🔋 FLASHLIGHT BATTERY DIED! YOU ARE IN THE DARK.');
+        }
+        useGameStore.setState({ backroomsBattery: nextBat });
+      } else {
+        // In the dark -> Drain sanity slowly
+        const nextSanity = Math.max(0, state.backroomsSanity - delta * 1.2);
+        useGameStore.setState({ backroomsSanity: nextSanity });
+        if (nextSanity <= 15 && Math.random() < 0.01) {
+          state.addEvent('👁️ VISIONS MULTIPLYING... DRINK ALMOND WATER!');
+        }
+      }
+    }
+
     // Portal distance check and next level transition trigger
     if (portalPosition && gameState === 'playing' && playerState === 'active') {
       const dist = Math.hypot(pos.x - portalPosition[0], pos.z - portalPosition[2]);

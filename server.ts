@@ -887,6 +887,54 @@ async function startServer() {
       io.to(data.to).emit('signal', { from: socket.id, signal: data.signal });
     });
 
+    
+    socket.on('getVoiceServers', () => {
+      socket.emit('voiceServersList', globalVoiceServers);
+    });
+
+    socket.on('createVoiceServer', (name: string) => {
+      const id = 'vs_' + Math.random().toString(36).substr(2, 9);
+      globalVoiceServers[id] = {
+        id,
+        name,
+        creatorId: socket.id,
+        participants: {}
+      };
+      io.emit('voiceServersList', globalVoiceServers);
+    });
+
+    socket.on('joinVoiceServer', (data: { serverId: string, playerName: string }) => {
+      // Remove from previous
+      for (const vsId in globalVoiceServers) {
+        if (globalVoiceServers[vsId].participants[socket.id]) {
+          delete globalVoiceServers[vsId].participants[socket.id];
+          io.to(`voice_${vsId}`).emit('voiceServerParticipantLeft', socket.id);
+          socket.leave(`voice_${vsId}`);
+        }
+      }
+      
+      const vs = globalVoiceServers[data.serverId];
+      if (vs) {
+        vs.participants[socket.id] = data.playerName;
+        socket.join(`voice_${vs.id}`);
+        io.to(`voice_${vs.id}`).emit('voiceServerParticipantJoined', { id: socket.id, name: data.playerName });
+        io.emit('voiceServersList', globalVoiceServers);
+        socket.emit('joinedVoiceServer', vs.id);
+      }
+    });
+
+    socket.on('leaveVoiceServer', () => {
+      for (const vsId in globalVoiceServers) {
+        if (globalVoiceServers[vsId].participants[socket.id]) {
+          delete globalVoiceServers[vsId].participants[socket.id];
+          io.to(`voice_${vsId}`).emit('voiceServerParticipantLeft', socket.id);
+          socket.leave(`voice_${vsId}`);
+        }
+      }
+      socket.emit('joinedVoiceServer', null);
+      io.emit('voiceServersList', globalVoiceServers);
+    });
+
     socket.on('updateSettings', (newSettings: any) => {
       const room = rooms[currentRoomId || 'global'];
       if (room) {

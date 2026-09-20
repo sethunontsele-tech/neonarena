@@ -1,18 +1,11 @@
-
+const fs = require('fs');
+fs.writeFileSync('src/components/BiggestUpdateModal.tsx', `
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Zap, Target, Shield, Trophy, Activity, Cpu, Sparkles, Wand2, Sword, FlaskConical, Car, Flame, Rocket, Ghost, Layers, Terminal, Map, Skull, BoomBox } from 'lucide-react';
-import { AwakeningEvent } from './AwakeningEvent';
 import { soundService } from '../services/soundService';
 
 export const BiggestUpdateModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  
-  const [showEvent, setShowEvent] = React.useState(false);
-
-  if (showEvent) {
-    return <AwakeningEvent onComplete={onClose} />;
-  }
-
   const features = [
     { icon: <Map />, title: "Massive New Hub & Maps", desc: "Explore the new interconnected Hub, Neon Megacity, Cyber Factory, Abandoned Arena, and more." },
     { icon: <Skull />, title: "7 New Game Modes", desc: "Survival, Boss Rush, Horde, Time Attack, Extraction, Chaos, and customizable Training Mode." },
@@ -56,7 +49,7 @@ export const BiggestUpdateModal: React.FC<{ onClose: () => void }> = ({ onClose 
             </div>
           </div>
           <button 
-            onClick={() => { onClose(); soundService.playSFX("ui_click"); }}
+            onClick={() => { onClose(); soundService.playSFX('ui_click'); }}
             className="p-4 bg-white/5 hover:bg-emerald-500 hover:text-black rounded-3xl transition-all"
           >
             <X size={32} />
@@ -93,7 +86,7 @@ export const BiggestUpdateModal: React.FC<{ onClose: () => void }> = ({ onClose 
         {/* Footer */}
         <div className="p-8 sm:p-12 pt-0 z-10">
           <button 
-            onClick={() => { setShowEvent(true); soundService.playSFX("ui_click"); }}
+            onClick={() => { onClose(); soundService.playSFX('ui_click'); }}
             className="w-full py-5 sm:py-6 bg-emerald-500 text-black font-black text-xl sm:text-2xl uppercase tracking-[0.2em] sm:tracking-[0.3em] rounded-2xl hover:bg-emerald-400 transition-all hover:scale-[1.01] shadow-[0_0_30px_rgba(16,185,129,0.4)]"
           >
             ENTER THE EXPANSION
@@ -103,3 +96,5 @@ export const BiggestUpdateModal: React.FC<{ onClose: () => void }> = ({ onClose 
     </div>
   );
 };
+`);
+console.log('Modal patched.');

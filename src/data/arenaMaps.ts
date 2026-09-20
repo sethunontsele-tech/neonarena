@@ -17,6 +17,38 @@ export interface ArenaMap {
 
 export const ARENA_MAPS: ArenaMap[] = [
   {
+    id: 'open_world',
+    name: 'Neon Horizon // Massive Sandbox Open World',
+    year: 2026,
+    creator: 'Neon Studio & Player Community',
+    genre: 'Massive Sandbox / Titan Battle / RPG',
+    platform: 'Cross-Platform PC/Mobile/VR',
+    desc: 'Gigantic multi-biome open world! Explore Megacities, Dino Valleys, Military Airbases, Ocean Islands, and Pyramids. Drive 10+ vehicles, ride dragons & T-Rex mounts, trigger Titan transformations, build custom maps, join clans, and survive The Great Flood!',
+    servers: ['Megacity-Prime', 'Dino-Sanctuary', 'Titan-Colosseum', 'Military-Airfield', 'Oceania-Harbor', 'Ruins-Wilderness'],
+    difficulty: 'Dynamic Sandbox',
+    rating: 'T',
+    players: '1.2M+',
+    award: 'ULTIMATE EXPANSION',
+    gradient: 'from-cyan-950 via-blue-950 to-black border-cyan-400/60',
+    badge: 'MEGA SANDBOX'
+  },
+  {
+    id: 'backrooms',
+    name: 'The Backrooms // Liminal Horror Dimension',
+    year: 2026,
+    creator: 'Neon Reality Anomaly Team',
+    genre: 'Liminal Survival Horror',
+    platform: 'Cross-Platform',
+    desc: 'Massive procedural liminal horror dimension with 6 unique levels, original entities, sanity meter, almond water, flashlight batteries, and the Harvester boss!',
+    servers: ['Level-0-YellowHalls', 'Level-1-Industrial', 'Level-2-Maintenance', 'Level-3-Flooded', 'Level-4-Office', 'Level-5-Hotel'],
+    difficulty: 'Nightmare',
+    rating: 'M',
+    players: '500K+',
+    award: 'MAJOR EXPANSION',
+    gradient: 'from-amber-950 via-zinc-900 to-black border-amber-500/50',
+    badge: 'NEW DIMENSION'
+  },
+  {
     id: 'minecraft',
     name: 'Minecraft',
     year: 2011,
@@ -817,3 +849,27 @@ export const ARENA_MAPS: ArenaMap[] = [
     badge: 'SURVIVAL RPG'
   }
 ];
+
+const generatedModes = ['Cyber', 'Neon', 'Quantum', 'Void', 'Plasma', 'Ether', 'Titan', 'Vortex', 'Phantom', 'Inferno'];
+const generatedSuffixes = ['Arena', 'Zone', 'Core', 'Labyrinth', 'Rift', 'Nexus', 'Sector', 'Spire', 'Grid', 'Dome'];
+const generatedGenres = ['FPS', 'RPG', 'MOBA', 'Survival', 'Battle Royale', 'Platformer', 'Puzzle', 'Strategy', 'Rogue-like', 'Sandbox'];
+
+for (let i = 1; i <= 1000; i++) {
+  const modeName = `${generatedModes[i % generatedModes.length]} ${generatedSuffixes[Math.floor(i / generatedModes.length) % generatedSuffixes.length]}`;
+  ARENA_MAPS.push({
+    id: `procedural_${i}`,
+    name: `${modeName} ${i}`,
+    year: 2026,
+    creator: 'Neon Forge',
+    genre: generatedGenres[i % generatedGenres.length],
+    platform: 'Neon Arena',
+    desc: `Procedurally generated ${generatedGenres[i % generatedGenres.length]} map #${i} in the ${modeName} series.`,
+    servers: [`Server ${Math.floor(Math.random() * 1000)}`, `Node ${Math.floor(Math.random() * 1000)}`],
+    difficulty: ['Easy', 'Normal', 'Hard', 'Extreme'][i % 4],
+    rating: 'T',
+    players: `${Math.floor(Math.random() * 100) + 1}k`,
+    award: 'Procedural Generation',
+    gradient: `from-[${['#00ffff', '#ff0055', '#f59e0b', '#8b5cf6'][i % 4]}] to-[${['#000000', '#111111', '#222222'][i % 3]}]`,
+    badge: 'NEW'
+  });
+}

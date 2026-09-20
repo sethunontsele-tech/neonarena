@@ -1,3 +1,11 @@
+
+export interface VoiceServer {
+  id: string;
+  name: string;
+  creatorId: string;
+  participants: Record<string, string>;
+}
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -19,8 +27,9 @@ export interface AppUser extends User {
 }
 
 import { soundService } from './services/soundService';
+import type { TransformationId, MegaVehicleType, PlacedMapObject } from './components/OpenWorld/types';
 
-export type GameState = 'splash' | 'menu' | 'lobby' | 'playing' | 'gameover' | 'open_world' | 'server_browser';
+export type GameState = 'splash' | 'menu' | 'lobby' | 'playing' | 'gameover' | 'open_world' | 'server_browser' | 'board_mode' | 'freerun_city';
 export type EntityState = 'active' | 'disabled';
 
 export interface ServerInstance {
@@ -33,11 +42,11 @@ export interface ServerInstance {
   region: string;
   type: 'competitive' | 'casual' | 'open-world';
 }
-export type MapType = 'open_world' | 'maze' | 'arena' | 'pillars' | 'flat' | 'void' | 'cybercity' | 'volcano' | 'infinite' | 'neon_grid' | 'quantum_rift' | 'custom_scan' | 'aurum_dominion' | 'infinity_academy' | 'minecraft' | 'roblox' | 'gta_v' | 'terraria' | 'rust' | 'cs2' | 'ark' | 'valheim' | 'wow' | 'ffxiv' | 'lol' | 'fortnite' | 'apex' | 'dayz' | 'project_zomboid' | 'unturned' | 'gmod' | 'tf2' | 'destiny2' | 'warframe' | 'sea_of_thieves' | 'no_mans_sky' | 'osrs' | 'dbd' | 'among_us' | 'phasmophobia' | 'elden_ring' | 'bg3' | 'cyberpunk' | 'overwatch2' | 'r6s' | 'rocket_league' | 'stardew_valley' | 'drg' | 'dota2' | 'fallout76' | 'eso' | 'poe' | 'genshin' | 'pubg' | 'tarkov' | 'starfield' | 'rdr2' | 'palworld' | 'helldivers2' | 'lethal_company' | 'vrising' | 'days_to_die' | 'conan_exiles' | 'enshrouded';
+export type MapType = 'backrooms' | 'neon_megacity' | 'cyber_factory' | 'abandoned_arena' | 'neon_wasteland' | 'sky_arena' | 'open_world' | 'maze' | 'arena' | 'pillars' | 'flat' | 'void' | 'cybercity' | 'volcano' | 'infinite' | 'neon_grid' | 'quantum_rift' | 'custom_scan' | 'aurum_dominion' | 'infinity_academy' | 'minecraft' | 'roblox' | 'gta_v' | 'terraria' | 'rust' | 'cs2' | 'ark' | 'valheim' | 'wow' | 'ffxiv' | 'lol' | 'fortnite' | 'apex' | 'dayz' | 'project_zomboid' | 'unturned' | 'gmod' | 'tf2' | 'destiny2' | 'warframe' | 'sea_of_thieves' | 'no_mans_sky' | 'osrs' | 'dbd' | 'among_us' | 'phasmophobia' | 'elden_ring' | 'bg3' | 'cyberpunk' | 'overwatch2' | 'r6s' | 'rocket_league' | 'stardew_valley' | 'drg' | 'dota2' | 'fallout76' | 'eso' | 'poe' | 'genshin' | 'pubg' | 'tarkov' | 'starfield' | 'rdr2' | 'palworld' | 'helldivers2' | 'lethal_company' | 'vrising' | 'days_to_die' | 'conan_exiles' | 'enshrouded';
 export type SkinType = 'alien' | 'neon' | 'gold' | 'stealth' | 'glitch' | 'ruby' | 'emerald' | 'diamond' | 'void' | 'steve' | 'alex' | 'vijo_pro';
 export type PatternType = 'none' | 'camo' | 'stripes' | 'dots' | 'grid' | 'circuit' | 'alien';
 export type AccessoryType = 'none' | 'hat' | 'glasses' | 'backpack' | 'horns' | 'halo';
-export type GameMode = 'ffa' | 'tdm' | 'ctf' | 'creative' | 'koth' | 'domination' | 'ranked' | 'infection';
+export type GameMode = 'survival' | 'boss_rush' | 'horde' | 'time_attack' | 'extraction' | 'chaos' | 'training' | 'ffa' | 'tdm' | 'ctf' | 'creative' | 'koth' | 'domination' | 'ranked' | 'infection';
 export type PlayerClass = 'mage' | 'spellblade' | 'alchemist' | 'none';
 export type VehicleType = 'car' | 'helicopter' | 'motorbike';
 export type WeatherType = 'clear' | 'rain' | 'storm' | 'fog' | 'snow';
@@ -109,7 +118,7 @@ export interface ControlPoint {
   capturingTeam: Team;
 }
 
-export type DimensionType = 'core' | 'void' | 'solar' | 'glitch' | 'matrix' | 'inferno' | 'zenith' | 'cyber' | 'rusty' | 'prism' | 'edge' | 'dimension_71';
+export type DimensionType = 'core' | 'void' | 'solar' | 'glitch' | 'matrix' | 'inferno' | 'zenith' | 'cyber' | 'rusty' | 'prism' | 'edge' | 'dimension_71' | 'backrooms';
 
 export interface DimensionStats {
   id: DimensionType;
@@ -137,6 +146,7 @@ export const DIMENSIONS: Record<DimensionType, DimensionStats> = {
   rusty: { id: 'rusty', name: 'INDUSTRIAL CORRECTION', gravity: -11, speedMultiplier: 1.0, manaRegen: 0.3, visuals: { color: '#92400e', fog: 0.2, ambient: '#1a0f05' } },
   prism: { id: 'prism', name: 'PRISM ARRAY', gravity: -9.81, speedMultiplier: 1.4, manaRegen: 1.0, visuals: { color: '#ffffff', fog: 0.03, ambient: '#2a2a2a' } },
   edge: { id: 'edge', name: 'EDGE DIMENSION // VIJO', gravity: -1, speedMultiplier: 2.0, manaRegen: 10.0, visuals: { color: '#ffffff', fog: 0, ambient: '#ffffff' } },
+  backrooms: { id: 'backrooms', name: 'THE BACKROOMS // LIMINAL ANOMALY', gravity: -9.81, speedMultiplier: 0.95, manaRegen: 0.5, visuals: { color: '#ca8a04', fog: 0.06, ambient: '#181408' } }
 };
 
 export type BlockType = 
@@ -586,7 +596,18 @@ interface GameStore {
   lastDashRefillTime: number;
   
   // UI States
-  modals: {
+  
+  voiceServers: Record<string, VoiceServer>;
+  activeVoiceServer: string | null;
+  setVoiceServers: (servers: Record<string, VoiceServer>) => void;
+  setActiveVoiceServer: (id: string | null) => void;
+  joinVoiceServer: (id: string) => void;
+  leaveVoiceServer: () => void;
+  createVoiceServer: (name: string) => void;
+
+  
+
+  modals: { classroom: boolean; voice: boolean;
     casino: boolean;
     update: boolean;
     tasks: boolean;
@@ -794,6 +815,34 @@ interface GameStore {
   teleportProgress: number;
   teleportTarget: DimensionType | null;
   setTeleportState: (progress: number, target: DimensionType | null) => void;
+
+  // Backrooms Dimension
+  backroomsActive: boolean;
+  backroomsLevel: number;
+  backroomsSanity: number;
+  backroomsBattery: number;
+  backroomsIsFlashlightOn: boolean;
+  backroomsInventory: any[];
+  backroomsKeys: string[];
+  enterBackrooms: (level?: number) => void;
+  exitBackrooms: () => void;
+  setBackroomsLevel: (lvl: number) => void;
+  toggleBackroomsFlashlight: () => void;
+  useBackroomsItem: (itemType: string) => void;
+  pickupBackroomsItem: (item: any) => void;
+  drainBackroomsSanity: (amt: number) => void;
+  restoreBackroomsSanity: (amt: number) => void;
+  reviveBackroomsTeammate: (teammateId: string) => void;
+
+  // Open World Sandbox Dimension
+  openWorldTransformation: TransformationId | null;
+  openWorldIsFloodActive: boolean;
+  openWorldSpawnedVehicles: Array<{ id: string; type: MegaVehicleType; pos: [number, number, number] }>;
+  openWorldPlacedObjects: PlacedMapObject[];
+  spawnOpenWorldVehicle: (type: MegaVehicleType) => void;
+  setOpenWorldTransformation: (form: TransformationId | null) => void;
+  toggleOpenWorldFlood: () => void;
+  addOpenWorldMapObject: (name: string, category: any) => void;
 
   // Combat Feedback
   hitIndicator: { active: boolean; position: { x: number; y: number } | null };
@@ -1040,6 +1089,20 @@ interface GameStore {
     worldId: string | null;
     worldName: string;
   }) => void;
+  // Quick Access Bar Integration
+  equippedSkills: string[];
+  equippedArmor: { head?: string; chest?: string; legs?: string; hands?: string; feet?: string; };
+  equippedStaff: string | null;
+  selectedMagic: string[];
+  selectedSpells: string[];
+  inventoryItems: { id: string; type: string; name: string; icon: string; quantity: number; rarity: string; description: string; effect?: string; stats?: any }[];
+  
+  setEquippedSkills: (skills: string[]) => void;
+  setEquippedArmor: (slot: 'head' | 'chest' | 'legs' | 'hands' | 'feet', armorId: string | undefined) => void;
+  setEquippedStaff: (staffId: string | null) => void;
+  setSelectedMagic: (magic: string[]) => void;
+  setSelectedSpells: (spells: string[]) => void;
+  setInventoryItems: (items: any[]) => void;
 }
 
 const INITIAL_ENEMIES: EnemyData[] = [
@@ -1055,6 +1118,28 @@ const INITIAL_ENEMIES: EnemyData[] = [
 
 export const useGameStore = create<GameStore>((set, get) => ({
   gameState: 'splash',
+  equippedSkills: ['dash', 'double_jump'],
+  equippedArmor: {},
+  equippedStaff: null,
+  selectedMagic: ['fireball'],
+  selectedSpells: ['heal'],
+
+  inventoryItems: [
+    { id: '1', type: 'potion', name: 'Health Potion', icon: 'FlaskConical', quantity: 5, rarity: 'common', description: 'Restores 50 HP', effect: 'heal' },
+    { id: '2', type: 'spell', name: 'Lightning Bolt', icon: 'Zap', quantity: 1, rarity: 'rare', description: 'Deals 30 damage', stats: { damage: 30 } },
+    { id: '3', type: 'weapon', name: 'Plasma Whip', icon: 'Flame', quantity: 1, rarity: 'legendary', description: 'V2.0.0 Experimental Energy Weapon.', stats: { damage: 150 } },
+    { id: '4', type: 'weapon', name: 'Stasis Field', icon: 'Shield', quantity: 1, rarity: 'epic', description: 'Freezes time in a small radius.', stats: { duration: 5 } },
+    { id: '5', type: 'armor', name: 'Titan Exosuit', icon: 'Shield', quantity: 1, rarity: 'legendary', description: 'Heavy sentinel class armor.', stats: { defense: 200 } },
+    { id: '6', type: 'artifact', name: 'Phase Core', icon: 'Zap', quantity: 3, rarity: 'epic', description: 'Dropped by Phase Hunters. Upgrades movement abilities.', stats: { value: 1000 } }
+  ],
+
+  setEquippedSkills: (skills) => set({ equippedSkills: skills }),
+  setEquippedArmor: (slot, armorId) => set((state) => ({ equippedArmor: { ...state.equippedArmor, [slot]: armorId } })),
+  setEquippedStaff: (staffId) => set({ equippedStaff: staffId }),
+  setSelectedMagic: (magic) => set({ selectedMagic: magic }),
+  setSelectedSpells: (spells) => set({ selectedSpells: spells }),
+  setInventoryItems: (items) => set({ inventoryItems: items }),
+
   pings: [],
   uiLayoutConfig: loadUILayoutConfig(),
   screenShakeIntensity: 0,
@@ -1345,7 +1430,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }, 800);
   },
   joinOpenWorld: () => {
-    set({ gameState: 'open_world', selectedMode: 'ffa', selectedMap: 'infinite', lobbyMode: false });
+    set({ gameState: 'open_world', selectedMode: 'ffa', selectedMap: 'open_world', lobbyMode: false });
     get().addEvent('🌍 ENTERING OPEN WORLD...');
   },
   joinServer: (serverId) => {
@@ -1389,7 +1474,31 @@ export const useGameStore = create<GameStore>((set, get) => ({
   currentDashes: 3,
   lastDashRefillTime: Date.now(),
   
+    voiceServers: {},
+  activeVoiceServer: null,
+  setVoiceServers: (servers) => set({ voiceServers: servers }),
+  setActiveVoiceServer: (id) => set({ activeVoiceServer: id }),
+  joinVoiceServer: (id) => {
+    const state = get();
+    if (state.socket && state.gamertag) {
+      state.socket.emit('joinVoiceServer', { serverId: id, playerName: state.gamertag });
+    }
+  },
+  leaveVoiceServer: () => {
+    const state = get();
+    if (state.socket) {
+      state.socket.emit('leaveVoiceServer');
+    }
+  },
+  createVoiceServer: (name) => {
+    const state = get();
+    if (state.socket) {
+      state.socket.emit('createVoiceServer', name);
+    }
+  },
   modals: {
+    classroom: false,
+    voice: false,
     casino: false,
     update: false,
     tasks: false,
@@ -1447,6 +1556,143 @@ export const useGameStore = create<GameStore>((set, get) => ({
   teleportProgress: 0,
   teleportTarget: null,
   setTeleportState: (progress, target) => set({ teleportProgress: progress, teleportTarget: target }),
+  
+  // Backrooms Dimension state
+  backroomsActive: false,
+  backroomsLevel: 0,
+  backroomsSanity: 100,
+  backroomsBattery: 100,
+  backroomsIsFlashlightOn: false,
+  backroomsInventory: [
+    { id: 'almond_1', type: 'almond_water', name: 'Almond Water', count: 2, icon: '💧' },
+    { id: 'bat_1', type: 'battery', name: 'Neon Battery Pack', count: 1, icon: '🔋' }
+  ],
+  backroomsKeys: [],
+  enterBackrooms: (level = 0) => {
+    set({
+      backroomsActive: true,
+      currentDimension: 'backrooms',
+      selectedMap: 'backrooms',
+      backroomsLevel: level,
+      playerPosition: [0, 1.5, 0],
+      cameraShake: 0.6
+    });
+    get().addEvent('⚠️ REALITY BREACH: ENTERED THE BACKROOMS DIMENSION.');
+    try {
+      soundService.playSFX('dimension_shift');
+    } catch (e) {}
+  },
+  exitBackrooms: () => {
+    set({
+      backroomsActive: false,
+      currentDimension: 'core',
+      selectedMap: 'arena',
+      playerPosition: [0, 1.5, 0],
+      cameraShake: 0.4
+    });
+    get().addEvent('🌐 SYSTEM RESTORED: RETURNED SAFELY TO NEON ARENA.');
+    try {
+      soundService.playSFX('dimension_shift');
+    } catch (e) {}
+  },
+  setBackroomsLevel: (lvl: number) => {
+    set({
+      backroomsLevel: lvl,
+      playerPosition: [0, 1.5, 0],
+      cameraShake: 0.3
+    });
+    get().addEvent(`🛗 ELEVATOR ARRIVED: TRANSFERRED TO LEVEL ${lvl}.`);
+  },
+  toggleBackroomsFlashlight: () => {
+    const { backroomsIsFlashlightOn, backroomsBattery } = get();
+    if (!backroomsIsFlashlightOn && backroomsBattery <= 0) {
+      get().addEvent('🔋 BATTERY DEPLETED! FIND A BATTERY PACK.');
+      return;
+    }
+    set({ backroomsIsFlashlightOn: !backroomsIsFlashlightOn });
+  },
+  useBackroomsItem: (itemType: string) => {
+    const { backroomsInventory, health, backroomsSanity, backroomsBattery } = get();
+    const itemIndex = backroomsInventory.findIndex(i => i.type === itemType);
+    if (itemIndex === -1) return;
+
+    const item = backroomsInventory[itemIndex];
+    const nextInv = [...backroomsInventory];
+    if (item.count > 1) {
+      nextInv[itemIndex] = { ...item, count: item.count - 1 };
+    } else {
+      nextInv.splice(itemIndex, 1);
+    }
+
+    if (itemType === 'almond_water') {
+      set({
+        backroomsInventory: nextInv,
+        health: Math.min(100, health + 30),
+        backroomsSanity: Math.min(100, backroomsSanity + 40)
+      });
+      get().addEvent('💧 DRANK ALMOND WATER: HEALTH & SANITY RESTORED.');
+    } else if (itemType === 'battery') {
+      set({
+        backroomsInventory: nextInv,
+        backroomsBattery: 100
+      });
+      get().addEvent('🔋 BATTERY PACK INSERTED: FLASHLIGHT RECHARGED TO 100%.');
+    } else if (itemType === 'medkit') {
+      set({
+        backroomsInventory: nextInv,
+        health: Math.min(100, health + 50)
+      });
+      get().addEvent('🩹 MEDKIT APPLIED: +50 HP RESTORED.');
+    } else if (itemType === 'adrenaline') {
+      set({
+        backroomsInventory: nextInv,
+        sprintSpeed: 24
+      });
+      get().addEvent('⚡ ADRENALINE SURGE: SPEED BOOST ACTIVE (12s).');
+      setTimeout(() => {
+        set({ sprintSpeed: 16 });
+      }, 12000);
+    }
+  },
+  pickupBackroomsItem: (item: any) => {
+    const { backroomsInventory, backroomsKeys } = get();
+    if (item.type.startsWith('keycard_')) {
+      if (!backroomsKeys.includes(item.type)) {
+        set({ backroomsKeys: [...backroomsKeys, item.type] });
+        get().addEvent(`🔑 ACQUIRED: ${item.name.toUpperCase()}!`);
+      }
+      return;
+    }
+    const existing = backroomsInventory.find(i => i.type === item.type);
+    if (existing) {
+      set({
+        backroomsInventory: backroomsInventory.map(i => 
+          i.type === item.type ? { ...i, count: i.count + 1 } : i
+        )
+      });
+    } else {
+      set({
+        backroomsInventory: [...backroomsInventory, { ...item, count: 1 }]
+      });
+    }
+    get().addEvent(`📦 COLLECTED: ${item.name}`);
+  },
+  drainBackroomsSanity: (amt: number) => {
+    set(state => ({
+      backroomsSanity: Math.max(0, state.backroomsSanity - amt)
+    }));
+  },
+  restoreBackroomsSanity: (amt: number) => {
+    set(state => ({
+      backroomsSanity: Math.min(100, state.backroomsSanity + amt)
+    }));
+  },
+  reviveBackroomsTeammate: (teammateId: string) => {
+    get().addEvent(`🚑 TEAMMATE ${teammateId.toUpperCase()} REVIVED!`);
+    try {
+      soundService.playSFX('powerup');
+    } catch (e) {}
+  },
   
   matchHistory: [],
   replays: [],
@@ -3487,5 +3733,70 @@ export const useGameStore = create<GameStore>((set, get) => ({
       activeWorldName: mods.worldName
     });
     get().addEvent(`⚙️ [MOD COMPILER] Loaded and injected world configs & scripts!`);
+  },
+
+  // Open World Sandbox Dimension
+  openWorldTransformation: null,
+  openWorldIsFloodActive: false,
+  openWorldSpawnedVehicles: [],
+  openWorldPlacedObjects: [],
+  spawnOpenWorldVehicle: (type: MegaVehicleType) => {
+    const playerPos = get().playerPosition;
+    const forwardOffset: [number, number, number] = [
+      playerPos[0] + (Math.random() - 0.5) * 8,
+      playerPos[1] + 2,
+      playerPos[2] + (Math.random() - 0.5) * 8
+    ];
+    const newVehicle = {
+      id: `spawned_${type}_${Date.now()}`,
+      type,
+      pos: forwardOffset
+    };
+    set(state => ({
+      openWorldSpawnedVehicles: [...state.openWorldSpawnedVehicles, newVehicle]
+    }));
+    get().addEvent(`🚗 [VEHICLE] Deployed ${type.toUpperCase().replace('_', ' ')}!`);
+    try {
+      soundService.playSFX('powerup');
+    } catch (e) {}
+  },
+  setOpenWorldTransformation: (form: TransformationId | null) => {
+    set({ openWorldTransformation: form });
+    if (form) {
+      get().addEvent(`⚡ [TRANSFORMATION] Awakened ${form.toUpperCase().replace('_', ' ')}!`);
+      try {
+        soundService.playSFX('dimension_shift');
+      } catch (e) {}
+    } else {
+      get().addEvent(`⚡ [TRANSFORMATION] Reverted to mortal form.`);
+    }
+  },
+  toggleOpenWorldFlood: () => {
+    const nextState = !get().openWorldIsFloodActive;
+    set({ openWorldIsFloodActive: nextState });
+    if (nextState) {
+      get().addEvent(`🌊 [SURVIVAL] THE GREAT FLOOD HAS COMMENCED! WATER LEVELS ARE RISING!`);
+    } else {
+      get().addEvent(`🌊 [SURVIVAL] The Great Flood has subsided.`);
+    }
+  },
+  addOpenWorldMapObject: (name: string, category: any) => {
+    const playerPos = get().playerPosition;
+    const newObj: PlacedMapObject = {
+      id: `obj_${Date.now()}`,
+      name,
+      category,
+      position: [playerPos[0], playerPos[1] + 1, playerPos[2]],
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1],
+      color: '#06b6d4'
+    };
+    set(state => ({
+      openWorldPlacedObjects: [...state.openWorldPlacedObjects, newObj]
+    }));
+    get().addEvent(`🛠️ [STUDIO] Constructed ${name}!`);
+    try {
+      soundService.playSFX('ui_click');
+    } catch (e) {}
   }
 }));
