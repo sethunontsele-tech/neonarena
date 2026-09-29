@@ -433,6 +433,47 @@ function SettingsPanel() {
           </select>
         </div>
       </div>
+      <div className="md:col-span-2 space-y-3 pt-2 border-t border-white/10">
+        <div className="flex items-center justify-between">
+          <h4 className="text-red-400 font-black uppercase tracking-widest text-xs flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            HUD Directional Damage Indicator Calibration
+          </h4>
+          <span className="text-[10px] text-white/40 font-mono">High-Speed HUD Feedback</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <button
+            onClick={() => useGameStore.getState().takeDamage(15, false, 'FRONT-DRONE', 0)}
+            className="px-3 py-2 bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 hover:border-red-400 text-red-200 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5"
+          >
+            <span>▲ Front (0°)</span>
+          </button>
+          <button
+            onClick={() => useGameStore.getState().takeDamage(18, false, 'FLANK-UNIT', 90)}
+            className="px-3 py-2 bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 hover:border-red-400 text-red-200 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5"
+          >
+            <span>▶ Right (90°)</span>
+          </button>
+          <button
+            onClick={() => useGameStore.getState().takeDamage(22, false, 'AMBUSH-SQUAD', 180)}
+            className="px-3 py-2 bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 hover:border-red-400 text-red-200 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5"
+          >
+            <span>▼ Behind (180°)</span>
+          </button>
+          <button
+            onClick={() => useGameStore.getState().takeDamage(18, false, 'FLANK-UNIT', 270)}
+            className="px-3 py-2 bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 hover:border-red-400 text-red-200 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5"
+          >
+            <span>◀ Left (270°)</span>
+          </button>
+          <button
+            onClick={() => useGameStore.getState().takeDamage(38, false, 'WARHEAD-BLAST', Math.random() * 360, undefined, 'explosive')}
+            className="col-span-2 sm:col-span-1 px-3 py-2 bg-orange-950/40 hover:bg-orange-900/60 border border-orange-500/30 hover:border-orange-400 text-orange-200 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5"
+          >
+            <span>💥 Blast (-38)</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

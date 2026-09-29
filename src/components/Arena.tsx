@@ -15,6 +15,7 @@ import { CustomOpenWorld } from './CustomOpenWorld';
 import { BackroomsWorld } from './Backrooms/BackroomsWorld';
 import { BackroomsPortal } from './Backrooms/BackroomsPortal';
 import { BackroomsLevelId } from './Backrooms/types';
+import { MiniRoyaleMap3D } from './MiniRoyale/MiniRoyaleMap3D';
 
 // Seeded PRNG for consistent multiplayer obstacle generation
 function mulberry32(a: number) {
@@ -681,60 +682,7 @@ export const BLOCK_COLORS: Record<string, string> = {
   teleport_71: '#ff0055', // 71 NO MANSKY
 };
 
-function Vehicle({ id, data }: { id: string, data: any }) {
-  const enterVehicle = useGameStore(state => state.enterVehicle);
-  const currentVehicleId = useGameStore(state => state.currentVehicleId);
-
-  let color = '#00ff00'; // Car
-  if (data.type === 'helicopter') color = '#ff00ff';
-  else if (data.type === 'motorbike') color = '#ffff00';
-
-  return (
-    <group position={data.position} rotation={[0, data.rotation, 0]}>
-      <RigidBody type="fixed" colliders="cuboid" userData={{ name: `vehicle-${id}` }}>
-        <mesh 
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!currentVehicleId && !data.ownerId) {
-              enterVehicle(id);
-            }
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            if (!currentVehicleId && !data.ownerId) {
-              document.body.style.cursor = 'pointer';
-            }
-          }}
-          onPointerOut={() => {
-            document.body.style.cursor = 'auto';
-          }}
-        >
-          {data.type === 'helicopter' ? (
-            <boxGeometry args={[4, 1.5, 6]} />
-          ) : data.type === 'car' ? (
-            <boxGeometry args={[3, 1.5, 5]} />
-          ) : (
-            <boxGeometry args={[1, 1.8, 3]} /> // Motorbike
-          )}
-          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} />
-        </mesh>
-      </RigidBody>
-      
-      {/* Label */}
-      <group position={[0, 3, 0]}>
-        <Text 
-          fontSize={0.4} 
-          color="white" 
-          anchorX="center" 
-          anchorY="middle"
-          font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff"
-        >
-          {data.type.toUpperCase()} {data.ownerId ? '(OCCUPIED)' : '[CLICK] TO ENTER'}
-        </Text>
-      </group>
-    </group>
-  );
-}
+import { Vehicle } from './Vehicle';
 
 import { useVisibilityCulling } from '../utils/useFrustumCulling';
 import { Rocket } from './Rocket';
@@ -756,7 +704,7 @@ const Obstacle = memo(function Obstacle({ obs, i, selectedMap }: { obs: any, i: 
       rotation={obs.rotation as [number, number, number]}
       onIntersectionEnter={(e) => {
         if (isLava && e.other.rigidBodyObject?.name === 'player') {
-          useGameStore.getState().takeDamage(10);
+          useGameStore.getState().takeDamage(10, false, 'LAVA HAZARD', undefined, obs.position as [number, number, number], 'hazard');
         }
       }}
     >
@@ -877,7 +825,7 @@ export function Arena() {
           onLevelChange={(lvl) => setBackroomsLevel(lvl)}
           onPickupItem={(item) => pickupBackroomsItem(item)}
           onAttackPlayer={(dmg, attacker) => {
-            takeDamage(dmg);
+            takeDamage(dmg, false, attacker, undefined, undefined, 'critical');
             useGameStore.getState().addEvent(`💥 ATTACKED BY ${attacker.toUpperCase()}! (-${dmg} HP)`);
           }}
           onExitBackrooms={exitBackrooms}
@@ -907,8 +855,15 @@ export function Arena() {
         />
       )}
 
+      {/* Mini Royale 1000x1000 Island Map Loader */}
+      {(selectedMap === 'mini_royale' || selectedMap === 'battle_royale') && (
+        <MiniRoyaleMap3D
+          playerPos={useGameStore(state => state.playerPosition)}
+        />
+      )}
+
       {/* Floor */}
-      {selectedMap !== 'void' && selectedMap !== 'open_world' && (
+      {selectedMap !== 'void' && selectedMap !== 'open_world' && selectedMap !== 'mini_royale' && selectedMap !== 'battle_royale' && (
         <RigidBody type="fixed" name="floor" friction={useGameStore.getState().scienceMode ? useGameStore.getState().scienceFriction : 0}>
           <mesh position={[0, -0.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             {arenaState === 'cube' ? (
@@ -1086,7 +1041,7 @@ export function Arena() {
       )}
 
       {/* Obstacles */}
-      {selectedMap !== 'open_world' && obstacles.map((obs, i) => (
+      {selectedMap !== 'open_world' && selectedMap !== 'mini_royale' && selectedMap !== 'battle_royale' && obstacles.map((obs, i) => (
         <Obstacle key={`${selectedMap}-${i}`} obs={obs} i={i} selectedMap={selectedMap} />
       ))}
     </group>

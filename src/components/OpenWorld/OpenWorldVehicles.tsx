@@ -6,6 +6,13 @@ import * as THREE from 'three';
 import { MegaVehicleType, MegaVehicleConfig } from './types';
 import { MEGA_VEHICLES } from './configs';
 import { useGameStore } from '../../store';
+import { TankModel } from '../RealisticVehicles/TankModel';
+import { FighterJetModel } from '../RealisticVehicles/FighterJetModel';
+import { AttackHelicopterModel } from '../RealisticVehicles/AttackHelicopterModel';
+import { ArmoredIFVModel } from '../RealisticVehicles/ArmoredIFVModel';
+import { NavalWarshipModel } from '../RealisticVehicles/NavalWarshipModel';
+import { CyberSupercarModel } from '../RealisticVehicles/CyberSupercarModel';
+import { CombatMotorbikeModel } from '../RealisticVehicles/CombatMotorbikeModel';
 
 interface OpenWorldVehicleProps {
   id: string;
@@ -131,190 +138,69 @@ export const OpenWorldVehicleInstance: React.FC<OpenWorldVehicleProps> = ({
             document.body.style.cursor = 'auto';
           }}
         >
-          {/* VEHICLE MODEL RENDERERS */}
-
-          {/* 1. SPORTS CAR / MUSCLE CAR / BUGGY */}
-          {(config.id === 'sports_car' || config.id === 'muscle_car' || config.id === 'buggy') && (
-            <group>
-              {/* Chassis */}
-              <mesh position={[0, 0.6, 0]} castShadow receiveShadow>
-                <boxGeometry args={[2.2, 0.7, 4.4]} />
-                <meshStandardMaterial color={config.color} metalness={0.85} roughness={0.15} />
-              </mesh>
-              {/* Cabin Roof */}
-              <mesh position={[0, 1.2, -0.2]} castShadow>
-                <boxGeometry args={[1.7, 0.6, 2.2]} />
-                <meshStandardMaterial color="#09090b" roughness={0.1} metalness={0.9} />
-              </mesh>
-              {/* Wheels */}
-              {[[-1.2, 0.35, 1.4], [1.2, 0.35, 1.4], [-1.2, 0.35, -1.4], [1.2, 0.35, -1.4]].map(([x, y, z], idx) => (
-                <mesh key={idx} position={[x, y, z]} rotation={[0, 0, Math.PI / 2]}>
-                  <cylinderGeometry args={[0.38, 0.38, 0.3, 16]} />
-                  <meshStandardMaterial color="#18181b" roughness={0.9} />
-                </mesh>
-              ))}
-              {/* Neon Underglow */}
-              <pointLight position={[0, 0.1, 0]} color={config.color} intensity={4} distance={6} />
-              {/* Rear Turbo Nitro Exhaust */}
-              {isBoosting && (
-                <pointLight position={[0, 0.6, 2.4]} color="#06b6d4" intensity={8} distance={8} />
-              )}
-            </group>
+          {/* REALISTIC 3D VEHICLE MODEL RENDERERS */}
+          {(config.id === 'sports_car' || config.id === 'muscle_car' || config.id === 'buggy' || config.id === 'flying_speeder') && (
+            <CyberSupercarModel
+              color={config.color}
+              camo="urban_cyber"
+              isDriving={isDriving}
+              isBoosting={isBoosting}
+              speed={currentSpeed}
+            />
           )}
 
-          {/* 2. TANK & ARMORED APC */}
-          {(config.id === 'tank' || config.id === 'armored_apc') && (
-            <group>
-              {/* Armored Hull */}
-              <mesh position={[0, 0.9, 0]} castShadow receiveShadow>
-                <boxGeometry args={[3.2, 1.2, 5.2]} />
-                <meshStandardMaterial color={config.color} metalness={0.7} roughness={0.4} />
-              </mesh>
-              {/* Caterpillar Treads */}
-              <mesh position={[-1.7, 0.5, 0]}>
-                <boxGeometry args={[0.6, 0.9, 5.4]} />
-                <meshStandardMaterial color="#09090b" roughness={0.95} />
-              </mesh>
-              <mesh position={[1.7, 0.5, 0]}>
-                <boxGeometry args={[0.6, 0.9, 5.4]} />
-                <meshStandardMaterial color="#09090b" roughness={0.95} />
-              </mesh>
-              {/* Rotating Turret & 120mm Cannon */}
-              <group position={[0, 1.7, -0.2]}>
-                <mesh castShadow>
-                  <boxGeometry args={[2.0, 0.8, 2.4]} />
-                  <meshStandardMaterial color={config.color} metalness={0.7} roughness={0.4} />
-                </mesh>
-                <mesh position={[0, 0.1, -2.2]} rotation={[Math.PI / 2, 0, 0]}>
-                  <cylinderGeometry args={[0.18, 0.22, 3.2, 12]} />
-                  <meshStandardMaterial color="#27272a" metalness={0.9} />
-                </mesh>
-              </group>
-            </group>
+          {config.id === 'tank' && (
+            <TankModel
+              color={config.color}
+              camo="digital_desert"
+              isDriving={isDriving}
+              speed={currentSpeed}
+            />
           )}
 
-          {/* 3. COMBAT HELICOPTER */}
+          {config.id === 'armored_apc' && (
+            <ArmoredIFVModel
+              color={config.color}
+              camo="urban_cyber"
+              isDriving={isDriving}
+              speed={currentSpeed}
+            />
+          )}
+
           {config.id === 'helicopter' && (
-            <group>
-              {/* Fuselage */}
-              <mesh position={[0, 1.5, 0]} castShadow>
-                <boxGeometry args={[1.8, 1.8, 5.0]} />
-                <meshStandardMaterial color={config.color} metalness={0.8} roughness={0.3} />
-              </mesh>
-              {/* Cockpit Canopy */}
-              <mesh position={[0, 1.6, -1.8]}>
-                <sphereGeometry args={[0.9, 12, 12]} />
-                <meshStandardMaterial color="#0284c7" metalness={0.9} roughness={0.1} />
-              </mesh>
-              {/* Tail Boom */}
-              <mesh position={[0, 1.8, 3.5]} rotation={[Math.PI / 2, 0, 0]}>
-                <cylinderGeometry args={[0.2, 0.4, 4.0, 8]} />
-                <meshStandardMaterial color={config.color} />
-              </mesh>
-              {/* Spinning Main Rotor */}
-              <group ref={rotorRef} position={[0, 2.7, -0.2]}>
-                <mesh>
-                  <cylinderGeometry args={[0.1, 0.1, 0.6, 8]} />
-                  <meshStandardMaterial color="#18181b" />
-                </mesh>
-                <mesh position={[0, 0.2, 0]}>
-                  <boxGeometry args={[9.0, 0.05, 0.4]} />
-                  <meshStandardMaterial color="#18181b" />
-                </mesh>
-                <mesh position={[0, 0.2, 0]} rotation={[0, Math.PI / 2, 0]}>
-                  <boxGeometry args={[9.0, 0.05, 0.4]} />
-                  <meshStandardMaterial color="#18181b" />
-                </mesh>
-              </group>
-              {/* Rocket Pods */}
-              <mesh position={[-1.3, 1.2, 0]} rotation={[Math.PI / 2, 0, 0]}>
-                <cylinderGeometry args={[0.3, 0.3, 1.6, 8]} />
-                <meshStandardMaterial color="#475569" />
-              </mesh>
-              <mesh position={[1.3, 1.2, 0]} rotation={[Math.PI / 2, 0, 0]}>
-                <cylinderGeometry args={[0.3, 0.3, 1.6, 8]} />
-                <meshStandardMaterial color="#475569" />
-              </mesh>
-            </group>
+            <AttackHelicopterModel
+              color={config.color}
+              camo="stealth_matte"
+              isDriving={isDriving}
+            />
           )}
 
-          {/* 4. FIGHTER JET / SUPERSONIC RAPTOR */}
-          {(config.id === 'jet' || config.id === 'fighter_aircraft') && (
-            <group>
-              {/* Sleek Aerodynamic Fuselage */}
-              <mesh position={[0, 0.8, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-                <coneGeometry args={[1.2, 7.5, 8]} />
-                <meshStandardMaterial color={config.color} metalness={0.9} roughness={0.2} />
-              </mesh>
-              {/* Swept Delta Wings */}
-              <mesh position={[0, 0.8, 0.5]}>
-                <boxGeometry args={[7.2, 0.1, 3.2]} />
-                <meshStandardMaterial color={config.color} metalness={0.9} roughness={0.2} />
-              </mesh>
-              {/* Twin Vertical Stabilizers */}
-              <mesh position={[-1.4, 1.6, 2.4]} rotation={[0, 0, -0.2]}>
-                <boxGeometry args={[0.1, 1.8, 1.4]} />
-                <meshStandardMaterial color={config.color} />
-              </mesh>
-              <mesh position={[1.4, 1.6, 2.4]} rotation={[0, 0, 0.2]}>
-                <boxGeometry args={[0.1, 1.8, 1.4]} />
-                <meshStandardMaterial color={config.color} />
-              </mesh>
-              {/* Afterburner Glow */}
-              <pointLight position={[0, 0.8, 3.8]} color="#06b6d4" intensity={isDriving ? 12 : 1} distance={10} />
-            </group>
+          {(config.id === 'jet' || config.id === 'fighter_aircraft' || config.id === 'transport_plane') && (
+            <FighterJetModel
+              color={config.color}
+              camo="stealth_matte"
+              isDriving={isDriving}
+              isBoosting={isBoosting}
+              speed={currentSpeed}
+            />
           )}
 
-          {/* 5. SPEEDBOAT & PATROL BOAT & SUBMARINE */}
-          {(config.id === 'speedboat' || config.id === 'patrol_boat' || config.id === 'submarine') && (
-            <group>
-              {/* Hydrodynamic Hull */}
-              <mesh position={[0, 0.6, 0]} castShadow>
-                <boxGeometry args={[2.4, 1.1, 6.0]} />
-                <meshStandardMaterial color={config.color} metalness={0.8} roughness={0.2} />
-              </mesh>
-              {/* Cockpit / Bridge */}
-              <mesh position={[0, 1.4, 0.8]}>
-                <boxGeometry args={[1.8, 0.9, 2.0]} />
-                <meshStandardMaterial color="#0284c7" roughness={0.1} />
-              </mesh>
-              {/* Water Splash Trail */}
-              {isDriving && currentSpeed > 2 && (
-                <pointLight position={[0, 0.1, 3.2]} color="#38bdf8" intensity={6} distance={8} />
-              )}
-            </group>
+          {(config.id === 'speedboat' || config.id === 'patrol_boat' || config.id === 'submarine' || config.id === 'aircraft_carrier' || config.id === 'hovercraft') && (
+            <NavalWarshipModel
+              color={config.color}
+              camo="stealth_matte"
+              isDriving={isDriving}
+              speed={currentSpeed}
+            />
           )}
 
-          {/* 6. CYBERBIKE / MOTORCYCLE */}
           {config.id === 'motorcycle' && (
-            <group>
-              {/* Slender Frame */}
-              <mesh position={[0, 0.8, 0]} castShadow>
-                <boxGeometry args={[0.7, 0.9, 2.6]} />
-                <meshStandardMaterial color={config.color} metalness={0.9} roughness={0.1} />
-              </mesh>
-              {/* Hubless Glowing Wheels */}
-              <mesh position={[0, 0.5, 1.1]} rotation={[0, 0, Math.PI / 2]}>
-                <torusGeometry args={[0.45, 0.12, 16, 24]} />
-                <meshBasicMaterial color="#ef4444" />
-              </mesh>
-              <mesh position={[0, 0.5, -1.1]} rotation={[0, 0, Math.PI / 2]}>
-                <torusGeometry args={[0.45, 0.12, 16, 24]} />
-                <meshBasicMaterial color="#ef4444" />
-              </mesh>
-            </group>
-          )}
-
-          {/* 7. QUANTUM HOVER SPEEDER */}
-          {config.id === 'flying_speeder' && (
-            <group>
-              <mesh position={[0, 0.8, 0]} castShadow>
-                <boxGeometry args={[1.6, 0.5, 3.4]} />
-                <meshStandardMaterial color="#22d3ee" metalness={0.95} roughness={0.05} />
-              </mesh>
-              {/* Anti-grav Rings */}
-              <pointLight position={[0, 0.3, 0]} color="#22d3ee" intensity={8} distance={8} />
-            </group>
+            <CombatMotorbikeModel
+              color={config.color}
+              camo="urban_cyber"
+              isDriving={isDriving}
+              speed={currentSpeed}
+            />
           )}
 
           {/* VEHICLE INTERACTION LABEL */}

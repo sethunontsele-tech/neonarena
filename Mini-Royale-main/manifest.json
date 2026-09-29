@@ -1,0 +1,26 @@
+{
+  "name": "Mini Royale - Battle Royale",
+  "short_name": "Mini Royale",
+  "description": "Free Fire style 3D battle royale game in the browser",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#1a1a2e",
+  "theme_color": "#ff4444",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "./assets/icons/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/icons/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

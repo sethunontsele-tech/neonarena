@@ -29,7 +29,7 @@ export interface AppUser extends User {
 import { soundService } from './services/soundService';
 import type { TransformationId, MegaVehicleType, PlacedMapObject } from './components/OpenWorld/types';
 
-export type GameState = 'splash' | 'menu' | 'lobby' | 'playing' | 'gameover' | 'open_world' | 'server_browser' | 'board_mode' | 'freerun_city';
+export type GameState = 'splash' | 'menu' | 'lobby' | 'playing' | 'gameover' | 'open_world' | 'server_browser' | 'board_mode' | 'freerun_city' | 'mini_royale';
 export type EntityState = 'active' | 'disabled';
 
 export interface ServerInstance {
@@ -42,13 +42,13 @@ export interface ServerInstance {
   region: string;
   type: 'competitive' | 'casual' | 'open-world';
 }
-export type MapType = 'backrooms' | 'neon_megacity' | 'cyber_factory' | 'abandoned_arena' | 'neon_wasteland' | 'sky_arena' | 'open_world' | 'maze' | 'arena' | 'pillars' | 'flat' | 'void' | 'cybercity' | 'volcano' | 'infinite' | 'neon_grid' | 'quantum_rift' | 'custom_scan' | 'aurum_dominion' | 'infinity_academy' | 'minecraft' | 'roblox' | 'gta_v' | 'terraria' | 'rust' | 'cs2' | 'ark' | 'valheim' | 'wow' | 'ffxiv' | 'lol' | 'fortnite' | 'apex' | 'dayz' | 'project_zomboid' | 'unturned' | 'gmod' | 'tf2' | 'destiny2' | 'warframe' | 'sea_of_thieves' | 'no_mans_sky' | 'osrs' | 'dbd' | 'among_us' | 'phasmophobia' | 'elden_ring' | 'bg3' | 'cyberpunk' | 'overwatch2' | 'r6s' | 'rocket_league' | 'stardew_valley' | 'drg' | 'dota2' | 'fallout76' | 'eso' | 'poe' | 'genshin' | 'pubg' | 'tarkov' | 'starfield' | 'rdr2' | 'palworld' | 'helldivers2' | 'lethal_company' | 'vrising' | 'days_to_die' | 'conan_exiles' | 'enshrouded';
+export type MapType = 'mini_royale' | 'battle_royale' | 'backrooms' | 'neon_megacity' | 'cyber_factory' | 'abandoned_arena' | 'neon_wasteland' | 'sky_arena' | 'open_world' | 'maze' | 'arena' | 'pillars' | 'flat' | 'void' | 'cybercity' | 'volcano' | 'infinite' | 'neon_grid' | 'quantum_rift' | 'custom_scan' | 'aurum_dominion' | 'infinity_academy' | 'minecraft' | 'roblox' | 'gta_v' | 'terraria' | 'rust' | 'cs2' | 'ark' | 'valheim' | 'wow' | 'ffxiv' | 'lol' | 'fortnite' | 'apex' | 'dayz' | 'project_zomboid' | 'unturned' | 'gmod' | 'tf2' | 'destiny2' | 'warframe' | 'sea_of_thieves' | 'no_mans_sky' | 'osrs' | 'dbd' | 'among_us' | 'phasmophobia' | 'elden_ring' | 'bg3' | 'cyberpunk' | 'overwatch2' | 'r6s' | 'rocket_league' | 'stardew_valley' | 'drg' | 'dota2' | 'fallout76' | 'eso' | 'poe' | 'genshin' | 'pubg' | 'tarkov' | 'starfield' | 'rdr2' | 'palworld' | 'helldivers2' | 'lethal_company' | 'vrising' | 'days_to_die' | 'conan_exiles' | 'enshrouded';
 export type SkinType = 'alien' | 'neon' | 'gold' | 'stealth' | 'glitch' | 'ruby' | 'emerald' | 'diamond' | 'void' | 'steve' | 'alex' | 'vijo_pro';
 export type PatternType = 'none' | 'camo' | 'stripes' | 'dots' | 'grid' | 'circuit' | 'alien';
 export type AccessoryType = 'none' | 'hat' | 'glasses' | 'backpack' | 'horns' | 'halo';
-export type GameMode = 'survival' | 'boss_rush' | 'horde' | 'time_attack' | 'extraction' | 'chaos' | 'training' | 'ffa' | 'tdm' | 'ctf' | 'creative' | 'koth' | 'domination' | 'ranked' | 'infection';
+export type GameMode = 'survival' | 'boss_rush' | 'horde' | 'time_attack' | 'extraction' | 'chaos' | 'training' | 'ffa' | 'tdm' | 'ctf' | 'creative' | 'koth' | 'domination' | 'ranked' | 'infection' | 'battle_royale';
 export type PlayerClass = 'mage' | 'spellblade' | 'alchemist' | 'none';
-export type VehicleType = 'car' | 'helicopter' | 'motorbike';
+export type VehicleType = 'car' | 'helicopter' | 'motorbike' | 'tank' | 'jet' | 'apc' | 'gunboat' | 'mech' | 'speeder';
 export type WeatherType = 'clear' | 'rain' | 'storm' | 'fog' | 'snow';
 
 export interface GameTask {
@@ -79,6 +79,22 @@ export interface VehicleData {
   speed: number;
   driverId: string | null;
   team: Team;
+  camo?: string;
+  ammo?: number;
+  maxAmmo?: number;
+  flares?: number;
+  boost?: number;
+  recoil?: number;
+  turretAngle?: number;
+  elevation?: number;
+  weaponType?: string;
+  components?: {
+    engine: number;
+    hull: number;
+    turret: number;
+    treads: number;
+    optics: number;
+  };
 }
 
 export interface EnvironmentState {
@@ -386,6 +402,17 @@ export interface ProjectileData {
   timestamp: number;
 }
 
+export interface DamageIndicator {
+  id: string;
+  angle: number; // in degrees: 0° is top (front), 90° right, 180° bottom (behind), 270° left
+  sourcePos?: [number, number, number]; // 3D world coordinates of damage origin
+  amount: number;
+  timestamp: number;
+  duration: number; // duration in ms (e.g. 1800ms)
+  damageType?: 'kinetic' | 'critical' | 'explosive' | 'glitch' | 'hazard';
+  attackerName?: string;
+}
+
 export const TROPHIES: Trophy[] = [
   { id: 'first_kill', name: 'First Blood', description: 'Kill your first enemy', icon: 'zap', requirement: '1 kill' },
   { id: 'survivor', name: 'Survivor', description: 'Survive for 5 minutes', icon: 'shield', requirement: '5 min survival' },
@@ -407,6 +434,10 @@ interface GameStore {
   killerName: string;
   lastDamageAngle: number | null;
   lastDamageAngleTime: number;
+  damageIndicators: DamageIndicator[];
+  addDamageIndicator: (indicator: Omit<DamageIndicator, 'id' | 'timestamp'> & { id?: string; timestamp?: number }) => void;
+  removeDamageIndicator: (id: string) => void;
+  clearExpiredDamageIndicators: () => void;
   enemies: EnemyData[];
   lasers: LaserData[];
   particles: ParticleData[];
@@ -678,6 +709,7 @@ interface GameStore {
   isLoadingServers: boolean;
   refreshServers: () => void;
   joinOpenWorld: () => void;
+  joinMiniRoyale: () => void;
   joinServer: (serverId: string) => void;
   
   // Environment
@@ -888,7 +920,7 @@ interface GameStore {
   endGame: () => void;
   leaveGame: () => void;
   updateTime: (delta: number) => void;
-  hitPlayer: (isGlitchAttacker?: boolean) => void;
+  hitPlayer: (isGlitchAttacker?: boolean, attackerName?: string, attackerPos?: [number, number, number] | number) => void;
   hitEnemy: (id: string, damage?: number) => void;
   addLaser: (start: [number, number, number], end: [number, number, number], color: string) => void;
   addParticles: (position: [number, number, number], color: string, count?: number) => void;
@@ -929,7 +961,7 @@ interface GameStore {
   setBotPower: (power: number) => void;
   unlockTrophy: (id: string) => void;
   regenerateHealth: (amount: number) => void;
-  takeDamage: (amount: number, isGlitchAttacker?: boolean, attackerName?: string, attackerAngle?: number) => void;
+  takeDamage: (amount: number, isGlitchAttacker?: boolean, attackerName?: string, attackerAngle?: number, attackerPos?: [number, number, number], damageType?: 'kinetic' | 'critical' | 'explosive' | 'glitch' | 'hazard') => void;
   
   setPlayerPosition: (pos: [number, number, number]) => void;
   switchWeapon: (index: number) => void;
@@ -1025,10 +1057,20 @@ interface GameStore {
   setUnlockedSkins: (skins: string[]) => void;
   
   // Vehicle Actions
-  spawnVehicle: (type: VehicleType, position: [number, number, number], team?: Team) => void;
+  spawnVehicle: (type: VehicleType, position: [number, number, number], team?: Team, camo?: string) => void;
   enterVehicle: (id: string) => void;
   exitVehicle: () => void;
   updateVehicle: (id: string, data: Partial<VehicleData>) => void;
+  fireVehicleWeapon: (id: string, isSecondary?: boolean) => void;
+  deployVehicleFlares: (id: string) => void;
+  repairVehicle: (id: string, amount?: number) => void;
+  damageVehicleComponent: (id: string, component: 'engine' | 'hull' | 'turret' | 'treads' | 'optics', damage: number) => void;
+  selectedVehicleCamo: string;
+  setSelectedVehicleCamo: (camo: string) => void;
+  isWarzoneGarageOpen: boolean;
+  setWarzoneGarageOpen: (open: boolean) => void;
+  activeCombinedArmsTheater: 'ground' | 'air' | 'naval' | 'combined' | 'none';
+  startCombinedArmsBattle: (theater: 'ground' | 'air' | 'naval' | 'combined') => void;
   
   // Recording
   setRecording: (recording: boolean) => void;
@@ -1161,6 +1203,31 @@ export const useGameStore = create<GameStore>((set, get) => ({
   killerName: '',
   lastDamageAngle: null,
   lastDamageAngleTime: 0,
+  damageIndicators: [],
+  addDamageIndicator: (indicator) => set((state) => {
+    const newIndicator: DamageIndicator = {
+      id: indicator.id || Math.random().toString(36).substring(2, 9),
+      timestamp: indicator.timestamp || Date.now(),
+      duration: indicator.duration || 1800,
+      angle: indicator.angle,
+      sourcePos: indicator.sourcePos,
+      amount: indicator.amount,
+      damageType: indicator.damageType || 'kinetic',
+      attackerName: indicator.attackerName
+    };
+    return {
+      damageIndicators: [...state.damageIndicators.slice(-14), newIndicator]
+    };
+  }),
+  removeDamageIndicator: (id) => set((state) => ({
+    damageIndicators: state.damageIndicators.filter(d => d.id !== id)
+  })),
+  clearExpiredDamageIndicators: () => set((state) => {
+    const now = Date.now();
+    const active = state.damageIndicators.filter(d => now - d.timestamp < d.duration);
+    if (active.length === state.damageIndicators.length) return state;
+    return { damageIndicators: active };
+  }),
   enemies: [],
   lasers: [],
   particles: [],
@@ -1432,6 +1499,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   joinOpenWorld: () => {
     set({ gameState: 'open_world', selectedMode: 'ffa', selectedMap: 'open_world', lobbyMode: false });
     get().addEvent('🌍 ENTERING OPEN WORLD...');
+  },
+  joinMiniRoyale: () => {
+    set({ gameState: 'mini_royale', selectedMode: 'battle_royale', selectedMap: 'mini_royale', lobbyMode: false });
+    get().addEvent('🪂 DROPPING INTO MINI ROYALE ISLAND (1000×1000)...');
   },
   joinServer: (serverId) => {
     const server = get().servers.find(s => s.id === serverId);
@@ -1740,6 +1811,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   
   vehicles: {},
   currentVehicleId: null,
+  selectedVehicleCamo: 'urban_cyber',
+  setSelectedVehicleCamo: (camo) => set({ selectedVehicleCamo: camo }),
+  isWarzoneGarageOpen: false,
+  setWarzoneGarageOpen: (open) => set({ isWarzoneGarageOpen: open }),
+  activeCombinedArmsTheater: 'none',
   
   isBuildMode: false,
   selectedBlock: 'stone',
@@ -2451,15 +2527,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
     };
   }),
 
-  hitPlayer: (isGlitchAttacker?: boolean) => {
-    // Pick a random killer name and damage angle for simulation
+  hitPlayer: (isGlitchAttacker?: boolean, attackerName?: string, attackerPos?: [number, number, number] | number) => {
+    // Pick a random killer name and damage angle/position for simulation
     const names = ['COBALT-SQUAD-01', 'VORTEX-SQUAD-02', 'APEX-SQUAD-03', 'GLITCH-STALKER', 'SENTRY-DRONE'];
-    const randomName = names[Math.floor(Math.random() * names.length)];
-    const randomAngle = Math.random() * 360;
-    get().takeDamage(20, isGlitchAttacker, randomName, randomAngle);
+    const finalAttackerName = attackerName || names[Math.floor(Math.random() * names.length)];
+    if (Array.isArray(attackerPos)) {
+      get().takeDamage(20, isGlitchAttacker, finalAttackerName, undefined, attackerPos, isGlitchAttacker ? 'glitch' : 'kinetic');
+    } else if (typeof attackerPos === 'number') {
+      get().takeDamage(20, isGlitchAttacker, finalAttackerName, attackerPos, undefined, isGlitchAttacker ? 'glitch' : 'kinetic');
+    } else {
+      const randomAngle = Math.random() * 360;
+      get().takeDamage(20, isGlitchAttacker, finalAttackerName, randomAngle, undefined, isGlitchAttacker ? 'glitch' : 'kinetic');
+    }
   },
 
-  takeDamage: (amount, isGlitchAttacker?: boolean, attackerName?: string, attackerAngle?: number) => set((state) => {
+  takeDamage: (amount, isGlitchAttacker?: boolean, attackerName?: string, attackerAngle?: number, attackerPos?: [number, number, number], damageType?: 'kinetic' | 'critical' | 'explosive' | 'glitch' | 'hazard') => set((state) => {
     if (state.playerState === 'disabled' || state.gameState !== 'playing' || state.activeStreakPower === 'GOD MODE') return state;
     
     let newIsGlitch = state.isGlitch;
@@ -2489,15 +2571,41 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
 
     const finalAttackerName = attackerName || (Math.random() > 0.5 ? 'COBALT-SQUAD-01' : 'APEX-SQUAD-03');
-    // Default random angle if not provided
-    const finalAttackerAngle = attackerAngle !== undefined ? attackerAngle : (Math.random() * 360);
+
+    // Calculate angle relative to camera view (0° = ahead, 90° = right, 180° = behind, 270° = left)
+    let finalAngle: number;
+    if (attackerPos) {
+      const { playerPosition, playerRotation } = state;
+      const dx = attackerPos[0] - playerPosition[0];
+      const dz = attackerPos[2] - playerPosition[2];
+      // In Three.js standard camera yaw:
+      const forwardDot = dx * (-Math.sin(playerRotation)) + dz * (-Math.cos(playerRotation));
+      const rightDot = dx * Math.cos(playerRotation) + dz * (-Math.sin(playerRotation));
+      finalAngle = (Math.atan2(rightDot, forwardDot) * 180 / Math.PI + 360) % 360;
+    } else if (attackerAngle !== undefined) {
+      finalAngle = (attackerAngle % 360 + 360) % 360;
+    } else {
+      finalAngle = Math.random() * 360;
+    }
+
+    const resolvedDamageType = damageType || (isGlitchAttacker ? 'glitch' : amount >= 35 ? 'critical' : 'kinetic');
+    const newIndicator: DamageIndicator = {
+      id: Math.random().toString(36).substring(2, 9),
+      angle: finalAngle,
+      sourcePos: attackerPos,
+      amount,
+      timestamp: Date.now(),
+      duration: 1800 + Math.min(600, amount * 15),
+      damageType: resolvedDamageType,
+      attackerName: finalAttackerName
+    };
 
     if (isDead) {
       get().addKillFeedEvent({
         killer: finalAttackerName,
         victim: state.gamertag || 'You',
-        weapon: 'Plasma Rifle',
-        isHeadshot: Math.random() < 0.2
+        weapon: resolvedDamageType === 'explosive' ? 'Rocket / Blast' : 'Plasma Rifle',
+        isHeadshot: resolvedDamageType === 'critical'
       });
     }
 
@@ -2508,8 +2616,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       playerState: isDead ? 'disabled' : 'active',
       playerDisabledUntil: isDead ? Date.now() + 8000 : 0, // 8 seconds: 5s death cam + 3s countdown
       killerName: isDead ? finalAttackerName : state.killerName,
-      lastDamageAngle: amount > 0 ? finalAttackerAngle : state.lastDamageAngle,
+      lastDamageAngle: amount > 0 ? finalAngle : state.lastDamageAngle,
       lastDamageAngleTime: amount > 0 ? Date.now() : state.lastDamageAngleTime,
+      damageIndicators: amount > 0 ? [...state.damageIndicators.slice(-14), newIndicator] : state.damageIndicators,
       deaths: isDead ? state.deaths + 1 : state.deaths,
       score: Math.max(0, state.score - 10),
       lastDamageTime: Date.now(),
@@ -3376,18 +3485,43 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ user: null, gameState: 'splash' });
   },
   
-  spawnVehicle: (type, position, team = 'none') => {
+  spawnVehicle: (type, position, team = 'none', camo) => {
     const id = `vehicle-${Math.random().toString(36).substr(2, 9)}`;
+    const actualCamo = camo || get().selectedVehicleCamo || 'urban_cyber';
+    const maxHealth = type === 'tank' ? 3000 :
+                      type === 'jet' ? 1400 :
+                      type === 'apc' ? 2400 :
+                      type === 'gunboat' ? 3500 :
+                      type === 'mech' ? 2600 :
+                      type === 'helicopter' ? 1600 : 1000;
+    const ammoCount = type === 'tank' ? 40 :
+                      type === 'jet' ? 150 :
+                      type === 'apc' ? 250 :
+                      type === 'gunboat' ? 80 :
+                      type === 'mech' ? 400 : 60;
     const vehicle: VehicleData = {
       id,
       type,
       position,
       rotation: [0, 0, 0],
-      health: 1000,
-      maxHealth: 1000,
+      health: maxHealth,
+      maxHealth,
       speed: 0,
       driverId: null,
-      team
+      team,
+      camo: actualCamo,
+      ammo: ammoCount,
+      maxAmmo: ammoCount,
+      flares: 6,
+      boost: 100,
+      recoil: 0,
+      components: {
+        engine: 100,
+        hull: 100,
+        turret: 100,
+        treads: 100,
+        optics: 100
+      }
     };
     set(state => ({ vehicles: { ...state.vehicles, [id]: vehicle } }));
     const { socket } = get();
@@ -3398,11 +3532,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (vehicles[id] && !vehicles[id].driverId) {
       set({ currentVehicleId: id });
       if (socket) socket.emit('enterVehicle', { id });
+      get().addEvent(`ENTERED ${vehicles[id].type.toUpperCase()}`);
     }
   },
   exitVehicle: () => {
-    const { socket, currentVehicleId } = get();
+    const { socket, currentVehicleId, vehicles } = get();
     if (currentVehicleId) {
+      const v = vehicles[currentVehicleId];
+      if (v) {
+        set({ playerPosition: [v.position[0] + 3, v.position[1] + 1, v.position[2] + 3] });
+      }
       set({ currentVehicleId: null });
       if (socket) socket.emit('exitVehicle', { id: currentVehicleId });
     }
@@ -3414,6 +3553,123 @@ export const useGameStore = create<GameStore>((set, get) => ({
         [id]: { ...state.vehicles[id], ...data }
       }
     }));
+  },
+  fireVehicleWeapon: (id, isSecondary = false) => {
+    const { vehicles } = get();
+    const v = vehicles[id];
+    if (!v) return;
+    if (v.ammo !== undefined && v.ammo <= 0) {
+      get().addEvent('⚠️ AMMO DEPLETED! RELOADING...');
+      return;
+    }
+    const newAmmo = Math.max(0, (v.ammo || 30) - 1);
+    set(state => ({
+      vehicles: {
+        ...state.vehicles,
+        [id]: {
+          ...state.vehicles[id],
+          ammo: newAmmo,
+          recoil: 1.0
+        }
+      }
+    }));
+  },
+  deployVehicleFlares: (id) => {
+    const { vehicles } = get();
+    const v = vehicles[id];
+    if (!v) return;
+    if ((v.flares || 0) <= 0) {
+      get().addEvent('⚠️ NO COUNTERMEASURE FLARES REMAINING');
+      return;
+    }
+    set(state => ({
+      vehicles: {
+        ...state.vehicles,
+        [id]: { ...state.vehicles[id], flares: Math.max(0, (v.flares || 6) - 1) }
+      }
+    }));
+    get().addEvent('✨ DEFENSIVE FLARES DEPLOYED! INCOMING MISSILES DIVERTED');
+  },
+  repairVehicle: (id, amount = 250) => {
+    const { vehicles } = get();
+    const v = vehicles[id];
+    if (!v) return;
+    const newHealth = Math.min(v.maxHealth, v.health + amount);
+    set(state => ({
+      vehicles: {
+        ...state.vehicles,
+        [id]: {
+          ...state.vehicles[id],
+          health: newHealth,
+          components: {
+            engine: 100,
+            hull: 100,
+            turret: 100,
+            treads: 100,
+            optics: 100
+          }
+        }
+      }
+    }));
+    get().addEvent(`🔧 FIELD REPAIR: HULL RESTORED TO ${Math.round((newHealth / v.maxHealth) * 100)}%`);
+  },
+  damageVehicleComponent: (id, component, damage) => {
+    const { vehicles } = get();
+    const v = vehicles[id];
+    if (!v) return;
+    const currentComp = v.components ? v.components[component] : 100;
+    const newComp = Math.max(0, currentComp - damage);
+    const newHealth = Math.max(0, v.health - damage);
+    set(state => ({
+      vehicles: {
+        ...state.vehicles,
+        [id]: {
+          ...state.vehicles[id],
+          health: newHealth,
+          components: {
+            ...(v.components || { engine: 100, hull: 100, turret: 100, treads: 100, optics: 100 }),
+            [component]: newComp
+          }
+        }
+      }
+    }));
+  },
+  startCombinedArmsBattle: (theater) => {
+    set({ activeCombinedArmsTheater: theater, gameState: 'playing' });
+    const { spawnVehicle, addEvent } = get();
+    // Clear old vehicles
+    set({ vehicles: {}, currentVehicleId: null });
+    
+    // Spawn theater-appropriate vehicles
+    if (theater === 'ground') {
+      spawnVehicle('tank', [-15, 1, -10], 'blue', 'urban_cyber');
+      spawnVehicle('tank', [15, 1, 10], 'amber', 'digital_desert');
+      spawnVehicle('apc', [-30, 1, -25], 'blue', 'urban_cyber');
+      spawnVehicle('apc', [30, 1, 25], 'amber', 'digital_desert');
+      addEvent('⚔️ GROUND SUPREMACY THEATER INITIALIZED: HEAVY ARMOR DEPLOYED');
+    } else if (theater === 'air') {
+      spawnVehicle('jet', [-20, 20, -50], 'blue', 'stealth_matte');
+      spawnVehicle('jet', [20, 25, 50], 'amber', 'arctic_tiger');
+      spawnVehicle('helicopter', [-40, 15, 0], 'blue', 'stealth_matte');
+      spawnVehicle('helicopter', [40, 15, 0], 'amber', 'urban_cyber');
+      addEvent('⚡ AIR SUPERIORITY THEATER INITIALIZED: SUPERSONIC INTERCEPTORS AIRBORNE');
+    } else if (theater === 'naval') {
+      spawnVehicle('gunboat', [-30, 0, -40], 'blue', 'stealth_matte');
+      spawnVehicle('gunboat', [30, 0, 40], 'amber', 'urban_cyber');
+      spawnVehicle('speeder', [0, 0, -10], 'blue', 'gold_elite');
+      addEvent('🌊 NAVAL STRIKE THEATER INITIALIZED: WARSHIPS IN BATTLE FORMATION');
+    } else {
+      // Combined arms!
+      spawnVehicle('tank', [-25, 1, -15], 'blue', 'urban_cyber');
+      spawnVehicle('tank', [25, 1, 15], 'amber', 'digital_desert');
+      spawnVehicle('jet', [-35, 30, -60], 'blue', 'stealth_matte');
+      spawnVehicle('jet', [35, 30, 60], 'amber', 'arctic_tiger');
+      spawnVehicle('helicopter', [0, 15, -30], 'blue', 'stealth_matte');
+      spawnVehicle('apc', [-10, 1, 30], 'blue', 'urban_cyber');
+      spawnVehicle('gunboat', [50, 0, -50], 'amber', 'stealth_matte');
+      spawnVehicle('mech', [0, 1, 40], 'none', 'urban_cyber');
+      addEvent('🌍 MASSIVE COMBINED-ARMS THEATER INITIALIZED: AIR, LAND & SEA ENGAGED');
+    }
   },
   
   setWeather: (weather) => set(state => ({ environment: { ...state.environment, weather } })),

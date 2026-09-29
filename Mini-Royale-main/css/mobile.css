@@ -1,0 +1,219 @@
+/* ============================================================
+   MINI ROYALE - Mobile Touch Controls
+   ============================================================ */
+
+#mobile-controls { display: none; }
+.touch-device #mobile-controls { display: block; }
+.touch-device .controls-info { display: none; }
+.touch-device body { cursor: default; }
+
+/* ===== Movement Joystick ===== */
+#joystick-zone {
+    position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: calc(20px + env(safe-area-inset-left, 0px)); width: 150px; height: 150px;
+    z-index: 50; touch-action: none;
+}
+#joystick-base {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.15);
+}
+#joystick-thumb {
+    position: absolute; width: 56px; height: 56px; border-radius: 50%;
+    background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.35);
+    top: 50%; left: 50%; transform: translate(-50%,-50%);
+    transition: none;
+}
+
+/* ===== Look Zone ===== */
+#look-zone {
+    position: fixed; top: 0; right: 0; width: 55%; height: 100%;
+    z-index: 45; touch-action: none;
+}
+
+/* ===== Action Buttons ===== */
+.touch-btn {
+    position: fixed; z-index: 55; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: #fff;
+    touch-action: none; user-select: none;
+    -webkit-user-select: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    transition: transform 0.1s, background 0.1s;
+}
+.touch-btn:active { transform: scale(0.92); }
+
+/* -- Fire Button (primary, largest) -- */
+#btn-fire {
+    bottom: calc(38px + env(safe-area-inset-bottom, 0px)); right: 28px; width: 76px; height: 76px;
+    background: radial-gradient(circle, rgba(255,60,60,0.55) 0%, rgba(200,30,30,0.45) 100%);
+    border: 3px solid rgba(255,80,80,0.5);
+    font-size: 26px;
+    box-shadow: 0 0 20px rgba(255,50,50,0.2);
+}
+#btn-fire.firing {
+    background: radial-gradient(circle, rgba(255,100,100,0.75) 0%, rgba(255,50,50,0.6) 100%);
+    box-shadow: 0 0 30px rgba(255,50,50,0.5);
+}
+
+/* -- ADS Button -- */
+#btn-ads {
+    bottom: calc(130px + env(safe-area-inset-bottom, 0px)); right: 28px; width: 52px; height: 52px;
+    background: rgba(80,80,220,0.3); border: 2px solid rgba(100,100,255,0.4);
+    font-size: 11px; letter-spacing: 0.5px;
+}
+#btn-ads.active { background: rgba(80,80,220,0.6); border-color: rgba(130,130,255,0.7); }
+
+/* -- Jump Button -- */
+#btn-jump {
+    bottom: calc(38px + env(safe-area-inset-bottom, 0px)); right: 122px; width: 52px; height: 52px;
+    background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.22);
+    font-size: 16px;
+}
+
+/* -- Crouch Button -- */
+#btn-crouch {
+    bottom: calc(130px + env(safe-area-inset-bottom, 0px)); right: 122px; width: 48px; height: 48px;
+    background: rgba(255,170,0,0.2); border: 2px solid rgba(255,170,0,0.35);
+    font-size: 16px;
+}
+#btn-crouch.active { background: rgba(255,170,0,0.5); border-color: rgba(255,190,50,0.6); }
+
+/* -- Reload Button -- */
+#btn-reload {
+    bottom: calc(200px + env(safe-area-inset-bottom, 0px)); right: 28px; width: 46px; height: 46px;
+    background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2);
+    font-size: 13px;
+}
+
+/* -- Grenade Button -- */
+#btn-grenade {
+    bottom: calc(200px + env(safe-area-inset-bottom, 0px)); right: 90px; width: 46px; height: 46px;
+    background: rgba(255,170,0,0.18); border: 2px solid rgba(255,170,0,0.3);
+    font-size: 18px;
+}
+
+/* -- Pickup Button -- */
+#btn-pickup {
+    bottom: 120px; left: 50%; transform: translateX(-50%);
+    width: 56px; height: 56px;
+    background: rgba(0,220,80,0.25); border: 2px solid rgba(0,255,100,0.45);
+    font-size: 11px; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+}
+#btn-pickup.visible { opacity: 1; pointer-events: auto; }
+
+/* -- Run/Sprint Button -- */
+#btn-run {
+    bottom: calc(38px + env(safe-area-inset-bottom, 0px)); left: 170px; width: 52px; height: 52px;
+    background: rgba(0,180,255,0.2); border: 2px solid rgba(0,180,255,0.35);
+    font-size: 18px;
+}
+#btn-run.active {
+    background: rgba(0,180,255,0.55); border-color: rgba(80,210,255,0.7);
+    box-shadow: 0 0 12px rgba(0,180,255,0.3);
+}
+
+/* ===== Weapon Switch Strip ===== */
+#weapon-strip {
+    position: fixed; bottom: calc(6px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
+    z-index: 60; display: flex; gap: 5px;
+}
+.ws-btn {
+    width: 42px; height: 34px; border-radius: 6px;
+    background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15);
+    color: #999; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.ws-btn.active {
+    border-color: #f90; color: #f90;
+    background: rgba(255,150,0,0.18);
+    box-shadow: 0 0 8px rgba(255,150,0,0.2);
+}
+
+/* ===== Mobile HUD Adjustments ===== */
+.touch-device #hud {
+    bottom: calc(6px + env(safe-area-inset-bottom, 0px)); gap: 3px;
+    left: 50%; right: auto; transform: translateX(-50%);
+    flex-wrap: nowrap;
+}
+.touch-device .hud-box { padding: 2px 5px; min-width: 0; }
+.touch-device .hud-value { font-size: 12px; }
+.touch-device .hud-label { font-size: 6px; letter-spacing: 0.5px; }
+.touch-device #bars-wrap {
+    bottom: calc(38px + env(safe-area-inset-bottom, 0px));
+    width: 180px; left: calc(50% + env(safe-area-inset-left, 0px) / 2);
+}
+.touch-device #minimap { width: 100px; height: 100px; top: 6px; right: 6px; }
+.touch-device #minimap canvas { width: 96px; height: 96px; }
+.touch-device #weapon-info {
+    bottom: calc(38px + env(safe-area-inset-bottom, 0px));
+    right: auto; left: calc(8px + env(safe-area-inset-left, 0px));
+    padding: 3px 8px;
+}
+.touch-device #weapon-name { font-size: 9px; }
+.touch-device #weapon-mode { font-size: 8px; }
+.touch-device #compass { font-size: 9px; padding: 2px 8px; }
+.touch-device #zone-timer { font-size: 9px; padding: 2px 8px; top: 32px; }
+.touch-device #crosshair .ch-h { width: 10px; }
+.touch-device #crosshair .ch-v { height: 10px; }
+.touch-device .ch-l { left: -16px; }
+.touch-device .ch-r { left: 6px; }
+.touch-device .ch-t { top: -16px; }
+.touch-device .ch-b { top: 6px; }
+.touch-device #aim-lock { left: -22px; top: -22px; width: 44px; height: 44px; }
+.touch-device #interact-prompt { display: none; }
+.touch-device #stance-indicator { bottom: calc(6px + env(safe-area-inset-bottom, 0px)); font-size: 9px; left: calc(8px + env(safe-area-inset-left, 0px)); }
+.touch-device #pickup-msg { bottom: 100px; font-size: 12px; }
+.touch-device #reload-bar-wrap { top: 52%; width: 100px; }
+.touch-device #kill-feed { max-width: 200px; }
+.touch-device .kill-msg { font-size: 10px; padding: 3px 8px; }
+.touch-device #zone-warning { top: 60px; font-size: 13px; padding: 4px 14px; }
+
+/* ===== Layout Editor ===== */
+#btn-edit-layout {
+    position: fixed; top: 6px; left: 6px; z-index: 200;
+    width: 32px; height: 32px; border-radius: 6px;
+    background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.45);
+    color: #fff; font-size: 16px; display: none;
+    align-items: center; justify-content: center;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+.touch-device #btn-edit-layout { display: flex; }
+#btn-edit-layout.editing { background: rgba(255,80,0,0.4); border-color: #f80; color: #fff; }
+.layout-editing .touch-btn,
+.layout-editing #weapon-strip,
+.layout-editing #joystick-zone {
+    outline: 2px dashed rgba(255,150,0,0.6) !important;
+}
+#layout-save, #layout-reset {
+    position: fixed; bottom: 50%; left: 50%; z-index: 201;
+    padding: 10px 30px; border-radius: 6px; border: none;
+    color: #fff; font-size: 14px; font-weight: bold; display: none;
+    cursor: pointer;
+}
+#layout-save { transform: translateX(-110%); background: linear-gradient(135deg, #f64, #e33); }
+#layout-reset { transform: translateX(10%); background: linear-gradient(135deg, #888, #555); }
+.layout-editing #layout-save, .layout-editing #layout-reset { display: block; }
+
+/* ===== Force Landscape - Rotate Prompt ===== */
+#rotate-prompt {
+    display: none; position: fixed; inset: 0; z-index: 9999;
+    background: #000; color: #fff;
+    flex-direction: column; align-items: center; justify-content: center;
+    font-size: 18px; text-align: center;
+}
+#rotate-prompt .rotate-icon {
+    font-size: 64px; margin-bottom: 20px;
+    animation: rotateAnim 2s ease-in-out infinite;
+}
+#rotate-prompt p { color: #aaa; margin-top: 10px; font-size: 13px; }
+@keyframes rotateAnim {
+    0%,100% { transform: rotate(0deg); }
+    50% { transform: rotate(90deg); }
+}
+@media (orientation: portrait) {
+    .touch-device #rotate-prompt { display: flex; }
+}

@@ -65,6 +65,7 @@ import { LandscapeOverlay, AndroidBackButtonListener, CrashProtectionBoundary, P
 import { getAbilitiesForWeapon } from './data/abilities';
 import { BoardMode } from './components/BoardMode/BoardMode';
 import { FreerunCity } from './components/FreerunCity/FreerunCity';
+import { WarzoneGarageModal } from './components/WarzoneGarageModal';
 import { Radio, Mic, MicOff, Camera, CameraOff, ArrowUp, LogIn, LogOut, Trophy, Target, Zap, Activity, Cpu, Check, X, MessageSquare, Search, RotateCcw, Book, Wand2, Shield, Sparkles, Volume2, Sword, FlaskConical, Coins, Heart, Settings, Sliders, LayoutGrid, UserPlus, UserCheck, UserX, Terminal as TerminalIcon, ListTodo, Calendar, AlertCircle, Car, Play, Pause, FastForward, Plus, User as UserIcon, Map as MapIcon, Globe, Layers, Glasses, Smartphone, FolderOpen, Gamepad2, Gift, GraduationCap, Crown } from 'lucide-react';
 import { auth, signInWithGoogle, logout, searchUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriends, getFriendRequests, createClan, getClan, joinClan, leaveClan, getTopClans, getUserProfile, ClanData, saveLoadoutPreset, getLoadoutPreset, getLeaderboard } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -1653,53 +1654,10 @@ function HUD() {
         )}
       </AnimatePresence>
 
-      {/* Vehicle Menu */}
+      {/* Warzone Garage & Combined-Arms Battle Center */}
       <AnimatePresence>
         {isVehicleMenuOpen && (
-          <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-[80] pointer-events-auto p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-zinc-950 border border-white/10 p-8 rounded-[2.5rem] w-full max-w-2xl flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.5)]"
-            >
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">Summon Vehicle</h2>
-                  <div className="h-1 w-16 bg-emerald-500 mt-2" />
-                </div>
-                <button onClick={() => setVehicleMenuOpen(false)} className="p-2 hover:bg-white/10 rounded-xl transition-all">
-                  <X size={24} className="text-white/50" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {(['helicopter', 'car', 'motorbike'] as const).map(type => (
-                  <button
-                    key={type}
-                    onClick={() => {
-                      spawnVehicle(type, [useGameStore.getState().playerPosition[0] + 5, useGameStore.getState().playerPosition[1] + 2, useGameStore.getState().playerPosition[2] + 5]);
-                      setVehicleMenuOpen(false);
-                      soundService.playSFX('ui_click');
-                    }}
-                    className="group relative bg-white/5 border border-white/10 p-6 rounded-3xl hover:bg-emerald-500 hover:text-black transition-all flex flex-col items-center gap-4"
-                  >
-                    <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center group-hover:bg-black/20">
-                      {type === 'helicopter' ? <Cpu size={32} /> : type === 'car' ? <Car size={32} /> : <Zap size={32} />}
-                    </div>
-                    <span className="font-black uppercase tracking-widest text-xs">{type}</span>
-                  </button>
-                ))}
-              </div>
-              
-              <button 
-                onClick={() => setVehicleMenuOpen(false)}
-                className="mt-8 w-full py-4 bg-white/5 text-white/50 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-white/10 transition-all"
-              >
-                Exit Menu
-              </button>
-            </motion.div>
-          </div>
+          <WarzoneGarageModal onClose={() => setVehicleMenuOpen(false)} />
         )}
       </AnimatePresence>
 
@@ -2468,30 +2426,6 @@ function HUD() {
         </div>
       )}
 
-      {/* Damage Directional Indicator */}
-      {lastDamageAngle !== null && Date.now() - lastDamageAngleTime < 1500 && (
-        <div 
-          className="absolute inset-0 pointer-events-none z-[120] transition-opacity duration-300"
-          style={{
-            opacity: Math.max(0, 1 - (Date.now() - lastDamageAngleTime) / 1500),
-          }}
-        >
-          {/* Main fading red arc at the edge of the screen */}
-          <div 
-            className="absolute inset-2 rounded-full border-[12px] border-transparent border-t-red-600/60 blur-[3px]"
-            style={{
-              transform: `rotate(${lastDamageAngle}deg)`,
-            }}
-          />
-          <div 
-            className="absolute inset-2 rounded-full border-[22px] border-transparent border-t-red-500/30 blur-[8px]"
-            style={{
-              transform: `rotate(${lastDamageAngle}deg)`,
-            }}
-          />
-          <div className="absolute inset-0 bg-red-600/[0.03] animate-pulse" />
-        </div>
-      )}
       {playerState === 'disabled' && (
         <div className="absolute inset-0 bg-zinc-950/90 pointer-events-auto z-[150] flex flex-col justify-between p-8 font-mono overflow-hidden select-none">
           {/* Scanline CRT overlay */}
@@ -2693,6 +2627,14 @@ function HUD() {
               className="flex-shrink-0 w-16 h-16 rounded-xl border-2 border-dashed border-white/20 bg-black/40 flex items-center justify-center hover:border-white/40 transition-all"
             >
               <div className="text-[10px] font-black text-white/40 uppercase">INV [E]</div>
+            </button>
+            <button
+              onClick={() => { setVehicleMenuOpen(true); soundService.playSFX('ui_click'); }}
+              className="flex-shrink-0 px-3 h-16 rounded-xl border-2 border-cyan-500/50 bg-cyan-950/50 hover:bg-cyan-500/30 flex flex-col items-center justify-center transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] text-cyan-400 group"
+              title="Open Warzone Garage & Combined-Arms Battles [V]"
+            >
+              <Car size={18} className="group-hover:scale-110 transition-transform mb-0.5" />
+              <div className="text-[9px] font-black uppercase tracking-wider text-cyan-300">GARAGE [V]</div>
             </button>
           </div>
         </div>
@@ -4215,7 +4157,7 @@ export default function App() {
         {modals.tasks && <TaskModal onClose={() => setModal('tasks', false)} />}
         {modals.friends && <FriendModal onClose={() => setModal('friends', false)} />}
         {modals.clans && <ClanModal onClose={() => setModal('clans', false)} />}
-        {modals.vehicles && <VehicleMenu onClose={() => setModal('vehicles', false)} />}
+        {modals.vehicles && <WarzoneGarageModal onClose={() => setModal('vehicles', false)} />}
         {modals.update && <BiggestUpdateModal onClose={() => setModal('update', false)} />}
         {modals.voice && <VoiceServersModal onClose={() => setModal('voice', false)} />}
         {modals.classroom && <ClassroomMode onClose={() => setModal('classroom', false)} />}

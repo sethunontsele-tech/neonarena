@@ -68,7 +68,7 @@ export const AlienAnimal: React.FC = () => {
     } else {
       const now = Date.now();
       if (now - lastAttackRef.current > 1000) {
-        takeDamage(25, false, 'VOID CONSUMER', Math.random() * 360);
+        takeDamage(25, false, 'VOID CONSUMER', undefined, [currentPos.x, currentPos.y, currentPos.z], 'critical');
         lastAttackRef.current = now;
         addEvent("YOU ARE BEING CONSUMED!");
         soundService.playSFX('hit');

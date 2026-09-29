@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../store';
+import { DirectionalDamageHUD } from './DirectionalDamageHUD';
 
 export const VisualFeedback: React.FC = () => {
   const health = useGameStore(state => state.health);
@@ -157,6 +158,9 @@ export const VisualFeedback: React.FC = () => {
 
       {/* HUD Speed Lines (optional effect for sprinting) */}
       <SpeedLines />
+
+      {/* Directional Damage Indicators */}
+      <DirectionalDamageHUD />
     </div>
   );
 };

@@ -23,10 +23,13 @@ import {
   Activity, 
   Boxes, 
   Code, 
-  Server 
+  Server,
+  Monitor
 } from 'lucide-react';
+import { NeonOSDesktop } from '../components/NeonOS/NeonOSDesktop';
 
 export function UniverseOS({ onClose, onLaunchPoker }: { onClose: () => void; onLaunchPoker: () => void }) {
+  const [isDesktopMode, setIsDesktopMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [activeFeature, setActiveFeature] = useState<MegaFeature | null>(MEGA_FEATURES_200[0]);
@@ -55,6 +58,20 @@ export function UniverseOS({ onClose, onLaunchPoker }: { onClose: () => void; on
       onLaunchPoker();
     }
   };
+
+  if (isDesktopMode) {
+    return (
+      <NeonOSDesktop
+        onClose={() => setIsDesktopMode(false)}
+        onLaunchGame={(gameId) => {
+          if (gameId === 'cyber_poker') {
+            setIsDesktopMode(false);
+            onLaunchPoker();
+          }
+        }}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-3xl z-[125] flex items-center justify-center p-4 select-none pointer-events-auto">

@@ -191,7 +191,7 @@ class SoundService {
     this.speak("Reloading weapon", 'Fenrir');
   }
 
-  async playSFX(type: 'shoot' | 'hit' | 'jump' | 'explosion' | 'reload' | 'spell' | 'infection' | 'timewarp' | 'killstreak' | 'ui_click' | 'ui_hover' | 'ui_tab' | 'dash_vijo' | 'achievement' | 'dimension_shift' | 'powerup' | 'quest_complete') {
+  async playSFX(type: 'shoot' | 'hit' | 'jump' | 'explosion' | 'explode' | 'reload' | 'spell' | 'infection' | 'timewarp' | 'killstreak' | 'kill' | 'pickup' | 'ui_click' | 'ui_hover' | 'ui_tab' | 'dash_vijo' | 'achievement' | 'dimension_shift' | 'powerup' | 'quest_complete') {
     try {
       const { useGameStore } = await import('../store');
       const sfxVolume = useGameStore.getState().sfxVolume;
@@ -207,6 +207,7 @@ class SoundService {
       const now = ctx.currentTime;
       
       switch(type) {
+        case 'pickup':
         case 'powerup':
           osc.type = 'sine';
           osc.frequency.setValueAtTime(440, now);
@@ -279,6 +280,7 @@ class SoundService {
           osc.start(now);
           osc.stop(now + 0.1);
           break;
+        case 'explode':
         case 'explosion':
           // Noise-like sound
           const bufferSize = ctx.sampleRate * 0.5;
@@ -333,6 +335,7 @@ class SoundService {
           osc.start(now);
           osc.stop(now + 1.0);
           break;
+        case 'kill':
         case 'killstreak':
           osc.type = 'square';
           osc.frequency.setValueAtTime(523.25, now); // C5

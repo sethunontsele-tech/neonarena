@@ -1,0 +1,436 @@
+/* ============================================================
+   MINI ROYALE - Free Fire Style Battle Royale
+   Main Stylesheet
+   ============================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    overflow: hidden; background: #000;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    cursor: crosshair; width: 100vw; height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+canvas { display: block; width: 100vw; height: 100dvh; }
+
+/* ===== HUD ===== */
+#hud {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; align-items: flex-end; z-index: 10; pointer-events: none;
+}
+.hud-box {
+    background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 5px; padding: 6px 12px; color: #fff; text-align: center;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    min-width: 54px;
+}
+.hud-label { font-size: 8px; text-transform: uppercase; letter-spacing: 1.2px; color: #888; margin-bottom: 2px; }
+.hud-value { font-size: 18px; font-weight: bold; }
+#health-val { color: #4f4; }
+#shield-val { color: #4af; }
+#ammo-val { color: #ff4; transition: color 0.2s; }
+#ammo-val.low-ammo { color: #f44; animation: ammoFlash 0.5s infinite; }
+@keyframes ammoFlash { 0%,100%{opacity:1} 50%{opacity:0.4} }
+#kills-val { color: #f44; }
+#alive-val { color: #4af; }
+#grenade-val { color: #fa0; }
+
+/* ===== Health + Shield Bars ===== */
+#bars-wrap {
+    position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%);
+    width: 320px; z-index: 10; pointer-events: none;
+}
+.bar-row { display: flex; align-items: center; margin-bottom: 3px; }
+.bar-icon { font-size: 11px; width: 18px; text-align: center; }
+.bar-track {
+    flex: 1; height: 6px; background: rgba(0,0,0,0.6); border-radius: 3px;
+    overflow: hidden; margin-left: 6px;
+}
+#health-bar { height: 100%; width: 100%; background: linear-gradient(90deg, #0c0, #4f4); border-radius: 3px; transition: width 0.25s ease-out; will-change: width; }
+#shield-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #28f, #6af); border-radius: 3px; transition: width 0.25s ease-out; will-change: width; }
+
+/* ===== Crosshair ===== */
+#crosshair {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 0; height: 0;
+    z-index: 10; pointer-events: none; transition: opacity 0.2s;
+}
+#crosshair .ch-h,
+#crosshair .ch-v,
+#crosshair .ch-dot { position: absolute; background: rgba(255,255,255,0.85); }
+.ch-h { width: 18px; height: 2px; top: -1px; }
+.ch-v { width: 2px; height: 18px; left: -1px; }
+.ch-l { left: -24px; }
+.ch-r { left: 6px; }
+.ch-t { top: -24px; }
+.ch-b { top: 6px; }
+.ch-dot { width: 2px; height: 2px; left: -1px; top: -1px; background: #f44; border-radius: 50%; }
+
+/* ===== Aim Lock Indicator (Free Fire style reticle) ===== */
+#aim-lock {
+    position: absolute; left: -28px; top: -28px;
+    width: 56px; height: 56px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.08s;
+    background: none;
+}
+#aim-lock.locked { opacity: 1; }
+
+/* Outer segmented ring — conic-gradient with radial mask for ring shape */
+.al-ring {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+        transparent 0deg, transparent 8deg,
+        #e01010 8deg, #e01010 82deg,
+        transparent 82deg, transparent 98deg,
+        #e01010 98deg, #e01010 172deg,
+        transparent 172deg, transparent 188deg,
+        #e01010 188deg, #e01010 262deg,
+        transparent 262deg, transparent 278deg,
+        #e01010 278deg, #e01010 352deg,
+        transparent 352deg, transparent 360deg
+    );
+    -webkit-mask-image: radial-gradient(transparent calc(50% - 4px), #000 calc(50% - 2px));
+    mask-image: radial-gradient(transparent calc(50% - 4px), #000 calc(50% - 2px));
+}
+
+/* Tick marks at 12, 3, 6, 9 o'clock */
+.al-seg {
+    position: absolute; background: #e01010;
+}
+.al-seg-t { width: 3px; height: 8px; left: 50%; top: -2px; transform: translateX(-50%); }
+.al-seg-b { width: 3px; height: 8px; left: 50%; bottom: -2px; transform: translateX(-50%); }
+.al-seg-l { width: 8px; height: 3px; top: 50%; left: -2px; transform: translateY(-50%); }
+.al-seg-r { width: 8px; height: 3px; top: 50%; right: -2px; transform: translateY(-50%); }
+
+/* Inner crosshair lines */
+.al-cross {
+    position: absolute; background: #e01010;
+}
+.al-ch { width: 16px; height: 2px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.al-cv { width: 2px; height: 16px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+/* Center dot */
+.al-dot {
+    position: absolute; width: 5px; height: 5px; border-radius: 50%;
+    background: #e01010; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    box-shadow: 0 0 6px rgba(255, 20, 20, 0.7);
+}
+
+/* Locked pulse */
+#aim-lock.locked .al-ring {
+    animation: aimRingPulse 0.8s ease-in-out infinite;
+}
+@keyframes aimRingPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+/* When locked, hide the default white crosshair — red reticle takes over */
+#crosshair:has(#aim-lock.locked) .ch-h,
+#crosshair:has(#aim-lock.locked) .ch-v,
+#crosshair:has(#aim-lock.locked) .ch-dot { opacity: 0; transition: opacity 0.08s; }
+
+/* ===== Hit Marker ===== */
+#hitmarker {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    z-index: 11; pointer-events: none; opacity: 0; transition: opacity 0.08s;
+}
+.hm-line {
+    position: absolute; width: 12px; height: 2px; background: #fff;
+    transform-origin: center;
+}
+.hm-1 { transform: translate(-2px,-12px) rotate(45deg); }
+.hm-2 { transform: translate(4px,-2px) rotate(45deg); }
+.hm-3 { transform: translate(-8px,4px) rotate(45deg); }
+.hm-4 { transform: translate(-2px,10px) rotate(45deg); }
+
+/* ===== ADS Overlay ===== */
+#ads-overlay {
+    position: fixed; inset: 0; z-index: 8; pointer-events: none;
+    border: 3px solid rgba(0,0,0,0); border-radius: 0;
+    transition: border 0.2s, background 0.2s;
+}
+#ads-overlay.active {
+    border: 60px solid rgba(0,0,0,0.4);
+    border-radius: 50%;
+}
+
+/* ===== Minimap ===== */
+#minimap {
+    position: fixed; top: 15px; right: 15px; width: 180px; height: 180px;
+    background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 8px; z-index: 10; pointer-events: none;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    overflow: hidden;
+}
+#minimap canvas { border-radius: 6px; width: 100%; height: 100%; display: block; }
+
+/* ===== Zone Warning ===== */
+#zone-warning {
+    position: fixed; top: 75px; left: 50%; transform: translateX(-50%);
+    color: #f44; font-size: 16px; font-weight: bold; z-index: 10;
+    text-shadow: 0 0 15px rgba(255,0,0,0.6); display: none; pointer-events: none;
+    animation: pulse 1s infinite;
+    background: rgba(0,0,0,0.5); padding: 6px 20px; border-radius: 4px;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ===== Zone Timer ===== */
+#zone-timer {
+    position: fixed; top: 44px; left: 50%; transform: translateX(-50%);
+    z-index: 10; pointer-events: none;
+    background: rgba(0,0,0,0.55); border-radius: 4px; padding: 3px 14px;
+    color: #6af; font-size: 11px; font-weight: bold; letter-spacing: 1px;
+}
+#zone-timer.shrinking { color: #f44; animation: pulse 1s infinite; }
+
+/* ===== Kill Feed ===== */
+#kill-feed {
+    position: fixed; top: 15px; left: 15px; z-index: 10; pointer-events: none; max-width: 300px;
+}
+.kill-msg {
+    background: rgba(0,0,0,0.75); color: #fff; padding: 5px 12px;
+    border-radius: 4px; margin-bottom: 3px; font-size: 12px;
+    animation: fadeIn 0.3s; border-left: 3px solid #f44;
+}
+.kill-msg span { color: #f44; font-weight: bold; }
+@keyframes fadeIn { from{opacity:0;transform:translateX(-20px)} to{opacity:1;transform:translateX(0)} }
+
+/* ===== Start Screen ===== */
+#start-screen {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    background: #060a10;
+    overflow: hidden;
+    transition: opacity 0.5s ease-out;
+}
+#start-screen.hidden { opacity: 0; pointer-events: none; }
+
+/* Animated background */
+#start-screen::before {
+    content: ''; position: absolute; inset: -50%;
+    background:
+        radial-gradient(circle at 20% 30%, rgba(255,80,20,0.07) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(0,120,255,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(255,50,50,0.03) 0%, transparent 70%);
+    animation: bgDrift 12s ease-in-out infinite;
+}
+@keyframes bgDrift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(3%, -2%) scale(1.02); }
+    66% { transform: translate(-2%, 3%) scale(0.98); }
+}
+#start-screen::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(0deg, rgba(6,10,16,0.9) 0%, transparent 30%, transparent 70%, rgba(6,10,16,0.7) 100%);
+    pointer-events: none;
+}
+
+/* Particles overlay */
+.ss-particles {
+    position: absolute; inset: 0;
+    background-image:
+        radial-gradient(1px 1px at 10% 20%, rgba(255,100,50,0.4), transparent),
+        radial-gradient(1px 1px at 30% 70%, rgba(255,100,50,0.3), transparent),
+        radial-gradient(1px 1px at 50% 10%, rgba(255,200,100,0.2), transparent),
+        radial-gradient(1px 1px at 70% 50%, rgba(255,100,50,0.3), transparent),
+        radial-gradient(1px 1px at 90% 80%, rgba(255,100,50,0.4), transparent),
+        radial-gradient(1px 1px at 15% 90%, rgba(255,200,100,0.2), transparent),
+        radial-gradient(1px 1px at 85% 30%, rgba(255,100,50,0.3), transparent),
+        radial-gradient(1px 1px at 60% 95%, rgba(255,200,100,0.25), transparent);
+    animation: particleFloat 20s linear infinite;
+}
+@keyframes particleFloat {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-100px); }
+}
+
+/* Content */
+.ss-content {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center;
+    animation: contentFadeIn 0.8s ease-out;
+}
+@keyframes contentFadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Logo icon */
+.ss-logo {
+    margin-bottom: 18px;
+    animation: logoPulse 3s ease-in-out infinite;
+}
+@keyframes logoPulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(255,100,50,0.3)); }
+    50% { transform: scale(1.05); filter: drop-shadow(0 0 16px rgba(255,100,50,0.5)); }
+}
+.ss-crosshair-icon { display: block; }
+
+/* Title */
+#start-screen h1 {
+    font-size: 72px; color: #fff; letter-spacing: 2px; position: relative;
+    margin: 0; line-height: 1;
+    text-shadow: 0 0 60px rgba(255,80,20,0.25);
+    font-weight: 900;
+}
+#start-screen h1 span {
+    color: #f64;
+    text-shadow: 0 0 40px rgba(255,100,50,0.5), 0 2px 10px rgba(0,0,0,0.5);
+}
+
+/* Tagline */
+.ss-tagline {
+    color: rgba(255,255,255,0.35); font-size: 11px; letter-spacing: 6px;
+    text-transform: uppercase; margin-top: 6px; font-weight: 600;
+}
+
+/* Divider */
+.ss-divider {
+    width: 60px; height: 2px; margin: 28px 0;
+    background: linear-gradient(90deg, transparent, #f64, transparent);
+}
+
+/* Stats row */
+.ss-stats-row {
+    display: flex; gap: 32px; margin-bottom: 32px;
+}
+.ss-stat {
+    display: flex; flex-direction: column; align-items: center;
+    color: rgba(255,255,255,0.4); font-size: 9px; letter-spacing: 2px;
+    text-transform: uppercase; font-weight: 600;
+}
+.ss-stat span {
+    font-size: 28px; color: #fff; font-weight: 800; letter-spacing: 0;
+    line-height: 1.2;
+}
+
+/* Start button */
+#start-btn {
+    padding: 16px 56px; font-size: 16px;
+    background: linear-gradient(135deg, #ff5530, #e02020);
+    color: #fff; border: none; border-radius: 6px; cursor: pointer;
+    font-weight: 800; letter-spacing: 4px; text-transform: uppercase;
+    transition: all 0.2s ease; position: relative;
+    box-shadow: 0 4px 20px rgba(255,60,20,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+    display: flex; align-items: center; gap: 8px;
+}
+#start-btn:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 8px 40px rgba(255,60,20,0.5), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+#start-btn:active { transform: translateY(0) scale(0.98); }
+.btn-icon { font-size: 12px; }
+
+/* Controls */
+.controls-info {
+    margin-top: 32px; color: rgba(255,255,255,0.25); font-size: 10px;
+    text-align: center; line-height: 2.4; position: relative;
+    max-width: 500px;
+}
+.controls-info kbd {
+    background: rgba(255,255,255,0.05); padding: 2px 7px; border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.45);
+    font-size: 9px; font-family: inherit;
+}
+
+/* Version */
+.ss-version {
+    position: absolute; bottom: -60px;
+    color: rgba(255,255,255,0.15); font-size: 9px; letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* ===== Game Over ===== */
+#game-over {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 100;
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    animation: fadeInOverlay 0.3s ease-out;
+    transition: opacity 0.2s ease-out;
+}
+@keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
+#game-over h1 { font-size: 48px; margin-bottom: 12px; letter-spacing: 3px; }
+#game-over .stats { color: #888; font-size: 15px; margin-bottom: 28px; letter-spacing: 1px; }
+#restart-btn {
+    padding: 13px 50px; font-size: 17px; background: linear-gradient(135deg, #f64, #e33);
+    color: #fff; border: none; border-radius: 5px; cursor: pointer;
+    font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+#restart-btn:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(255,80,0,0.4); }
+
+/* ===== Damage Flash + Direction ===== */
+#damage-flash {
+    position: fixed; inset: 0; z-index: 9;
+    pointer-events: none; opacity: 0; transition: opacity 0.15s;
+}
+.dmg-vignette {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(255,0,0,0.4) 100%);
+}
+
+#damage-dir {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 200px; height: 200px; z-index: 9; pointer-events: none;
+}
+.dmg-arrow {
+    position: absolute; width: 40px; height: 6px; background: rgba(255,50,50,0.7);
+    border-radius: 3px; opacity: 0; transition: opacity 0.3s;
+}
+.dmg-top { top: 0; left: 50%; transform: translateX(-50%); }
+.dmg-bot { bottom: 0; left: 50%; transform: translateX(-50%); }
+.dmg-left { left: 0; top: 50%; transform: translateY(-50%) rotate(90deg); }
+.dmg-right { right: 0; top: 50%; transform: translateY(-50%) rotate(90deg); }
+
+/* ===== Weapon Info ===== */
+#weapon-info {
+    position: fixed; bottom: 20px; right: 20px; z-index: 10; pointer-events: none;
+    background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 5px; padding: 6px 14px; color: #fff;
+}
+#weapon-name { font-size: 12px; font-weight: bold; color: #f90; }
+#weapon-mode { font-size: 9px; color: #777; margin-top: 2px; }
+
+/* ===== Reload Bar ===== */
+#reload-bar-wrap {
+    position: fixed; top: 55%; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 4px; background: rgba(0,0,0,0.6); border-radius: 2px;
+    z-index: 10; pointer-events: none; display: none;
+}
+#reload-bar { height: 100%; width: 0%; background: #fff; border-radius: 2px; transition: width 0.05s linear; }
+
+/* ===== Pickup Notification ===== */
+#pickup-msg {
+    position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%);
+    color: #4f4; font-size: 14px; font-weight: bold; z-index: 10; pointer-events: none;
+    opacity: 0; transition: opacity 0.3s; text-shadow: 0 0 8px rgba(0,255,0,0.4);
+}
+
+/* ===== Stance Indicator ===== */
+#stance-indicator {
+    position: fixed; bottom: 20px; left: 20px; z-index: 10; pointer-events: none;
+    color: #999; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+}
+
+/* ===== Compass ===== */
+#compass {
+    position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+    z-index: 10; pointer-events: none;
+    background: rgba(0,0,0,0.45); border-radius: 4px; padding: 3px 14px;
+    color: #ccc; font-size: 11px; font-weight: bold; letter-spacing: 2px;
+}
+
+/* ===== Interaction Prompt ===== */
+#interact-prompt {
+    position: fixed; bottom: 180px; left: 50%; transform: translateX(-50%);
+    z-index: 10; pointer-events: none; opacity: 0; transition: opacity 0.2s;
+    background: rgba(0,0,0,0.7); color: #fff; padding: 6px 16px; border-radius: 4px;
+    font-size: 13px;
+}
+#interact-prompt kbd {
+    background: rgba(255,255,255,0.15); padding: 1px 6px; border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.3); margin-right: 4px;
+}

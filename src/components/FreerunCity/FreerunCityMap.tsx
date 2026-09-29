@@ -398,11 +398,12 @@ export function FreerunCityMap({
         return (
           <group key={`pipe_${i}`} position={mid}>
             <mesh
+              rotation={[Math.PI / 2, 0, 0]}
               onUpdate={(self) => {
                 self.lookAt(e);
               }}
             >
-              <cylinderGeometry args={[0.16, 0.16, dist, 12]} rotation={[Math.PI / 2, 0, 0]} />
+              <cylinderGeometry args={[0.16, 0.16, dist, 12]} />
               <meshStandardMaterial color={gp.color} emissive={gp.color} emissiveIntensity={1.4} roughness={0.1} />
             </mesh>
           </group>

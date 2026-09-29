@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Mini Royale - Free Fire Style</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff4444">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mini Royale">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
+    <link rel="icon" href="assets/icons/favicon.ico">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mobile.css">
+</head>
+<body>
+
+<!-- Start Screen -->
+<div id="start-screen">
+    <div class="ss-particles"></div>
+    <div class="ss-content">
+        <div class="ss-logo">
+            <svg class="ss-crosshair-icon" viewBox="0 0 80 80" width="60" height="60">
+                <circle cx="40" cy="40" r="20" fill="none" stroke="#f64" stroke-width="2" opacity="0.6"/>
+                <circle cx="40" cy="40" r="3" fill="#f64"/>
+                <line x1="40" y1="10" x2="40" y2="28" stroke="#f64" stroke-width="2" stroke-linecap="round"/>
+                <line x1="40" y1="52" x2="40" y2="70" stroke="#f64" stroke-width="2" stroke-linecap="round"/>
+                <line x1="10" y1="40" x2="28" y2="40" stroke="#f64" stroke-width="2" stroke-linecap="round"/>
+                <line x1="52" y1="40" x2="70" y2="40" stroke="#f64" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <h1>MINI<span>ROYALE</span></h1>
+        <div class="ss-tagline">LAST ONE STANDING WINS</div>
+        <div class="ss-divider"></div>
+        <div class="ss-stats-row">
+            <div class="ss-stat"><span id="ss-players">36</span>PLAYERS</div>
+            <div class="ss-stat"><span>3</span>WEAPONS</div>
+            <div class="ss-stat"><span>1</span>WINNER</div>
+        </div>
+        <button id="start-btn">
+            <span class="btn-icon">&#9654;</span> DROP IN
+        </button>
+        <div class="controls-info">
+            <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;|&nbsp;
+            <kbd>Mouse</kbd> Look &nbsp;|&nbsp;
+            <kbd>LMB</kbd> Shoot &nbsp;|&nbsp;
+            <kbd>RMB</kbd> ADS<br>
+            <kbd>R</kbd> Reload &nbsp;|&nbsp;
+            <kbd>Space</kbd> Jump &nbsp;|&nbsp;
+            <kbd>Shift</kbd> Sprint &nbsp;|&nbsp;
+            <kbd>C</kbd> Crouch &nbsp;|&nbsp;
+            <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Weapons &nbsp;|&nbsp;
+            <kbd>G</kbd> Grenade &nbsp;|&nbsp;
+            <kbd>E</kbd> Pick Up
+        </div>
+        <div class="ss-version">v1.0 &bull; Web Battle Royale</div>
+    </div>
+</div>
+
+<!-- Game Over Screen -->
+<div id="game-over">
+    <h1 id="result-text"></h1>
+    <div class="stats" id="final-stats"></div>
+    <button id="restart-btn">PLAY AGAIN</button>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+    <div class="hud-box"><div class="hud-label">HP</div><div class="hud-value" id="health-val">150</div></div>
+    <div class="hud-box"><div class="hud-label">Shield</div><div class="hud-value" id="shield-val">50</div></div>
+    <div class="hud-box"><div class="hud-label">Ammo</div><div class="hud-value" id="ammo-val">30/90</div></div>
+    <div class="hud-box"><div class="hud-label">Kills</div><div class="hud-value" id="kills-val">0</div></div>
+    <div class="hud-box"><div class="hud-label">Alive</div><div class="hud-value" id="alive-val">36</div></div>
+    <div class="hud-box"><div class="hud-label">Nades</div><div class="hud-value" id="grenade-val">3</div></div>
+</div>
+
+<!-- Health + Shield bars -->
+<div id="bars-wrap">
+    <div class="bar-row"><div class="bar-icon">🛡</div><div class="bar-track"><div id="shield-bar"></div></div></div>
+    <div class="bar-row"><div class="bar-icon">❤</div><div class="bar-track"><div id="health-bar"></div></div></div>
+</div>
+
+<!-- Crosshair -->
+<div id="crosshair">
+    <div class="ch-h ch-l"></div>
+    <div class="ch-h ch-r"></div>
+    <div class="ch-v ch-t"></div>
+    <div class="ch-v ch-b"></div>
+    <div class="ch-dot"></div>
+    <div id="aim-lock">
+        <div class="al-ring"></div>
+        <div class="al-seg al-seg-t"></div>
+        <div class="al-seg al-seg-r"></div>
+        <div class="al-seg al-seg-b"></div>
+        <div class="al-seg al-seg-l"></div>
+        <div class="al-cross al-ch"></div>
+        <div class="al-cross al-cv"></div>
+        <div class="al-dot"></div>
+    </div>
+</div>
+
+<!-- Hit marker -->
+<div id="hitmarker">
+    <div class="hm-line hm-1"></div>
+    <div class="hm-line hm-2"></div>
+    <div class="hm-line hm-3"></div>
+    <div class="hm-line hm-4"></div>
+</div>
+
+<!-- ADS overlay -->
+<div id="ads-overlay"></div>
+
+<!-- Minimap -->
+<div id="minimap"><canvas id="minimap-canvas" width="186" height="186"></canvas></div>
+
+<!-- Compass -->
+<div id="compass">N</div>
+
+<!-- Zone Timer -->
+<div id="zone-timer">Zone 1 | 1:00</div>
+
+<!-- Zone Warning -->
+<div id="zone-warning">⚠ OUTSIDE SAFE ZONE ⚠</div>
+
+<!-- Kill Feed -->
+<div id="kill-feed"></div>
+
+<!-- Damage Flash -->
+<div id="damage-flash"><div class="dmg-vignette"></div></div>
+
+<!-- Damage Direction -->
+<div id="damage-dir">
+    <div class="dmg-arrow dmg-top"></div>
+    <div class="dmg-arrow dmg-bot"></div>
+    <div class="dmg-arrow dmg-left"></div>
+    <div class="dmg-arrow dmg-right"></div>
+</div>
+
+<!-- Weapon Info -->
+<div id="weapon-info">
+    <div id="weapon-name">AR - Assault Rifle</div>
+    <div id="weapon-mode">AUTO</div>
+</div>
+
+<!-- Reload bar -->
+<div id="reload-bar-wrap"><div id="reload-bar"></div></div>
+
+<!-- Pickup Message -->
+<div id="pickup-msg"></div>
+
+<!-- Stance indicator -->
+<div id="stance-indicator">Standing</div>
+
+<!-- Interaction prompt -->
+<div id="interact-prompt"><kbd>E</kbd> Pick Up</div>
+
+<!-- Rotate Prompt (portrait block) -->
+<div id="rotate-prompt">
+    <div class="rotate-icon">📱</div>
+    <div>Rotate your device to landscape</div>
+    <p>This game plays in horizontal mode like Free Fire</p>
+</div>
+
+<!-- Mobile Touch Controls -->
+<div id="mobile-controls">
+    <div id="look-zone"></div>
+    <div id="joystick-zone">
+        <div id="joystick-base"></div>
+        <div id="joystick-thumb"></div>
+    </div>
+    <div id="btn-fire" class="touch-btn">🔥</div>
+    <div id="btn-ads" class="touch-btn">ADS</div>
+    <div id="btn-jump" class="touch-btn">⬆</div>
+    <div id="btn-crouch" class="touch-btn">🦆</div>
+    <div id="btn-reload" class="touch-btn">R</div>
+    <div id="btn-grenade" class="touch-btn">💣</div>
+    <div id="btn-pickup" class="touch-btn">Pick</div>
+    <div id="btn-run" class="touch-btn">🏃</div>
+    <div id="weapon-strip">
+        <div class="ws-btn" data-wep="0">1</div>
+        <div class="ws-btn active" data-wep="1">2</div>
+        <div class="ws-btn" data-wep="2">3</div>
+    </div>
+</div>
+<div id="btn-edit-layout">⚙</div>
+<button id="layout-save">SAVE LAYOUT</button>
+<button id="layout-reset">RESET</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/game.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+}
+</script>
+
+</body>
+</html>

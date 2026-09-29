@@ -16,6 +16,7 @@ const SHOOT_DIST = 15;
 const SHOOT_COOLDOWN = 3500; // Increased from 2000 for less aggressive shooting
 
 import { useVisibilityCulling } from '../utils/useFrustumCulling';
+import { RealisticHumanoidModel } from './RealisticHumanoidModel';
 
 export function Enemy({ data }: { data: EnemyData }) {
   const body = useRef<RapierRigidBody>(null);
@@ -176,7 +177,7 @@ export function Enemy({ data }: { data: EnemyData }) {
             const userData = rb.userData as { name?: string };
             if (userData.name === 'player') {
               // Hit player!
-              hitPlayer();
+              hitPlayer(false, `BOT-${data.id.substring(0, 6)}`, [currentPos.x, currentPos.y, currentPos.z]);
               addParticles([camera.position.x, camera.position.y, camera.position.z], '#ff0000');
               addLaser(
                 [startPos.x, startPos.y, startPos.z],
@@ -269,45 +270,26 @@ export function Enemy({ data }: { data: EnemyData }) {
     >
       <CapsuleCollider args={[0.5, 0.5]} position={[0, 1, 0]} />
       <group ref={groupRef} position={[0, 0, 0]} visible={isVisible} scale={[moddedBotScale, moddedBotScale, moddedBotScale]}>
-        {/* Body */}
-        <mesh castShadow position={[0, 1, 0]}>
-          {isGlitch ? (
-            <boxGeometry args={[0.8, 1.8, 0.8]} />
-          ) : skin === 'stealth' ? (
-            <coneGeometry args={[0.6, 2, 8]} />
-          ) : (
-            <capsuleGeometry args={[0.5, 1]} />
-          )}
-          <meshStandardMaterial 
-            color={isGlitch ? '#ff0000' : (skin === 'gold' ? '#ffd700' : color)} 
-            roughness={skin === 'gold' ? 0.1 : 0.3} 
-            metalness={skin === 'gold' ? 1 : 0.8} 
-            emissive={isTargeted ? '#00ffff' : (isGlitch ? '#ff0000' : (skin === 'gold' ? '#ffd700' : color))}
-            emissiveIntensity={isTargeted ? 1.5 : (data.state === 'disabled' ? 0 : (isGlitch ? 2 : (skin === 'neon' ? 0.8 : 0.4)))}
-            transparent={skin === 'stealth' || isGlitch}
-            opacity={isGlitch ? 0.8 : (skin === 'stealth' ? 0.4 : 1)}
-          />
-        </mesh>
+        {/* Realistic Combat Bot Model */}
+        <RealisticHumanoidModel
+          variant="spec_ops"
+          baseColor={skin === 'gold' ? '#b45309' : (data.team === 'amber' ? '#78350f' : (data.team === 'blue' ? '#1e3a8a' : '#222831'))}
+          accentColor={skin === 'gold' ? '#fde047' : (data.team === 'amber' ? '#f59e0b' : (data.team === 'blue' ? '#00e5ff' : '#ff0055'))}
+          isEnemy={true}
+          team={data.team}
+          isAttacking={data.state === 'active' && Boolean(data.health > 0)}
+          isMoving={data.state === 'active'}
+          isDisabled={data.state === 'disabled'}
+          isGlitch={Boolean(isGlitch)}
+        />
 
         {/* Targeted Outline/Indicator */}
         {isTargeted && (
           <mesh position={[0, 1, 0]}>
-            {isGlitch ? (
-              <boxGeometry args={[0.9, 1.9, 0.9]} />
-            ) : skin === 'stealth' ? (
-              <coneGeometry args={[0.7, 2.1, 8]} />
-            ) : (
-              <capsuleGeometry args={[0.55, 1.1]} />
-            )}
-            <meshBasicMaterial color="#00ffff" wireframe transparent opacity={0.5} />
+            <capsuleGeometry args={[0.55, 1.1]} />
+            <meshBasicMaterial color="#00ffff" wireframe transparent opacity={0.6} />
           </mesh>
         )}
-        
-        {/* Eye/Visor */}
-        <mesh position={[0, 1.6, 0.45]}>
-          <boxGeometry args={[0.6, 0.2, 0.2]} />
-          <meshBasicMaterial color={data.state === 'disabled' ? '#111' : (skin === 'gold' ? '#fff' : '#00ffff')} />
-        </mesh>
 
         {/* Username Label */}
         <Text

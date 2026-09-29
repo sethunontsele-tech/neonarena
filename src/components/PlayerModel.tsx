@@ -9,6 +9,7 @@ import { useLoader } from '@react-three/fiber';
 import { OBJLoader, MTLLoader, GLTFLoader } from 'three-stdlib';
 import { useGameStore, SkinType, PatternType, AccessoryType, EntityState } from '../store';
 import { ModernPlayer } from './ModernPlayer';
+import { RealisticHumanoidModel } from './RealisticHumanoidModel';
 
 class LoaderErrorBoundary extends React.Component<{ fallback: React.ReactNode; children: React.ReactNode }, { hasError: boolean }> {
   constructor(props: any) {
@@ -244,24 +245,24 @@ export function PlayerModel({ skin, color, pattern, accessories, state, isMe, is
         <Suspense fallback={<mesh position={[0, 1, 0]}><capsuleGeometry args={[0.5, 1]} /><meshStandardMaterial color={color} wireframe /></mesh>}>
           <AlienMesh color={color} />
         </Suspense>
-      ) : (
+      ) : skin === 'steve' || skin === 'alex' ? (
         <mesh castShadow position={[0, 1, 0]}>
-          {isGlitch || skin === 'glitch' ? (
-            <boxGeometry args={[0.8, 1.8, 0.8]} />
-          ) : skin === 'stealth' ? (
-            <coneGeometry args={[0.6, 2, 8]} />
-          ) : skin === 'void' ? (
-            <boxGeometry args={[0.4, 2.2, 0.4]} />
-          ) : skin === 'steve' || skin === 'alex' ? (
-            <boxGeometry args={[0.6, 1.8, 0.4]} />
-          ) : (
-            <capsuleGeometry args={[0.5, 1]} />
-          )}
+          <boxGeometry args={[0.6, 1.8, 0.4]} />
           <meshStandardMaterial 
             {...materialProps} 
-            color={skin === 'steve' ? '#2e7d32' : skin === 'alex' ? '#ff8a65' : materialProps.color}
+            color={skin === 'steve' ? '#2e7d32' : '#ff8a65'}
           />
         </mesh>
+      ) : (
+        /* High-Fidelity Realistic Tactical Combat Operator Model */
+        <RealisticHumanoidModel
+          variant={skin === 'gold' || skin === 'ruby' || skin === 'emerald' || skin === 'diamond' ? 'gem_armor' : 'spec_ops'}
+          baseColor={materialProps.color}
+          accentColor={materialProps.emissive}
+          isDisabled={isPlayerDisabled}
+          isGlitch={Boolean(isGlitch)}
+          activePower={activeStreakPower}
+        />
       )}
 
       {/* Minecraft Head */}
@@ -382,10 +383,10 @@ export function PlayerModel({ skin, color, pattern, accessories, state, isMe, is
       ))}
 
       {/* Eye/Visor */}
-      {!skin.startsWith('custom_') && (
+      {(skin === 'steve' || skin === 'alex') && (
         <mesh position={[0, 1.6, 0.45]}>
           <boxGeometry args={[0.6, 0.2, 0.2]} />
-          <meshBasicMaterial color={isPlayerDisabled ? '#111' : (skin === 'gold' ? '#fff' : '#ffffff')} />
+          <meshBasicMaterial color={isPlayerDisabled ? '#111' : '#ffffff'} />
         </mesh>
       )}
     </group>

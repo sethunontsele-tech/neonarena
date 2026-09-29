@@ -48,6 +48,7 @@ export function Player() {
   const isWallRunningStore = useGameStore(state => state.isWallRunning);
   const wallRunSideStore = useGameStore(state => state.wallRunSide);
   const setWallRunning = useGameStore(state => state.setWallRunning);
+  const currentVehicleId = useGameStore(state => state.currentVehicleId);
 
   const keys = useRef({ w: false, a: false, s: false, d: false, space: false, shift: false, c: false });
   const lastEmitTime = useRef(0);
@@ -613,6 +614,16 @@ export function Player() {
       }
     });
 
+    // If player is piloting a vehicle, vehicle controls movement & camera
+    if (currentVehicleId) {
+      const v = useGameStore.getState().vehicles[currentVehicleId];
+      if (v && body.current) {
+        body.current.setTranslation(new THREE.Vector3(v.position[0], v.position[1] + 1.2, v.position[2]), true);
+        body.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      }
+      return;
+    }
+
     // Movement
     const k = keys.current;
     
@@ -940,7 +951,7 @@ export function Player() {
           const currentTime = Date.now();
           if (currentTime - lastHailDamageTime.current > 1400) {
             lastHailDamageTime.current = currentTime;
-            useGameStore.getState().takeDamage(3);
+            useGameStore.getState().takeDamage(3, false, 'HAILSTORM', 0, undefined, 'hazard');
             useGameStore.getState().addEvent('⚠️ HAILSTORM BLASTING IN PE: TAKE SHELTER UNDER ROOFS!');
             soundService.playSFX('hit');
           }

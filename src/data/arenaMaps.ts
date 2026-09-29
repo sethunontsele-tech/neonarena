@@ -17,6 +17,22 @@ export interface ArenaMap {
 
 export const ARENA_MAPS: ArenaMap[] = [
   {
+    id: 'mini_royale',
+    name: 'Mini Royale // Free Fire Style 1000×1000 Island',
+    year: 2026,
+    creator: 'Neon Arena & Mini Royale Team',
+    genre: 'Battle Royale / Combined Arms Survival',
+    platform: 'Cross-Platform PC/Mobile/VR',
+    desc: 'Drop into a massive 1000×1000 island with 35 AI opponents! Enter 38 buildings for tactical cover, scavenge 100 loot crates, drive combat vehicles, and fight to survive as the 5-phase red danger zone closes in. Features ADS zoom, Free Fire aim lock reticles, and realistic recoil.',
+    servers: ['Bermuda-Central', 'Purgatory-NW', 'Kalahari-SE', 'Clock-Tower-South', 'Factory-Compound', 'Peak-Highland'],
+    difficulty: 'Battle Royale (36 Players)',
+    rating: 'T',
+    players: '2.5M+',
+    award: 'NEW EXPANSION',
+    gradient: 'from-orange-950 via-red-950 to-black border-orange-500/60',
+    badge: 'MINI ROYALE'
+  },
+  {
     id: 'open_world',
     name: 'Neon Horizon // Massive Sandbox Open World',
     year: 2026,
